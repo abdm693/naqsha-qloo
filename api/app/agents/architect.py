@@ -89,7 +89,7 @@ STAIRS (objective geometry, checked):
 - roof.mumty.rect = the top-floor stair hall; roof.mumty.door_side = the start-end side (front for "+y", back for "-y", left
   for "+x", right for "-x"). If that side is a party wall, use a long side and make the hall ≥ 3.6 ft longer than the stair there.
 
-ARCHITECT'S COMMON SENSE: plan the way a thoughtful Lahore architect would. Every room has its own way in from circulation: a
+ARCHITECT'S COMMON SENSE: plan the way a thoughtful local architect would (in Pakistan, a Lahore architect). Every room has its own way in from circulation: a
 bedroom opens onto a corridor, lobby, stair hall or the family lounge (plus its own bath, dressing or balcony), never through
 another bedroom, a bath, the kitchen or the drawing room; a bath has exactly one door, and the master bath opens into the master
 bedroom. A powder room or common bath never opens into the dining room (its door would face the dining table): open it off a
@@ -115,8 +115,9 @@ bedroom, the lounge) face the road on every floor; never put a bath, store or st
 face. Leave open roof or terraces at the back, not the front, unless the brief asks otherwise.
 
 ROOF: solar-ready roofs stay clear: no minarets, domes or chhatris unless asked; the stair tower and tank sit in one corner.
-roof.water_tank.material follows brief.water_tank ("plastic" sits on the stair tower, its rect inside roof.mumty.rect;
-"concrete" sits on the roof slab beside it). roof.solar = {"mode": brief.solar} when it is "ready" or "panels".
+roof.water_tank only when brief.water_tank is set (Pakistan and the Gulf; homes elsewhere have no roof tank): its material
+follows brief.water_tank ("plastic" sits on the stair tower, its rect inside roof.mumty.rect; "concrete" sits on the roof
+slab beside it). Outside Pakistan the stair tower is a light roof-deck access, not a mumty with a tank. roof.solar = {"mode": brief.solar} when it is "ready" or "panels".
 
 Pakistani planning sense (homes in Pakistan; elsewhere follow LOCAL PLANNING in the prompt): the drawing room near the entrance (guests enter from the porch); a family TV lounge at the heart;
 the kitchen beside the dining with a dirty kitchen or service access at the rear; a car porch at the front within the
@@ -211,6 +212,8 @@ def _clean_plan(plan: dict, brief: dict) -> dict:
         roof["mumty"]["height_ft"] = min(float(roof["mumty"].get("height_ft") or 9), 9.5)
     if roof.get("water_tank") and brief.get("water_tank") in ("plastic", "concrete"):
         roof["water_tank"]["material"] = brief["water_tank"]
+    elif not brief.get("water_tank") and not locale.roof_tank_usual(brief):
+        roof.pop("water_tank", None)  # nobody in Austin or Toronto has a tank on the roof
     if brief.get("solar") in ("ready", "panels"):
         roof["solar"] = {**(roof.get("solar") or {}), "mode": brief["solar"]}
     elif brief.get("solar") == "none":

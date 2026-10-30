@@ -19,6 +19,20 @@ def is_pakistan(brief: dict) -> bool:
     return str(brief.get("authority") or "LDA").upper() in PK_AUTHORITIES
 
 
+GULF = {"United Arab Emirates", "Saudi Arabia", "Qatar", "Oman", "Kuwait", "Bahrain"}
+
+
+def country(brief: dict) -> str:
+    if is_pakistan(brief):
+        return "Pakistan"
+    return brief.get("country") or COUNTRY.get(str(brief.get("city") or "").strip().lower(), "")
+
+
+def roof_tank_usual(brief: dict) -> bool:
+    """Homes with a water tank on the roof: Pakistan and the Gulf. Nobody in Austin or Toronto is asked about one."""
+    return is_pakistan(brief) or country(brief) in GULF
+
+
 def place(brief: dict) -> str:
     """'DHA Phase 6, Lahore, Pakistan' / 'Travis Heights, Austin, United States'."""
     city = brief.get("city") or ("Lahore" if is_pakistan(brief) else "")

@@ -12,6 +12,7 @@ import logging
 import re
 from typing import AsyncIterator
 
+from .. import locale
 from ..compliance import lda
 from ..store import db
 
@@ -35,6 +36,8 @@ ASK_ORDER = ["authority", "plot", "corner", "facing", "storeys", "bedrooms", "fl
 STOREY_LEVELS = ["ground", "first", "second", "third"]
 AUTHORITY_NAME = {"LDA": "LDA", "DHA": "DHA", "BAHRIA": "Bahria Town", "OTHER": "LDA"}
 DEFAULT_SPACES = ["drawing", "tv_lounge", "dining", "kitchen", "car_porch:1", "lawn", "store"]
+# Outside Pakistan: no drawing room, dirty kitchen or servant quarter unless the family asks (the car bay is a garage there).
+DEFAULT_SPACES_INTL = ["tv_lounge", "dining", "kitchen", "car_porch:1", "lawn", "laundry", "store"]
 LEVEL_NAMES = ["ground", "first", "second", "third", "basement", "roof"]
 
 
@@ -404,11 +407,12 @@ def defaults_for(brief: dict) -> tuple[dict, list[str]]:
     put("storeys", 1 if marla < 4 else 2)
     put("bedrooms", 2 if marla < 4 else 3 if marla < 7 else 4 if marla < 15 else 5)
     put("bathrooms", b["bedrooms"] + 1)
-    spaces = list(DEFAULT_SPACES)
-    if marla >= 10:
+    pk = locale.is_pakistan(b)
+    spaces = list(DEFAULT_SPACES if pk else DEFAULT_SPACES_INTL)
+    if marla >= 10 and pk:
         spaces += ["dirty_kitchen", "laundry"]
     if marla >= 20:
-        spaces += ["servant_quarter", "prayer", "roof_terrace"]
+        spaces += ["servant_quarter", "prayer", "roof_terrace"] if pk else ["study", "roof_terrace"]
         spaces = [s if not s.startswith("car_porch") else "car_porch:2" for s in spaces]
     put("spaces", spaces)
     if "spaces" in auto:
@@ -416,7 +420,8 @@ def defaults_for(brief: dict) -> tuple[dict, list[str]]:
     put("style", "Modern Contemporary")
     put("facing", "N")
     put("budget", "standard")
-    put("water_tank", "concrete")
+    if locale.roof_tank_usual(b):
+        put("water_tank", "concrete")
     put("solar", "ready")
     if not b.get("corner_stated"):
         if "corner" not in (b.get("auto_filled") or []):
@@ -490,6 +495,8 @@ def to_ask(brief: dict) -> list[str]:
         elif k == "corner":  # not said: asked once (the assumption is still open), unless they skipped it
             if brief.get("plot") and brief.get("corner_stated") is False and ("corner" not in auto or brief.get("corner_open")):
                 out.append(k)
+        elif k == "water_tank" and not locale.roof_tank_usual(brief):
+            continue  # only Pakistan and the Gulf put water tanks on the roof
         elif not brief.get(k) and k not in auto:
             out.append(k)
     return out
