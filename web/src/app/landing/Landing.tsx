@@ -5,7 +5,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, useReducedMotion } from "motion/react";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check, MapPin } from "lucide-react";
 import type { Project } from "@contracts/api-types";
 import { api, assetUrl } from "@/api/client";
 import { cn } from "@/app/lib/utils";
@@ -45,6 +45,7 @@ const FAMILIES = [
       { kind: "Favourite spot", value: "Kiraz Coffee House" },
     ],
     finds: ["Traditional craftsmanship", "Modern silhouettes", "Rich textiles", "Cultural pride"],
+    street: { where: "DHA Phase 6", feel: ["Modern", "Urban", "Lively"], idea: "A lush walled lawn with jasmine" },
     changes: ["Brass jaali screens on the upper façade", "Lahori brick, lime plaster and walnut", "A reading bay for Abbu off the parents' suite", "A music corner in the lounge"],
   },
   {
@@ -56,6 +57,7 @@ const FAMILIES = [
       { kind: "Favourite spot", value: "Franklin Barbecue" },
     ],
     finds: ["Sustainable, eco-conscious", "Minimalist comfort", "Whimsy and imagination", "Warm elegance"],
+    street: { where: "Travis Heights", feel: ["Walkable", "Casual", "Lively"], idea: "A screened porch for year-round lounging" },
     changes: ["A terracotta breeze-block screen at the front", "Clay limewash and reclaimed oak", "Hand-painted Mexican tiles on the stair", "A smoker alcove on the back porch"],
   },
   {
@@ -67,6 +69,7 @@ const FAMILIES = [
       { kind: "Brands", value: "Hermès" },
     ],
     finds: ["Timeless elegance", "Artisanal and crafted", "Sophisticated living", "Wellness"],
+    street: { where: "Al Barsha", feel: ["Modern", "Convenient", "Walkable"], idea: "A walled water court with palms" },
     changes: ["A majlis with its own entrance", "A shaded courtyard with a water rill", "Bronze mashrabiya screens to the west", "Saddle-leather and walnut on the stair"],
   },
   {
@@ -78,6 +81,7 @@ const FAMILIES = [
       { kind: "Brands", value: "Muji" },
     ],
     finds: ["Minimalist design", "Monochrome calm", "Laid-back city living", "Quietly fashion-forward"],
+    street: { where: "Leslieville", feel: ["Historic", "Stylish", "Walkable"], idea: "Red brick and arched masonry, like the street" },
     changes: ["White oak kitchen open to the dining room", "A big picture window onto the garden", "A mudroom with hidden oak lockers", "A laneway garage in charcoal brick and cedar"],
   },
 ];
@@ -323,6 +327,18 @@ export function Landing() {
                     </li>
                   ))}
                 </ul>
+                {/* The street matters as much as the people: read from the places around the plot. */}
+                <div className="mt-5 border-t border-line pt-4">
+                  <p className="flex items-center gap-1.5 text-[12px] font-medium text-ink-3">
+                    <MapPin className="size-3.5 text-taste-2" strokeWidth={2} aria-hidden /> Around {FAMILIES[family].street.where}
+                  </p>
+                  <ul className="mt-2 flex flex-wrap gap-1.5" aria-label={`How ${FAMILIES[family].street.where} feels`}>
+                    {FAMILIES[family].street.feel.map((f) => (
+                      <li key={f} className="rounded-full bg-taste-soft px-2.5 py-0.5 text-[12.5px] font-medium text-taste-ink">{f}</li>
+                    ))}
+                  </ul>
+                  <p className="mt-2 text-[14px] leading-5 text-ink-2">{FAMILIES[family].street.idea}</p>
+                </div>
               </TasteStep>
               <TasteStep n={3} title="How the house changes">
                 <ul className="flex flex-col gap-3">
