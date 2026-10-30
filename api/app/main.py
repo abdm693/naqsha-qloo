@@ -937,7 +937,7 @@ async def repair(pid: str, vid: str, body: RepairBody, me: Identity = Depends(au
         v["sections"] = [fixed if s["name"] == body.section else s for s in v["sections"]]
         jsfix.share_declarations(v["sections"])
         fixed = next(s for s in v["sections"] if s["name"] == body.section)
-        await db.save_version(pid, v)
+        await db.patch_version(pid, vid, sections=v["sections"])  # never the whole version: it may have gained photos meanwhile
         idx = next(i for i, s in enumerate(v["sections"]) if s["name"] == body.section)
         yield "section", {"section": fixed, "index": idx}
     return sse.stream(gen())
@@ -951,13 +951,11 @@ class ThumbBody(BaseModel):
 async def version_thumbnail(pid: str, vid: str, body: ThumbBody, me: Identity = Depends(auth.identity)):
     """Store a viewport capture as the version's (and project's) thumbnail."""
     await access(pid, me, "edit")
-    v = await db.get_version(pid, vid)
-    if not v:
+    if not await db.get_version(pid, vid):
         raise HTTPException(404, "version not found")
     data, mime = blobs.decode_data_url(body.image_data_url)
     url = await blobs.put(f"projects/{pid}/versions/{vid}.{'jpg' if 'jpeg' in mime else 'png'}", data, mime)
-    v["thumbnail_url"] = url
-    await db.save_version(pid, v)
+    await db.patch_version(pid, vid, thumbnail_url=url)
     await db.update_project(pid, thumbnail_url=url)
     return {"url": url}
 
