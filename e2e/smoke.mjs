@@ -65,7 +65,8 @@ await check("match", async (p) => {
   await chip.click();
   const go = p.getByRole("button", { name: /^(Check against the concept|Check again)$/ }).last();
   if (await go.isVisible().catch(() => false)) await go.click();
-  await p.getByText(/Matches the concept: \d+%/).first().waitFor({ timeout: 300000 });
+  // the score, then (below 100%) the facade rebuild it starts
+  await p.getByText(/Matches the concept: \d+%|\d+% of the concept is in the model/).first().waitFor({ timeout: 300000 });
 }, page);
 
 await check("photos", async (p) => {
