@@ -360,7 +360,7 @@ export function Landing() {
         {/* What it runs on */}
         <section className="mx-auto max-w-[1280px] px-4 pt-16 sm:px-8 sm:pt-20" aria-labelledby="stack-title">
           <h2 id="stack-title" className="text-[13px] font-medium text-ink-3">What it runs on</h2>
-          <ul className="mt-4 grid grid-cols-1 gap-px overflow-hidden rounded-card bg-line shadow-e1 sm:grid-cols-3">
+          <ul className="mt-4 grid grid-cols-1 gap-px overflow-hidden rounded-card bg-line shadow-e1 sm:grid-cols-2">
             {STACK.map((t) => (
               <li key={t.name} className="bg-surface px-5 py-5 sm:px-6">
                 <p className="text-[15px] font-semibold tracking-[-.01em] text-ink">{t.name}</p>
