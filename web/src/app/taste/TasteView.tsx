@@ -438,6 +438,11 @@ function Profile({ taste, project, editor, onEdit, onProjectChange }: { taste: T
         </section>
       )}
 
+      {/* Where they'll live: the plot on its map among the places people love around it */}
+      {!!project.locality?.places.length && (
+        <Neighbourhood project={project} title="Where you'll live" sub={`Around ${project.locality.location.split(",")[0]}`} />
+      )}
+
 
       {/* Each person */}
       {!!s.people?.length && (
@@ -509,14 +514,11 @@ function Profile({ taste, project, editor, onEdit, onProjectChange }: { taste: T
         </section>
       )}
 
-      {/* Where they'll live: the neighbourhood on its map, then what the family's taste makes of it, and the garden */}
-      {!!project.locality?.places.length && (
-        <Neighbourhood project={project} title="Where you'll live" sub={`Around ${project.locality.location.split(",")[0]}`} />
-      )}
+      {/* What the family's taste makes of the neighbourhood, and the garden */}
       <section className="grid gap-4 lg:grid-cols-2">
         {(s.neighbourhood || p.area) && (
           <article className="rounded-card bg-surface p-6 shadow-e1">
-            <div className="flex items-center gap-2 text-small font-medium text-ink-3"><MapPin className="size-4" /> {p.area?.location || "The neighbourhood"}</div>
+            <div className="flex items-center gap-2 text-small font-medium text-ink-3"><MapPin className="size-4" /> Your house on {p.area?.location ? `${p.area.location.split(",")[0]}'s streets` : "its street"}</div>
             {s.neighbourhood?.reading && <p className="mt-2 text-body-lg text-ink">{s.neighbourhood.reading}</p>}
             {s.neighbourhood?.response && <p className="mt-2 text-body text-ink-2">{s.neighbourhood.response}</p>}
             <div className="mt-3 flex flex-wrap gap-1.5">
