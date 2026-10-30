@@ -95,6 +95,8 @@ await check("family", async (p) => {
   const box = p.getByRole("textbox").first();
   await box.fill("10 marla mid-row plot in DHA Phase 6 Lahore, facing north. Two storeys, four bedrooms, parents downstairs.");
   await box.press("Enter");
+  const decide = p.getByRole("button", { name: /Decide everything for me/ }).first();
+  await decide.waitFor({ timeout: 120000 }).then(() => decide.click()).catch(() => {});
   await p.getByRole("button", { name: /Add your taste/ }).first().waitFor({ timeout: 180000 });
   await p.getByRole("button", { name: /Add your taste/ }).first().click();
   const cards = p.locator("section").filter({ has: p.locator('input[aria-label="Who"]') });

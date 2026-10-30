@@ -157,7 +157,7 @@ async def research(city: str, authority: str, force: bool = False) -> dict | Non
     prompt = (f"AUTHORITY: {authority}\nCITY: {city}\n\nSEARCH SUMMARY (unverified, for orientation only):\n{answer[:2000]}\n\n"
               f"PAGES:\n{text}\n\nWrite the rule pack now. Source ids are T1…T{len(pages)} as above.")
     raw = None
-    async for kind, val in llm.stream_json(config.MODEL_ARCHITECT, prompt, PACK_SYSTEM, max_tokens=8192, attempts=2):
+    async for kind, val in llm.stream_json(config.MODEL_INTAKE, prompt, PACK_SYSTEM, max_tokens=8192, attempts=2, thinking="LOW"):
         if kind == "result":
             raw = val[0]
     pack = clean_pack(raw or {}, pages)
@@ -169,7 +169,7 @@ async def research(city: str, authority: str, force: bool = False) -> dict | Non
         if s.get("id") in by_id:
             s["url"], s["fetched"] = by_id[s["id"]]["url"], True
     pack.update(key=key, requested={"city": city, "authority": authority}, seconds=round(time.monotonic() - t0, 1), _at=time.time(),
-                researched_with="Tavily search + extract; Gemini 4 Argon on Vertex AI")
+                researched_with="Tavily search + extract; Gemini 3.8 Flash on Vertex AI")
     await db.save_rulepack(key, pack)
     lda.register_pack(authority, pack)
     log.info("researched %s in %.0fs: %d bands, %d sources", authority, pack["seconds"], len(pack["bands"]), len(pack["sources"]))

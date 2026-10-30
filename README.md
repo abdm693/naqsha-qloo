@@ -25,7 +25,7 @@ Only favourites and a place name are sent to Qloo, never names or personal data.
 ## What it does
 
 1. **Brief.** One message is enough: *"10 marla in DHA Phase 6 Lahore, four bedrooms, parents downstairs."* A setup agent (Google ADK, Gemini) records the brief and asks only what's missing. Or **upload a drawing** of a plan, and a vision model reads it room by room.
-2. **Taste.** Each person adds a few favourites. The **taste agent** (Gemini 4 Argon with Qloo tools) gathers each person's taste and the family's, explores further where it matters (a destination worth reading, local makers), and writes the family's **style brief**: exterior, interiors, a room for each person, the garden, four concept directions and the key decisions. Every choice carries "because" chips that show the Qloo evidence behind it.
+2. **Taste.** Each person adds a few favourites. The **taste agent** gathers each person's taste and the family's from Qloo, explores further with Qloo tools where it matters (Gemini 3.8 Flash: a destination worth reading, local makers), and Gemini 4 Argon writes the family's **style brief**: exterior, interiors, a room for each person, the garden, four concept directions and the key decisions. Every choice carries "because" chips that show the Qloo evidence behind it.
 3. **A room for each of you.** Each room follows one person's taste, or everyone's. Switch whose taste a room follows and it is restyled from their Qloo tags, then pictured as a photoreal interior.
 4. **Concepts.** Four exteriors, one per taste direction: the family's shared taste, the parents', a fit with the neighbourhood, and a bolder direction from an adjacent taste. Each says why it suits them.
 5. **Rules for the city.** Lahore's LDA rules ship hand-verified; for any other city the agent researches the authority's bylaws with **Tavily** and writes a cited rule pack.
@@ -37,8 +37,8 @@ Only favourites and a place name are sent to Qloo, never names or personal data.
 
 | Step | Model |
 |---|---|
-| Setup agent, quick JSON, vision reads | `gemini-3.8-flash` (Vertex AI) |
-| Taste agent, plans, fixer agents, 3D model, revisions | `gemini-4-argon` (Vertex AI) |
+| Setup agent, taste exploration (Qloo tools), rule research, quick JSON, vision reads | `gemini-3.8-flash` (Vertex AI) |
+| Style brief, plans, fixer agents, 3D model, revisions | `gemini-4-argon` (Vertex AI) |
 | Concepts, room pictures, photos | Gemini image models (Vertex AI) |
 | Taste | Qloo taste graph (hackathon API) |
 | Local rules | Tavily Search and Extract |
@@ -49,7 +49,7 @@ Only favourites and a place name are sent to Qloo, never names or personal data.
 React SPA (Vite, three.js, react-three-fiber)
         │  REST + Server-Sent Events
 Cloud Run · FastAPI (serves the SPA and the API)
-  ├─ Taste agent ........ Qloo search / Taste Analysis / affinities / locality → Gemini 4 Argon (Qloo tools) → style brief
+  ├─ Taste agent ........ Qloo search / Taste Analysis / affinities / locality → Flash explores with Qloo tools → Argon writes the style brief
   ├─ Setup agent ........ Google ADK → Gemini 3.8 Flash; tools incl. research_local_rules (Tavily)
   ├─ Architect .......... 4 drafts → rules engine → 2 fixer agents (tool calls) → self-review → design.js from the
   │                        concept's feature checklist and the family's palettes

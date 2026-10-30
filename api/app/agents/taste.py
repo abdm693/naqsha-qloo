@@ -3,7 +3,7 @@
 1. Gather (deterministic, in parallel): every favourite is matched to a Qloo entity; Qloo's Taste Analysis gives the tags
    each person's favourites point to, and the family's together; Qloo also returns destinations and brands people with that
    taste love, how the neighbourhood feels, and places there that suit the family.
-2. Explore (Gemini 4 Argon with Qloo tools, a few steps): the agent looks further where the first pass is thin or
+2. Explore (Gemini 3.8 Flash with Qloo tools, a few steps): the agent looks further where the first pass is thin or
    surprising (a destination worth reading, a tag type it wants, local shops for the interiors).
 3. Write: Argon turns the evidence into the style brief: exterior, interiors, a room for each person, landscape, the four
    concept directions and the decisions, every one citing the Qloo evidence behind it (`because`: evidence ids).
@@ -230,7 +230,7 @@ async def explore(brief: dict, taste: dict, ev: Evidence, max_steps: int = 5) ->
             break
         try:
             resp = await asyncio.wait_for(llm.chat(
-                model=llm.model_id(config.MODEL_TASTE), messages=msgs, tools=TOOLS, tool_choice="auto", max_tokens=2048,
+                model=llm.model_id(config.MODEL_INTAKE), messages=msgs, tools=TOOLS, tool_choice="auto", max_tokens=2048,
                 reasoning_effort="low"), timeout=60)
         except Exception as e:
             log.warning("taste explore step failed: %r", e)
