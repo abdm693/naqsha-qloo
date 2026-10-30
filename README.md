@@ -36,7 +36,7 @@ evidence), and every concept run also draws the same plot and brief **without** 
 | The Al Mansouris, Al Barsha, **Dubai** (Fairuz, Umm Kulthum, Granada; Tokyo, Dune) | Andalusian Craft Meets Desert Modernism | 27% | **89%** |
 | The Parks, Leslieville, **Toronto** (Seoul, IU, Parasite; Drake, Copenhagen) | Seoul-Copenhagen Minimalist Sanctuary | 65% | **100%** |
 
-The Parks' taste is quiet and minimal, close to a typical new house, so their gap is smaller; the score says so honestly. Photographed after it is built in 3D, the Lahore house keeps 77% of the family's choices and the Toronto house 85%. Each city's rules come from
+The Parks' taste is quiet and minimal, close to a typical new house, so their gap is smaller; the score says so honestly. Each city's rules come from
 its own authority (LDA for Lahore; the City of Austin, Dubai Municipality and the City of Toronto researched with Tavily and
 cited), and the house follows local conventions: a majlis and a maid's room in Dubai, a mudroom and a laneway garage in
 Toronto, a covered back porch in Austin. A family who shares no favourites still gets a personal house, read from the taste
@@ -51,7 +51,7 @@ Only favourites and a place name are sent to Qloo, never names or personal data.
 
 1. **Brief.** One message is enough: *"10 marla in DHA Phase 6 Lahore, four bedrooms, parents downstairs."* A setup agent (Google ADK, Gemini) records the brief and asks only what's missing. Or **upload a drawing** of a plan, and a vision model reads it room by room.
 2. **Taste.** Each person adds a few favourites. The **taste agent** gathers each person's taste and the family's from Qloo, explores further with Qloo tools where it matters (Gemini 3.8 Flash: a destination worth reading, local makers), and Gemini 4 Argon writes the family's **style brief**: exterior, interiors, a room for each person, the garden, four concept directions and the key decisions. Every choice carries "because" chips that show the Qloo evidence behind it.
-3. **Measured, every time.** Each concept shows its taste fit, next to the same brief drawn without the family's taste; the built house is scored from its photograph. No favourites? The locality's taste is read from Qloo first, so no design is generic.
+3. **Measured, every time.** Each concept shows its taste fit, next to the same brief drawn without the family's taste. No favourites? The locality's taste is read from Qloo first, so no design is generic.
 4. **A room for each of you.** Each room follows one person's taste, or everyone's. Switch whose taste a room follows and it is restyled from their Qloo tags, then pictured as a photoreal interior.
 5. **Concepts.** Four exteriors, one per taste direction: the family's shared taste, the parents', a fit with the neighbourhood, and a bolder direction from an adjacent taste. Each says why it suits them.
 6. **Rules for the city.** Lahore's LDA rules ship hand-verified; for any other city the agent researches the authority's bylaws with **Tavily** and writes a cited rule pack.

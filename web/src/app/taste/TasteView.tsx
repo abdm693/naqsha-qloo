@@ -550,7 +550,6 @@ function Impact({ taste, project }: { taste: Taste; project: Project }) {
   const chosen = project.concepts.find((c) => c.id === project.selected_concept_id && typeof c.taste_fit?.score === "number");
   const best = chosen ?? [...fitted].sort((a, b) => (b.taste_fit!.score ?? 0) - (a.taste_fit!.score ?? 0))[0];
   const base = taste.baseline;
-  const house = project.house_taste_fit;
   const stats = [
     { n: p.locality_only ? (p.area?.places.length ?? 0) : (p.favourites?.length ?? 0), label: p.locality_only ? "local places read" : "favourites found in Qloo" },
     { n: Object.keys(s.evidence || {}).length, label: "Qloo signals cited" },
@@ -573,14 +572,6 @@ function Impact({ taste, project }: { taste: Taste; project: Project }) {
           <FitCard title="Without your taste" sub="The same plot and brief, a typical new house" url={base.url} fit={base.taste_fit?.score} muted />
           <FitCard title={best.title ? `Yours: ${best.title}` : "Yours"} sub={best.why || "Drawn from your taste"} url={best.url} fit={best.taste_fit?.score}
             delta={typeof best.taste_fit?.score === "number" && typeof base.taste_fit?.score === "number" ? best.taste_fit.score - base.taste_fit.score : undefined} />
-        </div>
-      )}
-      {typeof house?.score === "number" && (
-        <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-card bg-surface p-5 shadow-e1">
-          <div className="font-display text-[2.4rem] leading-none text-ink">{house.score}%</div>
-          <p className="max-w-[640px] text-body text-ink-2">
-            of your taste choices show in the photograph of the built 3D house ({house.items.filter((x) => x.status === "present").length} of {house.judged} judged from the {house.angle || "front"}).
-          </p>
         </div>
       )}
     </section>
