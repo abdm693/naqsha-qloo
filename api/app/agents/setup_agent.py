@@ -271,6 +271,17 @@ def terrace_said(text: str) -> bool:
     return bool(TERRACE_RE.search(text or ""))
 
 
+NUMBER_WORDS = {"two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8}
+BEDROOMS_RE = re.compile(r"\b(two|three|four|five|six|seven|eight|\d{1,2})[\s-]*bed(?:room)?s?\b", re.I)
+
+
+def bedrooms_said(text: str) -> int | None:
+    """The bedroom count the family typed ("four bedrooms", "5-bed"), the largest if they gave several. None when they didn't."""
+    found = [NUMBER_WORDS.get(m.lower()) or int(m) for m in BEDROOMS_RE.findall(text or "")]
+    found = [n for n in found if 2 <= n <= 12]
+    return max(found) if found else None
+
+
 def drop_roof_terrace(patch: dict) -> dict:
     """The patch without a roof terrace the family never asked for: roof_terrace in spaces, and a terrace on the roof's
     per-floor program (a roof level left empty is dropped, so it never clears what was recorded before)."""
@@ -357,6 +368,9 @@ async def agent_turn(project: dict, brief: dict, before: dict, history: list[dic
     brief, push = intake.clamp_storeys(turn.brief)  # never more storeys than the rules allow (DHA: 2)
     if push:
         turn.patch_fields.add("storeys")
+    if not brief.get("bedrooms") and (beds := bedrooms_said(said)):  # a number they typed never depends on the model noticing it
+        brief = intake.merge_brief(brief, {"bedrooms": beds}, [], spaces_mode="union")
+        turn.patch_fields.add("bedrooms")
     said = (turn.reply or {}).get("text") or final_text.strip()
     if push:  # one sentence of pushback, and no sentence that still promises the storeys that aren't allowed
         kept = [s for s in re.split(r"(?<=[.!?])\s+", said)

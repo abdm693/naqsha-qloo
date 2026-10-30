@@ -384,3 +384,13 @@ def test_setup_agent_records_no_roof_terrace_for_a_stair_to_the_roof():
     t2 = setup_agent.Turn(intake.empty_brief(), intake.empty_brief(), asked)
     t2.tools()[0](spaces=["roof_terrace"])
     assert "roof_terrace" in t2.brief["spaces"]
+
+
+def test_bedrooms_said_reads_what_the_family_typed():
+    from app.agents import setup_agent
+
+    assert setup_agent.bedrooms_said("Two storeys, four bedrooms, somewhere to cook outside.") == 4
+    assert setup_agent.bedrooms_said("a 5-bed villa") == 5
+    assert setup_agent.bedrooms_said("3 bedrooms upstairs and 2 bedrooms down") == 3
+    assert setup_agent.bedrooms_said("one bedroom downstairs for my mother") is None
+    assert setup_agent.bedrooms_said("a family of four") is None
