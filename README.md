@@ -14,9 +14,10 @@ Language models can guess that someone who loves Kyoto might like timber and cal
 | What Naqsha asks Qloo | Qloo API | What the design gets from it |
 |---|---|---|
 | Find each favourite | `/search` | The family's films, artists, shows, places, restaurants and brands as Qloo entities (with their own tags) |
-| The taste behind each person's favourites, and the family's together | `/v2/insights`, `filter.type=urn:tag` (Taste Analysis), aesthetic property, personal style, cultural relevance, lifestyle and emotional tone tags, diversified by type, with explainability | "Traditional Craftsmanship", "Modern Silhouettes", "Rich Textiles", "Refined Elegance"…, each tied to the favourites that point to it |
+| The taste behind each person's favourites, and the family's together | `/v2/insights`, `filter.type=urn:tag` (Taste Analysis), aesthetic property, personal style, cultural relevance, lifestyle and emotional tone tags, diversified by type, with explainability (for families who name only places: their character, culture and scenery tags) | "Traditional Craftsmanship", "Modern Silhouettes", "Rich Textiles", "Refined Elegance"…, each tied to the favourites that point to it |
 | Destinations and brands people with that taste love | `/v2/insights`, `urn:entity:destination` / `urn:entity:brand` (fashion and retail) | Architectural references and textile language beyond what the family named |
-| How the neighbourhood feels | `/v2/insights`, `urn:entity:place` with `filter.location.query` | The area's character, read from the ambience, decor and setting tags of its places |
+| Where the plot is | `/search`, `types=urn:entity:locality` | The neighbourhood's own point (DHA Phase 6, Travis Heights, Leslieville), for the map pin and every search around it |
+| How the neighbourhood feels, from the first message | `/v2/insights`, `urn:entity:place` with `filter.location` = the locality's point and a 2 km radius | The places people love around the plot, pinned on a map, and the area's character from their ambience, decor and setting tags; Gemini Flash turns them into four ideas for the house and one-tap suggestions, before the family shares any favourites |
 | Places there that suit the family | the same, with `signal.interests.entities` and place-category tags | Galleries, makers and shops for the interiors |
 | Pictures of the places they love | entity `properties.images` from the calls above | Passed to the image model with the family's own exterior to ground each person's room |
 | "Make the lounge feel more like Istanbul" | `/search` + Taste Analysis, from the revision agent | The change is designed from Qloo's reading of Istanbul |
@@ -45,19 +46,20 @@ of the places people love in their area.
 Even Naqsha's one-tap suggestions come from Qloo ("Add Marrakech brass screens for privacy", "Try Santorini white arches on
 balconies"), each with its evidence.
 
-Only favourites and a place name are sent to Qloo, never names or personal data. Qloo results are cached privately on the server and never stored in this repository.
+In the app the feature is simply **Naqsha Taste**: families never see a data source's name, a tag id or a score they didn't ask for. Only favourites and a place name are sent to Qloo, never names or personal data. Qloo results are cached privately on the server and never stored in this repository.
 
 ## What it does
 
 1. **Brief.** One message is enough: *"10 marla in DHA Phase 6 Lahore, four bedrooms, parents downstairs."* A setup agent (Google ADK, Gemini) records the brief and asks only what's missing. Or **upload a drawing** of a plan, and a vision model reads it room by room.
-2. **Taste.** Each person adds a few favourites. The **taste agent** gathers each person's taste and the family's from Qloo, explores further with Qloo tools where it matters (Gemini 3.8 Flash: a destination worth reading, local makers), and Gemini 4 Argon writes the family's **style brief**: exterior, interiors, a room for each person, the garden, four concept directions and the key decisions. Every choice carries "because" chips that show the Qloo evidence behind it.
-3. **Measured, every time.** Each concept shows its taste fit, next to the same brief drawn without the family's taste. No favourites? The locality's taste is read from Qloo first, so no design is generic.
-4. **A room for each of you.** Each room follows one person's taste, or everyone's. Switch whose taste a room follows and it is restyled from their Qloo tags, then pictured as a photoreal interior.
-5. **Concepts.** Four exteriors, one per taste direction: the family's shared taste, the parents', a fit with the neighbourhood, and a bolder direction from an adjacent taste. Each says why it suits them.
-6. **Rules for the city.** Lahore's LDA rules ship hand-verified; for any other city the agent researches the authority's bylaws with **Tavily** and writes a cited rule pack.
-7. **Plan.** The architect drafts four plans in parallel from proven layouts; a deterministic rules engine scores them against the bylaws and livable-home rules, and two tool-using fixer agents repair the best ones edit by edit until every check passes.
-8. **House.** The 3D model is written as code against our House SDK (three.js), built from the chosen concept feature by feature and furnished from the family's palettes and materials, room by room. A vision check compares it with the concept and rebuilds what's missing. Photos from the road, the corner, the garden and the air are made from the model.
-9. **Walk, comment, revise.** Walk through in first person, pin a note on any wall, share a link so relatives can comment from their phones. The revision agent applies the notes in the family's taste, re-checks the rules and answers each one.
+2. **Your neighbourhood, from the first message.** As soon as the brief knows the place, Naqsha walks the neighbourhood: the plot is pinned on a 3D map among the places people love around it (each with its photo and how it feels), with a reading of the area and four ideas a house there could take from it: the facade, inside, the garden and how the family will live. Hover an idea and the places behind it light up. The first concepts take their facade and garden from it, before anyone has shared a favourite.
+3. **Naqsha Taste.** Each person adds a few favourites. The **taste agent** gathers each person's taste and the family's from Qloo, explores further with Qloo tools where it matters (Gemini 3.8 Flash: a destination worth reading, local makers), and Gemini 4 Argon writes the family's **style brief**: exterior, interiors, a room for each person, the garden, four concept directions and the key decisions. Every choice carries "because" chips that show the Qloo evidence behind it.
+4. **Measured, every time.** Each concept shows its taste fit, next to the same brief drawn without the family's taste. No favourites? The locality's taste is read from Qloo first, so no design is generic.
+5. **A room for each of you.** Each room follows one person's taste, or everyone's. Switch whose taste a room follows and it is restyled from their Qloo tags, then pictured as a photoreal interior.
+6. **Concepts.** Four exteriors, one per taste direction: the family's shared taste, the parents', a fit with the neighbourhood, and a bolder direction from an adjacent taste. Each says why it suits them.
+7. **Rules for the city.** Lahore's LDA rules ship hand-verified; for any other city the agent researches the authority's bylaws with **Tavily** and writes a cited rule pack.
+8. **Plan.** The architect drafts four plans in parallel from proven layouts; a deterministic rules engine scores them against the bylaws and livable-home rules, and two tool-using fixer agents repair the best ones edit by edit until every check passes.
+9. **House.** The 3D model is written as code against our House SDK (three.js), built from the chosen concept feature by feature and furnished from the family's palettes and materials, room by room. A vision check compares it with the concept and rebuilds what's missing. Photos from the road, the corner, the garden and the air are made from the model.
+10. **Walk, comment, revise.** Walk through in first person, pin a note on any wall, share a link so relatives can comment from their phones. The revision agent applies the notes in the family's taste, re-checks the rules and answers each one.
 
 ## Screens
 
@@ -86,11 +88,12 @@ Captured from the live app with Playwright.
 
 | Step | Model |
 |---|---|
-| Setup agent, taste exploration (Qloo tools), rule research, quick JSON, vision reads | `gemini-3.8-flash` (Vertex AI) |
+| Setup agent, taste exploration (Qloo tools), the neighbourhood's ideas, rule research, quick JSON, vision reads | `gemini-3.8-flash` (Vertex AI) |
 | Style brief, plans, fixer agents, 3D model, revisions | `gemini-4-argon` (Vertex AI) |
 | Concepts, room pictures, photos | Gemini image models (Vertex AI) |
 | Taste | Qloo taste graph (hackathon API) |
 | Local rules | Tavily Search and Extract |
+| Neighbourhood map | MapLibre GL with OpenFreeMap vector tiles (© OpenStreetMap contributors) |
 
 ## Architecture
 
@@ -108,7 +111,7 @@ Cloud Run · FastAPI (serves the SPA and the API)
   └─ Firestore / Cloud Storage
 ```
 
-Code map: `api/app/qloo.py` (Qloo client), `api/app/agents/taste.py` (taste agent, room styling), `api/app/agents/` (architect, fixer, research, importer, views, setup, reviser), `api/app/compliance/` (rules engine), `contracts/` (plan schema, House SDK), `web/src/app/taste/` (the Taste view), `web/src/` (app, 3D engine, viewer).
+Code map: `api/app/qloo.py` (Qloo client), `api/app/agents/taste.py` (taste agent, room styling), `api/app/agents/` (architect, fixer, research, importer, views, setup, reviser), `api/app/compliance/` (rules engine), `contracts/` (plan schema, House SDK), `api/app/agents/locality.py` (the neighbourhood read), `web/src/app/taste/` (the Taste view and the neighbourhood map), `web/src/` (app, 3D engine, viewer).
 
 ## Run locally
 
