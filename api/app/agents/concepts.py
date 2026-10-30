@@ -299,6 +299,7 @@ async def generate(project: dict, count: int = 4, instruction: str | None = None
         got = await blobs.get(base["url"].removeprefix("/api/assets/"))
         ref = got if got else None
     jobs: list[tuple[str, dict | None]] = []
+    style = (project.get("taste") or {}).get("style")
     if base:
         for i in range(count):
             jobs.append((f"Edit this house design photo: {instruction or 'refine it'}. Keep the same house, plot, camera, light and "
@@ -312,9 +313,13 @@ async def generate(project: dict, count: int = 4, instruction: str | None = None
             takes = await design_takes(brief, count, instruction)
         for take in takes[:count]:
             jobs.append((concept_prompt(brief, take, instruction, style), take))
+        if style and not instruction:  # the measured comparison: the same brief drawn without the family's taste
+            jobs.append((concept_prompt(brief, {"title": "Without your taste", "direction": "a typical new house for this plot"}),
+                         {"title": "Without your taste", "baseline": True}))
     refs = [] if base else await design_refs(project)
-    for i, (pr, _) in enumerate(jobs):
-        yield "concept.started", {"index": i, "prompt": pr, "from_design": bool(refs)}
+    for i, (pr, take) in enumerate(jobs):
+        if not (take or {}).get("baseline"):
+            yield "concept.started", {"index": i, "prompt": pr, "from_design": bool(refs)}
 
     site = None if (brief.get("plot") or {}).get("corner") else _site_sentence(brief)
 
@@ -323,6 +328,14 @@ async def generate(project: dict, count: int = 4, instruction: str | None = None
             c = await _generate_one(pid, pr, ref, site, refs)
             if refs:
                 c["from_design"] = True
+            if style and not base:  # measured impact: how much of the family's taste this picture shows
+                from . import taste as taste_agent
+                got = await blobs.get(c["url"].removeprefix("/api/assets/"))
+                if got:
+                    c["taste_fit"] = await taste_agent.fit(got, style)
+            if take and take.get("baseline"):
+                c.update(title=take["title"], baseline=True)
+                return i, c, None
             if take:
                 c.update(title=take["title"], summary=take.get("direction", ""))
                 if take.get("why"):  # a direction from the family's taste: why it suits them, and the Qloo evidence
@@ -335,17 +348,22 @@ async def generate(project: dict, count: int = 4, instruction: str | None = None
             return i, None, str(e)
 
     tasks = [asyncio.create_task(one(i, pr, take)) for i, (pr, take) in enumerate(jobs)]
-    made = []
+    made, baseline = [], None
     for fut in asyncio.as_completed(tasks):
         i, c, err = await fut
-        if c:
+        if c and c.get("baseline"):
+            baseline = c
+            yield "baseline", {"concept": c}
+        elif c:
             made.append(c)
             yield "concept", {"index": i, "concept": c}
-        else:
+        elif not (jobs[i][1] or {}).get("baseline"):
             yield "concept.failed", {"index": i, "message": "This one didn't come through. Try again in a moment."}
     fresh = await db.get_project(pid)
     concepts = (fresh.get("concepts") or []) + made
     fields = {"concepts": concepts}
+    if baseline and fresh.get("taste"):
+        fields["taste"] = {**fresh["taste"], "baseline": baseline}
     if fresh.get("stage") in (None, "setup", "concepts"):
         fields["stage"] = "concepts"  # never move a designed project backwards
     if not fresh.get("thumbnail_url") and made:

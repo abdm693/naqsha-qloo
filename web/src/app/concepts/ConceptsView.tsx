@@ -218,6 +218,11 @@ export function ConceptsView({ project, onProjectChange }: { project: Project; o
           <div className="min-w-0">
             <h1 className="text-title text-ink">Concepts</h1>
             {chips.length > 0 && <p className="mt-1 text-[13.5px] text-ink-3">{chips.join(" · ")}</p>}
+            {run?.running && run.note && (
+              <p className="mt-2 inline-flex items-center gap-2 rounded-full bg-surface px-3 py-1 text-[13px] text-ink shadow-e1" aria-live="polite">
+                <span className="taste-gradient size-2 animate-breathe rounded-full" /> {run.note}
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Segmented
@@ -441,6 +446,12 @@ function Tile({ l, light, nightShown, nightFailed, chosen, onOpen, small }: { l:
         )}
         {light === "night" && nightFailed && <span className="shrink-0 text-[12.5px] text-ink-3">Night view unavailable</span>}
       </figcaption>
+      {!small && typeof l.concept.taste_fit?.score === "number" && (
+        <p className="mt-1 px-0.5 text-[12.5px] text-ink-3">
+          <span className="font-semibold text-ink">Taste fit {l.concept.taste_fit.score}%</span>
+          {" "}· {l.concept.taste_fit.items.filter((x) => x.status === "present").length} of {l.concept.taste_fit.judged} of your choices visible
+        </p>
+      )}
       {!small && l.concept.from_taste && l.concept.why && (
         <p className="mt-1 inline-flex items-center gap-1.5 px-0.5 text-[12.5px] font-medium text-ink-2">
           <span className="size-1.5 rounded-full" style={{ backgroundImage: "linear-gradient(120deg, var(--color-taste-1, #E8A33D), var(--color-taste-2, #D9486B), var(--color-taste-3, #6B3FA0))" }} />

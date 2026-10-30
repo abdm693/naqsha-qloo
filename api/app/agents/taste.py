@@ -84,8 +84,14 @@ Write JSON only:
                                                                                 // a fit with the neighbourhood, a bolder
                                                                                 // direction from an adjacent taste
  "decisions": [{"decision": "short, concrete", "reason": "one line in plain words", "because": ["…"]}],   // 6-10
- "shop": [{"id": "P…", "why": "one line"}]                                      // 0-6 local places for the interiors
+ "shop": [{"id": "P…", "why": "one line"}],                                     // 0-6 local places for the interiors
+ "suggestions": {"concepts": [{"text": "…", "because": ["…"]}],                  // 4 next looks to try on the exterior
+                 "plan": [{"text": "…", "because": ["…"]}],                      // 3 layout ideas that fit how they live
+                 "house": [{"text": "…", "because": ["…"]}]}                     // 4 changes to the built house
 }
+Suggestions are what Naqsha offers the family as one-tap requests, so they must come from the evidence: imperative, 3-7
+words, concrete (e.g. "Add a brass jaali to the stair", "A reading nook for Abbu", "Kyoto timber on the balcony").
+If THE FAMILY is empty, nobody shared favourites yet: design from the locality's taste and say so in the story.
 Plain, warm, specific English. No emoji. No "not X but Y"."""
 
 
@@ -150,7 +156,8 @@ def _location(brief: dict, taste: dict) -> str | None:
 async def gather(brief: dict, taste: dict, ev: Evidence) -> AsyncIterator[tuple[str, dict]]:
     people = _people(taste)
     loc = _location(brief, taste)
-    yield "step", {"id": "resolve", "message": "Finding your favourites in Qloo's taste graph"}
+    if people:
+        yield "step", {"id": "resolve", "message": "Finding your favourites in Qloo's taste graph"}
     resolved = await asyncio.gather(*[qloo.resolve([{**f, "who": p.get("label") or "You"} for f in p.get("favourites") or []])
                                       for p in people])
     found, missing = [], []
@@ -167,8 +174,22 @@ async def gather(brief: dict, taste: dict, ev: Evidence) -> AsyncIterator[tuple[
         p["_ids"] = ids
     yield "favourites", {"found": found, "missing": missing}
     family_ids = list(dict.fromkeys(i for p in people for i in p["_ids"]))
-    if not family_ids:
-        return
+    locality_only = False
+    if not family_ids:  # no favourites yet: the house still follows its locality, read from the places people love there
+        if not loc:
+            return
+        yield "step", {"id": "locality", "message": f"Reading the taste of {loc} from the places people love there"}
+        try:
+            ar0 = await qloo.area(loc)
+        except qloo.QlooError as e:
+            log.warning("locality taste failed: %s", e)
+            return
+        for x in ar0.get("places") or []:
+            ev.add("P", x, f"popular in {loc}")
+        family_ids = [x["id"] for x in ar0.get("places") or [] if x.get("id")][:10]
+        locality_only = True
+        if not family_ids:
+            return
 
     yield "step", {"id": "taste", "message": "Reading the taste behind them"}
     jobs = {"family": qloo.taste_tags(family_ids, take=28),
@@ -197,7 +218,8 @@ async def gather(brief: dict, taste: dict, ev: Evidence) -> AsyncIterator[tuple[
                         "from": [f for f in frm if f]})
         return res
 
-    profile: dict = {"family": cite_tags(out["family"], "the family's taste"), "feel": [], "people": [], "favourites": found}
+    profile: dict = {"family": cite_tags(out["family"], f"the taste of {loc}" if locality_only else "the family's taste"), "feel": [],
+                     "people": [], "favourites": found, "locality_only": locality_only}
     for i, p in enumerate(people):
         tags = out.get(f"person{i}") or []
         profile["people"].append({"label": p.get("label") or "You", "role": p.get("role"),
@@ -303,6 +325,9 @@ def _clean(sb: dict, ev: Evidence) -> dict:
     sb = walk(sb)
     sb["takes"] = [t for t in sb.get("takes") or [] if isinstance(t, dict) and t.get("title") and t.get("direction")][:4]
     sb["shop"] = [s for s in sb.get("shop") or [] if isinstance(s, dict) and s.get("id") in ev.items]
+    sug = sb.get("suggestions") if isinstance(sb.get("suggestions"), dict) else {}
+    sb["suggestions"] = {k: [x for x in sug.get(k) or [] if isinstance(x, dict) and str(x.get("text") or "").strip()][:5]
+                         for k in ("concepts", "plan", "house")}
     cited = set()
 
     def collect(x):
@@ -353,7 +378,8 @@ async def run(brief: dict, taste: dict) -> AsyncIterator[tuple[str, dict]]:
         yield e
     if not profile:
         yield "error", {"message": "Qloo didn't recognise any of these favourites yet. Try a few more well-known ones: a film, "
-                                   "an artist, a city you loved."}
+                                   "an artist, a city you loved." if _people(taste) else
+                                   "Tell me where the house will be, so Qloo can read the area's taste."}
         return
     yield "step", {"id": "explore", "message": "Following the threads that matter for your home"}
     async for e in explore(brief, taste, ev):
@@ -402,3 +428,48 @@ async def restyle_room(taste: dict, room: dict, follows: str) -> dict:
     return {**room, "for": follows, "mood": out.get("mood") or room.get("mood"), "palette": out.get("palette") or room.get("palette"),
             "ideas": out.get("ideas") or room.get("ideas"), "because": [i for i in out.get("because") or [] if i in ids][:4] or room.get("because"),
             "image": None}
+
+
+# ---- measured impact: how much of the family's taste a picture of the house shows ---------------------------------------
+FIT_SYSTEM = """You check a photograph of a house against a family's taste checklist. For each item answer:
+"present" (clearly visible), "partial" (hinted, or only part of it), "missing" (it would be visible from this view but
+isn't), or "na" (inside the house or otherwise not judgeable from this view). Be strict: generic modern details don't
+count as a family's specific choice. JSON only: {"items": [{"id": "…", "status": "present|partial|missing|na", "note": "≤8 words"}]}"""
+
+
+def fit_items(style: dict) -> list[dict]:
+    """The exterior checklist from the style brief: materials, colours, details and the decisions, each with its evidence."""
+    ext = style.get("exterior") or {}
+    items = [{"id": f"M{i + 1}", "what": m, "because": ext.get("because") or []} for i, m in enumerate(ext.get("materials") or [])]
+    items += [{"id": f"C{i + 1}", "what": f"{c.get('name')} colour ({c.get('hex')})", "because": ext.get("because") or []}
+              for i, c in enumerate(ext.get("palette") or []) if isinstance(c, dict)]
+    items += [{"id": f"D{i + 1}", "what": d, "because": ext.get("because") or []} for i, d in enumerate(ext.get("details") or [])]
+    items += [{"id": f"X{i + 1}", "what": d.get("decision"), "because": d.get("because") or []}
+              for i, d in enumerate(style.get("decisions") or []) if isinstance(d, dict) and d.get("decision")]
+    return [x for x in items if x["what"]][:24]
+
+
+async def fit(image: tuple[bytes, str], style: dict) -> dict | None:
+    """Taste fit: the share of the judgeable checklist the picture shows (present 1, partial 0.5). None when it can't be read."""
+    from google.genai import types as gtypes
+    items = fit_items(style or {})
+    if not items:
+        return None
+    ask = "CHECKLIST:\n" + "\n".join(f"{x['id']}: {x['what']}" for x in items)
+    try:
+        text = await asyncio.wait_for(llm.generate_text(
+            config.MODEL_VISION, [gtypes.Part.from_bytes(data=image[0], mime_type=image[1]), ask], system=FIT_SYSTEM,
+            max_tokens=3000, json_mode=True, thinking=False, temperature=0), timeout=90)
+        got = {x.get("id"): x for x in llm.parse_json(text).get("items") or [] if isinstance(x, dict)}
+    except Exception as e:
+        log.warning("taste fit failed: %r", e)
+        return None
+    out, num, den = [], 0.0, 0
+    for x in items:
+        st = (got.get(x["id"]) or {}).get("status", "na")
+        st = st if st in ("present", "partial", "missing", "na") else "na"
+        if st != "na":
+            den += 1
+            num += 1 if st == "present" else 0.5 if st == "partial" else 0
+        out.append({**x, "status": st, "note": (got.get(x["id"]) or {}).get("note", "")})
+    return {"score": round(100 * num / den) if den else None, "judged": den, "items": out, "at": time.time()}

@@ -34,7 +34,8 @@ app = FastAPI(title="Naqsha API")
 app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=6)
 
 PUBLIC_FIELDS = ("id", "name", "created_at", "updated_at", "stage", "brief", "envelope", "concepts", "selected_concept_id",
-                 "versions", "current_version_id", "thumbnail_url", "brief_changed", "cloned_from", "imported", "taste")
+                 "versions", "current_version_id", "thumbnail_url", "brief_changed", "cloned_from", "imported", "taste",
+                 "house_taste_fit")
 CLIENT_FIELDS = ("id", "name", "created_at", "updated_at", "stage", "concepts", "selected_concept_id", "versions",
                  "current_version_id", "thumbnail_url", "taste")
 RANK = {"client": 1, "team": 2, "owner": 3}
@@ -589,22 +590,26 @@ async def taste_run(pid: str, body: TasteBody, me: Identity = Depends(auth.ident
     data = body.model_dump()
     data["people"] = [{**x, "favourites": [f for f in x["favourites"] if f["name"].strip()][:12]} for x in data["people"]][:6]
 
-    async def gen():
-        brief = p.get("brief") or {}
-        async for ev in taste.run(brief, data):
-            if ev[0] == "brief":
-                style = ev[1]["style"]
-                saved = {"input": data, "profile": ev[1]["profile"], "style": style, "at": db.now()}
-                ext = style.get("exterior") or {}
-                new_brief = {**brief, "taste": data}
-                if ext.get("style"):
-                    new_brief["style"] = ext["style"]
-                    new_brief["style_notes"] = "; ".join(x for x in [", ".join(ext.get("materials") or []), ext.get("massing")] if x)
-                await db.update_project(pid, taste=saved, brief=new_brief, brief_changed=bool(p.get("versions")))
-                yield "taste", saved
-            else:
-                yield ev
-    return sse.stream(gen())
+    return sse.stream(_taste_events(pid, p, data))
+
+
+async def _taste_events(pid: str, p: dict, data: dict):
+    """Run the taste agent and save its result on the project (the brief's style follows the family's taste)."""
+    brief = p.get("brief") or {}
+    async for ev in taste.run(brief, data):
+        if ev[0] == "brief":
+            style = ev[1]["style"]
+            saved = {"input": data, "profile": ev[1]["profile"], "style": style, "at": db.now()}
+            ext = style.get("exterior") or {}
+            new_brief = {**brief, "taste": data}
+            if ext.get("style"):
+                new_brief["style"] = ext["style"]
+                new_brief["style_notes"] = "; ".join(x for x in [", ".join(ext.get("materials") or []), ext.get("massing")] if x)
+            await db.update_project(pid, taste=saved, brief=new_brief, brief_changed=bool(p.get("versions")))
+            yield "taste", saved
+        else:
+            yield ev
+
 
 
 class RoomBody(BaseModel):
@@ -669,7 +674,22 @@ async def make_concepts(pid: str, body: ConceptBody, me: Identity = Depends(auth
     p, _ = await access(pid, me, "edit")
     if not p.get("brief"):
         raise HTTPException(400, "finish the setup first")
-    return sse.stream(concepts.generate(p, max(1, min(4, body.count)), body.instruction, body.base_concept_id))
+
+    async def gen():
+        proj = p
+        brief = p.get("brief") or {}
+        where = ", ".join(x for x in (brief.get("scheme"), brief.get("city")) if x)
+        if not p.get("taste") and where and not body.base_concept_id:
+            # no favourites shared: the design still follows its locality, read from Qloo before anything is drawn
+            async for ev in _taste_events(pid, p, {"people": [], "location": where, "notes": None}):
+                if ev[0] == "step":
+                    yield "stage", {"stage": "wait", "message": ev[1]["message"]}
+                elif ev[0] == "taste":
+                    yield ev
+            proj = await db.get_project(pid) or p
+        async for ev in concepts.generate(proj, max(1, min(4, body.count)), body.instruction, body.base_concept_id):
+            yield ev
+    return sse.stream(gen())
 
 
 @app.post("/api/projects/{pid}/concepts/night")

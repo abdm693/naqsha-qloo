@@ -63,7 +63,7 @@ export interface Run {
 }
 
 export interface ConceptSlot { key: string; index: number; status: "drawing" | "done" | "failed"; conceptId?: string; message?: string }
-export interface ConceptRun { id: string; pid: string; instruction?: string; baseId?: string; slots: ConceptSlot[]; running: boolean; startedAt: number }
+export interface ConceptRun { id: string; pid: string; instruction?: string; baseId?: string; slots: ConceptSlot[]; running: boolean; startedAt: number; note?: string }
 export interface NightRun { pid: string; ids: string[]; done: string[]; failed: string[]; running: boolean; startedAt: number }
 
 interface FlowState {
@@ -239,7 +239,7 @@ function toRun(kind: Run["kind"], pid: string, r: StoreRun, versions: Record<str
 
 function toConcepts(pid: string, r: StoreConceptRun | null): ConceptRun | null {
   if (!r) return null;
-  return { id: r.id, pid, instruction: r.instruction, baseId: r.baseId, running: r.running, startedAt: r.startedAt, slots: r.slots };
+  return { id: r.id, pid, instruction: r.instruction, baseId: r.baseId, running: r.running, startedAt: r.startedAt, slots: r.slots, note: r.note };
 }
 
 // Recompute only what changed (reference equality on the store's slices), so selectors stay stable.

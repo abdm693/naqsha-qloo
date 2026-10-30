@@ -89,6 +89,10 @@ export interface Concept {
   spec?: ConceptSpec;
   /** A direction from the family's Qloo taste: why it suits them, and the evidence ids behind it. */
   from_taste?: boolean;
+  /** Measured: how much of the family's taste checklist this picture shows. */
+  taste_fit?: TasteFit | null;
+  /** The same brief drawn without the family's taste, for the comparison. */
+  baseline?: boolean;
   why?: string;
   because?: string[];
 }
@@ -164,6 +168,8 @@ export interface Version {
   summary?: string;
   /** Photographs from several angles, each made from the 3D model. */
   views?: HouseView[];
+  /** Measured on the built house: the family's taste checklist against its front (or corner) photograph. */
+  taste_fit?: TasteFit | null;
   concept_match?: ConceptMatch;
 }
 
@@ -199,6 +205,8 @@ export interface Project {
   imported?: ImportedDrawing | null;
   /** The family's taste, read with Qloo, and the style brief it led to. */
   taste?: Taste | null;
+  /** Measured on the built house (its photograph against the taste checklist). */
+  house_taste_fit?: (TasteFit & { version_id: string }) | null;
 }
 
 // ---- taste (Qloo) ----------------------------------------------------------------------------------------------------
@@ -219,6 +227,8 @@ export interface TasteProfile {
   brands: { eid: string; name: string; image?: string; adjectives?: unknown }[];
   area?: { location: string; tags: TasteTag[]; places: TastePlace[]; makers?: TastePlace[] };
   favourites?: FoundFavourite[];
+  /** No favourites were shared: the taste was read from the locality's places. */
+  locality_only?: boolean;
 }
 export interface TastePlace { eid: string; name: string; address?: string; image?: string; tags: string[] }
 export interface Swatch { name: string; hex: string }
@@ -235,9 +245,13 @@ export interface StyleBrief {
   takes?: { title: string; direction: string; why?: string; because?: string[] }[];
   decisions?: { decision: string; reason?: string; because?: string[] }[];
   shop?: { id: string; why?: string }[];
+  suggestions?: { concepts?: Suggestion[]; plan?: Suggestion[]; house?: Suggestion[] };
   evidence: Record<string, Evidence>;
 }
-export interface Taste { input: TasteInput; profile: TasteProfile; style: StyleBrief; at: string }
+export interface TasteFitItem { id: string; what: string; status: "present" | "partial" | "missing" | "na"; note?: string; because?: string[] }
+export interface TasteFit { score: number | null; judged: number; items: TasteFitItem[]; angle?: string }
+export interface Suggestion { text: string; because?: string[] }
+export interface Taste { input: TasteInput; profile: TasteProfile; style: StyleBrief; at: string; baseline?: Concept | null }
 
 export type Vec3 = [number, number, number];
 
@@ -316,6 +330,8 @@ export interface SSEEvents {
   favourites: { found: FoundFavourite[]; missing: { who: string; asked: string }[] };
   profile: TasteProfile;
   taste: Taste;
+  baseline: { concept: Concept };
+  taste_fit: { version_id: string; fit: TasteFit };
   ping: Record<string, never>;
   done: Record<string, unknown>;
   error: { message: string; recoverable?: boolean };

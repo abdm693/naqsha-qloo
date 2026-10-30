@@ -179,8 +179,14 @@ function Composer({ project, onRead, onCancel }: { project: Project; onRead(i: T
         </label>
       </div>
 
-      <div className="mt-8">
+      <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
         <ReadButton total={total} onClick={submit} onCancel={onCancel} />
+        {location.trim() && (
+          <button type="button" onClick={() => onRead({ people: [], location: location.trim(), notes: notes.trim() || null })}
+            className="text-small font-medium text-ink-2 underline decoration-line-strong underline-offset-4 hover:text-ink">
+            No favourites yet? Start from the taste of {location.trim()}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -378,6 +384,9 @@ function Profile({ taste, project, editor, onEdit, onProjectChange }: { taste: T
         <TasteBadge onDark />
         <h1 className="mt-4 max-w-[820px] xl:max-w-[640px] font-display text-[clamp(2.2rem,5vw,4rem)] leading-[1] tracking-[-0.03em]">{s.headline}</h1>
         <p className="mt-4 max-w-[720px] xl:max-w-[620px] text-body-lg text-white/90">{s.story}</p>
+        {p.locality_only && (
+          <p className="mt-3 max-w-[620px] text-small text-white/85">Read from {p.area?.location || "your area"}: add your favourites to make it yours.</p>
+        )}
         <div className="mt-6 flex flex-wrap gap-2">
           {(p.family || []).slice(0, 10).map((t) => (
             <span key={t.eid} className="rounded-full bg-white/15 px-3 py-1 text-small backdrop-blur">{t.name}</span>
@@ -396,6 +405,8 @@ function Profile({ taste, project, editor, onEdit, onProjectChange }: { taste: T
           )}
         </div>
       </section>
+
+      <Impact taste={taste} project={project} />
 
       {/* Each person */}
       {!!s.people?.length && (
@@ -527,6 +538,70 @@ function Profile({ taste, project, editor, onEdit, onProjectChange }: { taste: T
         them into design choices. {project.taste?.at ? `Read ${new Date(project.taste.at).toLocaleDateString()}.` : ""}
       </p>
     </div>
+  );
+}
+
+// ---- measured impact ---------------------------------------------------------------------------------------------------
+function Impact({ taste, project }: { taste: Taste; project: Project }) {
+  const s = taste.style;
+  const p = taste.profile;
+  const fitted = project.concepts.filter((c) => c.from_taste && typeof c.taste_fit?.score === "number");
+  const chosen = project.concepts.find((c) => c.id === project.selected_concept_id && typeof c.taste_fit?.score === "number");
+  const best = chosen ?? [...fitted].sort((a, b) => (b.taste_fit!.score ?? 0) - (a.taste_fit!.score ?? 0))[0];
+  const base = taste.baseline;
+  const house = project.house_taste_fit;
+  const stats = [
+    { n: p.locality_only ? (p.area?.places.length ?? 0) : (p.favourites?.length ?? 0), label: p.locality_only ? "local places read" : "favourites found in Qloo" },
+    { n: Object.keys(s.evidence || {}).length, label: "Qloo signals cited" },
+    { n: s.decisions?.length ?? 0, label: "design decisions from your taste" },
+    { n: s.rooms?.length ?? 0, label: "rooms styled for someone" },
+  ];
+  return (
+    <section aria-labelledby="impact-title">
+      <SectionTitle title="What Qloo changed" sub="Measured: a vision check counts how many of your taste choices each design actually shows" />
+      <dl className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {stats.map((x) => (
+          <div key={x.label} className="rounded-card bg-surface p-5 shadow-e1">
+            <dt className="text-small text-ink-3">{x.label}</dt>
+            <dd className="mt-1 font-display text-[2.4rem] leading-none text-ink">{x.n}</dd>
+          </div>
+        ))}
+      </dl>
+      {base && best && (
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <FitCard title="Without your taste" sub="The same plot and brief, a typical new house" url={base.url} fit={base.taste_fit?.score} muted />
+          <FitCard title={best.title ? `Yours: ${best.title}` : "Yours"} sub={best.why || "Drawn from your taste"} url={best.url} fit={best.taste_fit?.score}
+            delta={typeof best.taste_fit?.score === "number" && typeof base.taste_fit?.score === "number" ? best.taste_fit.score - base.taste_fit.score : undefined} />
+        </div>
+      )}
+      {typeof house?.score === "number" && (
+        <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-card bg-surface p-5 shadow-e1">
+          <div className="font-display text-[2.4rem] leading-none text-ink">{house.score}%</div>
+          <p className="max-w-[640px] text-body text-ink-2">
+            of your taste choices show in the photograph of the built 3D house ({house.items.filter((x) => x.status === "present").length} of {house.judged} judged from the {house.angle || "front"}).
+          </p>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function FitCard({ title, sub, url, fit, delta, muted }: { title: string; sub?: string; url: string; fit?: number | null; delta?: number; muted?: boolean }) {
+  return (
+    <figure className={cn("overflow-hidden rounded-card bg-surface shadow-e1", !muted && "taste-ring")}>
+      <div className="relative aspect-[16/10]">
+        <img src={assetUrl(url, { w: 960 })} alt={title} className={cn("size-full object-cover", muted && "saturate-[.6]")} loading="lazy" />
+        {typeof fit === "number" && (
+          <span className={cn("absolute left-3 top-3 rounded-full px-3 py-1 text-small font-semibold shadow-e2", muted ? "bg-surface text-ink-2" : "taste-gradient text-white")}>
+            Taste fit {fit}%{typeof delta === "number" && delta > 0 ? `  ·  +${delta} points` : ""}
+          </span>
+        )}
+      </div>
+      <figcaption className="p-4">
+        <div className="text-heading text-ink">{title}</div>
+        {sub && <div className="mt-0.5 text-small text-ink-3">{sub}</div>}
+      </figcaption>
+    </figure>
   );
 }
 

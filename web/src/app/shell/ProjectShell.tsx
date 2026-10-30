@@ -219,13 +219,17 @@ function Shell({ project, view }: { project: Project; view: ViewId }) {
     }
   }, [view, project, versions, asBuilt, lastLine, conceptsRunning, current, editor, openCount, params, touch]);
 
+  // Suggestions come from the family's taste (Qloo), so every one-tap request is theirs; the generic ones are a fallback.
+  const tasteSuggestions = project.taste?.style?.suggestions;
   const defaultSuggestions = useMemo(() => {
     if (!editor) return [];
     if (view === "brief") return lastSuggestions;
-    if (view === "concepts" && project.selected_concept_id) return ["Darker glass", "More greenery", "Add solar panels"];
-    if (view === "plan" && current) return ["Make the kitchen open", "Bigger master bedroom", "Add a skylight over the stair"];
+    const fromTaste = (k: "concepts" | "plan" | "house") => (tasteSuggestions?.[k] ?? []).map((x) => x.text).slice(0, 3);
+    if (view === "concepts" && project.selected_concept_id) return fromTaste("concepts").length ? fromTaste("concepts") : ["Darker glass", "More greenery", "Add solar panels"];
+    if (view === "plan" && current) return fromTaste("plan").length ? fromTaste("plan") : ["Make the kitchen open", "Bigger master bedroom", "Add a skylight over the stair"];
+    if (view === "house" && current) return fromTaste("house");
     return [];
-  }, [editor, view, lastSuggestions, project.selected_concept_id, current]);
+  }, [editor, view, lastSuggestions, project.selected_concept_id, current, tasteSuggestions]);
 
   const defaultPlaceholder =
     !editor ? "Leave a note for the owner"

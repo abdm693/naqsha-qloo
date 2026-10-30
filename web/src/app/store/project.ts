@@ -49,6 +49,8 @@ export interface ConceptRun {
   slots: ConceptSlot[];
   running: boolean;
   startedAt: number;
+  /** What the run is doing before the drawings start (reading the locality's taste with Qloo). */
+  note?: string;
 }
 
 type StageName = SSEEvents["stage"]["stage"];
@@ -603,7 +605,21 @@ export const useProject = create<ProjectState>((set, get) => {
           pid,
           { ...body, count },
           {
-            "concept.started": ({ index, prompt }) => live(pid) && updateSlot(index, { prompt }),
+            "concept.started": ({ index, prompt }) => {
+              if (!live(pid)) return;
+              updateSlot(index, { prompt });
+              const r = get().conceptRun;
+              if (r?.id === runId && r.note) set({ conceptRun: { ...r, note: undefined } });
+            },
+            stage: ({ message }) => {
+              const r = get().conceptRun;
+              if (live(pid) && r?.id === runId) set({ conceptRun: { ...r, note: message } });
+            },
+            taste: (t) => live(pid) && get().patchProject({ taste: t }),
+            baseline: ({ concept }) => {
+              const p = get().project;
+              if (live(pid) && p?.taste) get().patchProject({ taste: { ...p.taste, baseline: concept } });
+            },
             concept: ({ index, concept }) => {
               if (!live(pid)) return;
               const p = get().project;

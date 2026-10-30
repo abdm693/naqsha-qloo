@@ -98,6 +98,17 @@ async def photos(project: dict, version: dict, shots: list[dict]) -> AsyncIterat
             yield "view", {"index": i, "view": view}
         else:
             yield "view.failed", {"index": i, "message": "This angle didn't come through. Try again in a moment."}
+    style = (project.get("taste") or {}).get("style")
+    front_view = next((v for v in made if v["angle"] in ("front", "corner")), None)
+    if style and front_view:  # measured impact on the built house: the taste checklist against its photograph
+        from . import taste as taste_agent
+        got = await blobs.get(front_view["url"].removeprefix("/api/assets/"))
+        f = await taste_agent.fit(got, style) if got else None
+        if f:
+            f["angle"] = front_view["angle"]
+            await db.patch_version(pid, vid, taste_fit=f)
+            await db.patch_project(pid, house_taste_fit={**f, "version_id": vid})
+            yield "taste_fit", {"version_id": vid, "fit": f}
     if made:
         if not project.get("thumbnail_url") or project.get("thumbnail_url") == (await _first_concept_url(project)):
             front = next((v for v in views if v["angle"] == "front"), views[0])
