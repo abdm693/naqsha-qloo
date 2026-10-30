@@ -53,6 +53,8 @@ These families are invented; their favourites and the results are real runs of t
 
 The Lahore house reached that state through the product's own revision agent: its first plan passed every LDA rule but left two upstairs rooms unreachable, and one typed request fixed it. It shows as version 2.
 
+"Local rules" are the rules Naqsha researched and cited for that city, a draft to confirm with the authority. Where the sources don't state a number, as with Dubai's coverage and height, a cautious default is used and the app says so.
+
 Each concept run also draws the same plot and brief without the family's taste, scored by a vision check against the same checklist. That shows the design follows the taste brief; it doesn't prove a family would prefer it.
 
 ## Screens

@@ -19,12 +19,13 @@ def load(name: str) -> dict:
 
 @pytest.fixture(autouse=True)
 def no_research(monkeypatch):
-    """Tests never go to the web or Firestore for a home profile: a test that wants one patches it in."""
-    from app.agents import homes
+    """Tests never go to the web or Firestore for a home profile or rule pack: a test that wants one patches it in."""
+    from app.agents import homes, research
 
-    async def none(brief, force=False):
+    async def none(*args, **kwargs):
         return None
     monkeypatch.setattr(homes, "profile", none)
+    monkeypatch.setattr(research, "research", none)
 
 
 @pytest.fixture

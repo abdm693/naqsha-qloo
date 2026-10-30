@@ -88,7 +88,7 @@ def _pack_overrides(authority: str, area_sqft: float) -> tuple[dict, list[str]]:
     notes = [f"{name} rules researched on the web for a {b['label'] or 'plot of this size'}: "
              + "; ".join(f"{s.get('title') or s['url']} ({s['url']})" for s in srcs[:3]) + "."]
     if missing:
-        notes.append(f"The sources don't state the {', '.join(missing)}: the LDA baseline is used for those.")
+        notes.append(f"The sources don't state the {', '.join(missing)}: a cautious default is used for those, so confirm them with the authority.")
     notes.append("A researched rule pack is a draft: confirm it with the authority before you build.")
     return over, notes
 
@@ -102,7 +102,7 @@ def _authority_overrides(authority: str) -> tuple[dict, list[str]]:
     if authority == "BAHRIA":
         return {}, ["Bahria Town Lahore uses its own SOPs (not published online). LDA baseline shown; confirm with the Bahria Design Wing."]
     if authority not in ("LDA", "OTHER"):
-        return {}, [f"{authority}: no rule pack yet, so LDA's current rules are shown as the baseline."]
+        return {}, [f"{authority}: no rule pack yet, so cautious defaults are shown."]
     return {}, []
 
 
