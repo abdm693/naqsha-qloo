@@ -629,8 +629,10 @@ async def taste_room(pid: str, index: int, body: RoomBody, me: Identity = Depend
         if not got:
             raise HTTPException(502, "The image model returned no image. Try again.")
         room["image"] = await blobs.put(f"projects/{pid}/rooms/{db.new_id('r_')}.png", got[0], got[1])
-    rooms[index] = room
-    return public(await db.update_project(pid, taste=t), role)
+    fresh = copy.deepcopy((await db.get_project(pid) or {}).get("taste") or t)   # another room may have changed meanwhile
+    fresh_rooms = (fresh.get("style") or {}).get("rooms") or rooms
+    fresh_rooms[index] = room
+    return public(await db.update_project(pid, taste=fresh), role)
 
 
 # --- LDA --------------------------------------------------------------------------------------------------------------
