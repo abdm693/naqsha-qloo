@@ -880,8 +880,9 @@ START_NOTE = "Or tell me about the whole home in one message; that works too."
 GREETING_SUGGESTIONS = [
     "10 marla in Johar Town, mid-row, facing north. Two storeys, 5 bedrooms with attached baths, my parents' room on the "
     "ground floor, open kitchen with a dirty kitchen, 2-car porch, solar panels and a concrete water tank. Modern style.",
-    "5 marla corner plot in DHA Lahore, east-facing, for a family of four",
-    "1 kanal in Bahria Town with a servant quarter and a prayer room",
+    "A 50 by 120 ft lot in Travis Heights, Austin, two storeys, four bedrooms, a two-car garage",
+    "A villa plot in Al Barsha, Dubai, 60 by 100 ft, five bedrooms, a majlis and a maid's room",
+    "A 30 by 120 ft lot in Leslieville, Toronto, three bedrooms and a home studio",
 ]
 COMPLETE_SUGGESTIONS = ["Show me concepts", "Add a prayer room", "Make the kitchen open"]
 # Follow-ups offered once the brief is complete; each is left out when the brief already has it.

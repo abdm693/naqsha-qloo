@@ -193,7 +193,7 @@ export function Workspace() {
               value={text}
               onChange={setText}
               onSubmit={() => submit()}
-              placeholder={phone ? "10 marla, Johar Town, for six" : "10 marla in Johar Town, east-facing, mid-row, for six"}
+              placeholder={phone ? "Plot, city, who lives there" : "A 50 × 120 ft lot in Austin, or 10 marla in Lahore: tell me the plot and the family"}
               label="Describe your plot"
               busy={creating}
               className="shadow-e2"

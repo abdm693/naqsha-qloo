@@ -28,29 +28,65 @@ const benefits = (counts: SampleCounts | null): { title: string; line: string }[
       : "Every bylaw that applies to your plot (LDA in this prototype), and the livable rules: setbacks, coverage, height, stairs to the roof, railings at every drop.",
   },
   { title: "Start from your own drawing", line: "Have a naqsha from your architect, or a sketch on paper? Upload a photo of it. Naqsha reads every room and builds from your layout, changing only what the rules need." },
-  { title: "Rules for your city, looked up for you", line: "Outside Lahore, Naqsha searches the web with Tavily for your authority's building rules and checks the design against them, with every source linked." },
+  { title: "Rules for your city, looked up for you", line: "Anywhere in the world, Naqsha searches the web with Tavily for your authority's building rules and checks the design against them, with every source linked." },
   { title: "Walk your home before you build it", line: "Room by room, on any laptop or phone, with photos from the road, the garden and the air. Find the cramped bedroom while it costs nothing to fix." },
   { title: "Change it by asking", line: "Pin a note on a wall or type what you want. Naqsha returns the next version, still compliant, and answers every note in its thread." },
   { title: "Drawings your contractor can use", line: "Print every floor to scale with a title block, area schedule and compliance sheet, on A3 or A4, or save it as a PDF." },
 ];
 
-/** The taste section's example: what a family shares, what Qloo finds in it, and what changes in the house. */
-const TASTE = {
-  shares: [
-    { kind: "Films", value: "Joyland, Bol" },
-    { kind: "Music", value: "Coke Studio, Abida Parveen" },
-    { kind: "Places", value: "The walled city, Lahore Fort" },
-    { kind: "Neighbourhood", value: "Model Town" },
-  ],
-  finds: ["Craft and heritage over gloss", "Courtyards, shade and evening light", "Earthy colours: terracotta, teak, brass", "Rooms for gathering, music and long dinners"],
-  changes: ["A courtyard at the centre of the ground floor", "Jaali screens to shade the west façade", "Lime plaster, teak doors and brass fittings", "A bigger family lounge, a smaller drawing room"],
-};
+/** The taste section: four real families from the samples, in four countries. What they share, what Qloo finds, what changes. */
+const FAMILIES = [
+  {
+    place: "Lahore, Pakistan",
+    shares: [
+      { kind: "Places", value: "Istanbul, Fez, Kyoto" },
+      { kind: "Music", value: "Abida Parveen, Coke Studio, Coldplay" },
+      { kind: "Films", value: "Spirited Away" },
+      { kind: "Favourite spot", value: "Kiraz Coffee House" },
+    ],
+    finds: ["Traditional craftsmanship", "Modern silhouettes", "Rich textiles", "Cultural pride"],
+    changes: ["Brass jaali screens on the upper façade", "Lahori brick, lime plaster and walnut", "A reading bay for Abbu off the parents' suite", "A music corner in the lounge"],
+  },
+  {
+    place: "Austin, United States",
+    shares: [
+      { kind: "Places", value: "Oaxaca, Mexico City, Marfa" },
+      { kind: "Music", value: "Selena, Bad Bunny" },
+      { kind: "Films", value: "Coco, Spider-Verse" },
+      { kind: "Favourite spot", value: "Franklin Barbecue" },
+    ],
+    finds: ["Sustainable, eco-conscious", "Minimalist comfort", "Whimsy and imagination", "Warm elegance"],
+    changes: ["A terracotta breeze-block screen at the front", "Clay limewash and reclaimed oak", "Hand-painted Mexican tiles on the stair", "A smoker alcove on the back porch"],
+  },
+  {
+    place: "Dubai, United Arab Emirates",
+    shares: [
+      { kind: "Places", value: "Granada, Marrakech, Tokyo, Paris" },
+      { kind: "Music", value: "Fairuz, Umm Kulthum, The Weeknd" },
+      { kind: "Films", value: "Dune" },
+      { kind: "Brands", value: "Hermès" },
+    ],
+    finds: ["Timeless elegance", "Artisanal and crafted", "Sophisticated living", "Wellness"],
+    changes: ["A majlis with its own entrance", "A shaded courtyard with a water rill", "Bronze mashrabiya screens to the west", "Saddle-leather and walnut on the stair"],
+  },
+  {
+    place: "Toronto, Canada",
+    shares: [
+      { kind: "Places", value: "Seoul, Jeju Island, Copenhagen" },
+      { kind: "Music", value: "IU, Drake" },
+      { kind: "Films", value: "Parasite, Spirited Away" },
+      { kind: "Brands", value: "Muji" },
+    ],
+    finds: ["Minimalist design", "Monochrome calm", "Laid-back city living", "Quietly fashion-forward"],
+    changes: ["White oak kitchen open to the dining room", "A big picture window onto the garden", "A mudroom with hidden oak lockers", "A laneway garage in charcoal brick and cedar"],
+  },
+];
 
 /** What this edition runs on. */
 const STACK: { name: string; line: string }[] = [
   { name: "Qloo taste graph", line: "Finds what a family's favourite films, music and places say about the home they want." },
   { name: "Google Gemini on Vertex AI", line: "Talks with the family, designs the plan and the 3D house, and revises it from their notes." },
-  { name: "Tavily", line: "Looks up the local building rules for plots outside Lahore, with every source linked." },
+  { name: "Tavily", line: "Looks up the local building rules wherever the plot is, with every source linked." },
 ];
 
 const STEPS: { label: string; time: string; title: string; line: string }[] = [
@@ -66,6 +102,7 @@ const NAV_LINK = "h-9 items-center rounded-full px-3 text-[14px] font-medium tex
 export function Landing() {
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
+  const [family, setFamily] = useState(0);
   const [opening, setOpening] = useState<string | null>(null);
   const [samples, setSamples] = useState<Project[] | null>(null);
 
@@ -212,10 +249,18 @@ export function Landing() {
                 Two families on the same plot should not get the same house. Tell Naqsha the films you rewatch, the music in the car and the places you keep going back to. Qloo's taste graph finds what those choices have in common, and the design follows it.
               </p>
             </Reveal>
-            <ol className="mt-12 grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-5">
+            <div role="tablist" aria-label="Four families" className="mt-10 flex flex-wrap gap-2">
+              {FAMILIES.map((f, i) => (
+                <button key={f.place} type="button" role="tab" aria-selected={family === i} onClick={() => setFamily(i)}
+                  className={cn("rounded-full border px-4 py-2 text-[14px] font-medium transition", family === i ? "border-transparent bg-ink text-white" : "border-line-strong bg-surface text-ink-2 hover:text-ink")}>
+                  {f.place}
+                </button>
+              ))}
+            </div>
+            <ol className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-5">
               <TasteStep n={1} title="What your family shares">
                 <ul className="flex flex-col gap-2.5">
-                  {TASTE.shares.map((t) => (
+                  {FAMILIES[family].shares.map((t) => (
                     <li key={t.kind} className="flex items-baseline gap-3 rounded-[14px] bg-surface-2/70 px-3.5 py-2.5">
                       <span className="w-24 shrink-0 text-[12px] font-medium text-ink-3">{t.kind}</span>
                       <span className="min-w-0 text-[14px] leading-5 text-ink">{t.value}</span>
@@ -225,7 +270,7 @@ export function Landing() {
               </TasteStep>
               <TasteStep n={2} title="What Qloo finds" featured>
                 <ul className="flex flex-col gap-3">
-                  {TASTE.finds.map((t) => (
+                  {FAMILIES[family].finds.map((t) => (
                     <li key={t} className="flex items-start gap-3 text-[15px] leading-[22px] text-ink">
                       <span className="taste-gradient mt-[7px] size-2 shrink-0 rounded-full" aria-hidden />
                       {t}
@@ -235,7 +280,7 @@ export function Landing() {
               </TasteStep>
               <TasteStep n={3} title="How the house changes">
                 <ul className="flex flex-col gap-3">
-                  {TASTE.changes.map((t) => (
+                  {FAMILIES[family].changes.map((t) => (
                     <li key={t} className="flex items-start gap-3 text-[15px] leading-[22px] text-ink">
                       <Check className="mt-[3px] size-4 shrink-0 text-accent" strokeWidth={2} aria-hidden />
                       {t}
@@ -245,7 +290,7 @@ export function Landing() {
               </TasteStep>
             </ol>
             <p className="mt-6 max-w-[40rem] text-[13px] leading-5 text-ink-3">
-              An example family. Your own answers shape your own house, and every change is still checked against the bylaws.
+              Four families from the sample homes, read with Qloo. Your own answers shape your own house, and every change is still checked against the local rules.
             </p>
           </div>
         </section>
