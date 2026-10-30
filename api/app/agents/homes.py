@@ -52,7 +52,7 @@ flat roofs.
 JSON only:
 {"place": "<the place, with its country>", "country": "<country>",
  "summary": "<one plain line a family would recognise, naming the form, roof, walls and parking>",
- "authority": {"code": "<short code of the body that approves house plans there>", "name": "<its full name>"},
+ "authority": {"code": "<2-6 capital letters for the body that approves house plans there, e.g. TOR, COA, DM>", "name": "<its full name, e.g. City of Toronto>"},
  "style": "<two to four words naming ONE look: the usual look of a home there, e.g. Texas Hill Country>",
  "form": {"type": "detached|semi-detached|row|compound|townhouse",
           "street_relation": "<one sentence: how a house meets the street and its neighbours>",
@@ -90,6 +90,15 @@ def _num(v, lo: float, hi: float):
     return research._num(v, lo, hi)
 
 
+def _code(auth: dict) -> str:
+    """A short code for an authority, whatever the model wrote: "TORONTO BUIL" reads as nothing, and it keys the rule pack."""
+    raw = re.sub(r"[^A-Za-z0-9]", "", str(auth.get("code") or ""))
+    if 2 <= len(raw) <= 6:
+        return raw.upper()
+    words = [w for w in re.findall(r"[A-Za-z]+", str(auth.get("name") or auth.get("code") or "")) if w.lower() not in ("of", "the", "and", "for", "de")]
+    return "".join(w[0] for w in words).upper()[:6] or raw[:6].upper()
+
+
 def _text(v, limit: int = 240) -> str:
     v = ", ".join(str(x) for x in v) if isinstance(v, list) else v
     return re.sub(r"\s+", " ", str(v or "")).strip()[:limit]
@@ -119,7 +128,7 @@ def clean(raw: dict, place: str) -> dict | None:
     auth = raw.get("authority") or {}
     return {
         "place": _text(raw.get("place") or place, 120), "country": _text(raw.get("country"), 60), "summary": _text(raw.get("summary"), 200),
-        "authority": {"code": _text(auth.get("code"), 12).upper(), "name": _text(auth.get("name"), 100)} if auth.get("code") else None,
+        "authority": {"code": _code(auth), "name": _text(auth.get("name"), 100)} if auth.get("code") or auth.get("name") else None,
         "style": _text(raw.get("style"), 40),
         "form": {"type": kind, "street_relation": _text(f.get("street_relation")), "side_gap_ft": 0.0 if kind in locale.ATTACHED else gap,
                  "front_setback_ft": _num(f.get("front_setback_ft"), 0, 100)},
@@ -276,7 +285,7 @@ def stamp(brief: dict, prof: dict | None) -> dict:
     out = dict(brief)
     if prof.get("country") and not out.get("country"):
         out["country"] = prof["country"]
-    auth = (prof.get("authority") or {}).get("code")
+    auth = _code(prof.get("authority") or {})
     if auth and not out.get("authority"):
         out["authority"] = auth
     old = brief.get("local")
@@ -327,7 +336,7 @@ async def rules_for(brief: dict, prof: dict | None) -> tuple[dict, dict | None]:
     if not auth:
         return brief, None
     try:
-        pack = await research.research(locale._city(brief), auth)
+        pack = await research.research(locale._city(brief), auth, name=((prof or {}).get("authority") or {}).get("name"))
     except Exception:
         log.exception("rule research for %s failed", auth)
         return brief, None

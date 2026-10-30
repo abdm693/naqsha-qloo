@@ -137,7 +137,7 @@ def clean_pack(raw: dict, pages: list[dict]) -> dict | None:
             "sources": sources[:8], "caveats": [str(c)[:240] for c in raw.get("caveats") or []][:4]}
 
 
-async def research(city: str, authority: str, force: bool = False) -> dict | None:
+async def research(city: str, authority: str, force: bool = False, name: str | None = None) -> dict | None:
     """The rule pack for an authority: cached (30 days), else researched now (about 30 to 60 seconds). Registered with the
     rules engine under `authority`."""
     key = slug(authority or city)
@@ -149,12 +149,12 @@ async def research(city: str, authority: str, force: bool = False) -> dict | Non
     if not config.TAVILY_API_KEY:
         return None
     t0 = time.monotonic()
-    pages, answer = await gather(city, authority)
+    pages, answer = await gather(city, name or authority)  # search by its real name, not the short code
     if not pages:
         return None
     text = "\n\n".join(f"SOURCE T{i} — {p['title']} ({p['url']}){' [official]' if p['official'] else ''}\n{p['content']}"
                        for i, p in enumerate(pages, 1))
-    prompt = (f"AUTHORITY: {authority}\nCITY: {city}\n\nSEARCH SUMMARY (unverified, for orientation only):\n{answer[:2000]}\n\n"
+    prompt = (f"AUTHORITY: {name or authority}\nCITY: {city}\n\nSEARCH SUMMARY (unverified, for orientation only):\n{answer[:2000]}\n\n"
               f"PAGES:\n{text}\n\nWrite the rule pack now. Source ids are T1…T{len(pages)} as above.")
     raw = None
     async for kind, val in llm.stream_json(config.MODEL_INTAKE, prompt, PACK_SYSTEM, max_tokens=8192, attempts=2, thinking="LOW"):

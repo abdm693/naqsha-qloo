@@ -16,9 +16,14 @@ import { sentenceCase, untitle } from "@/app/plan/model";
  * The guarantees for the brief as it stands now: the authority's limits from the current envelope (so a plot edit
  * never leaves stale figures on the card), then the rules that carry no numbers.
  */
+/** Numbers are only ever shown from this place's own rules: Lahore's built-in authorities, or a pack researched for it. */
+export function rulesKnown(brief: Brief | null): boolean {
+  return !!brief?.rules_pack || ["LDA", "DHA", "BAHRIA"].includes(String(brief?.authority ?? "").toUpperCase());
+}
+
 export function currentGuarantees(server: string[], envelope: Envelope | null, brief: Brief | null): string[] {
-  if (!envelope) return server;
-  const a = brief?.authority ?? envelope.authority ?? "LDA";
+  if (!envelope || !rulesKnown(brief)) return server;
+  const a = brief?.rules_pack?.name ?? brief?.authority ?? envelope.authority ?? "LDA";
   const sb = envelope.setbacks_ft;
   const out = [
     `${a}: keep ${feetInches(sb.front)} open at the front and ${feetInches(sb.rear)} at the back${sb.left || sb.right ? `, ${feetInches(Math.max(sb.left, sb.right))} on one side` : ""}`,

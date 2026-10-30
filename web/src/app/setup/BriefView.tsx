@@ -22,6 +22,7 @@ import { Conversation } from "./Conversation";
 import { DrawingCard, useDrawingPicker } from "./DrawingCard";
 import { importDrawing, useDrawing } from "./drawing";
 import { PlotCanvas } from "./PlotCanvas";
+import { rulesKnown } from "./Understood";
 import { Neighbourhood } from "@/app/taste/Neighbourhood";
 
 const NO_MESSAGES: ChatMessage[] = [];
@@ -123,7 +124,7 @@ export function BriefView({ project, onProjectChange }: { project: Project; onPr
         </div>
         {brief?.plot?.width_ft ? (
           <p className="mt-3 px-1 text-[13px] text-ink-3">
-            {plotLabel(brief.plot.area_marla)} {brief.plot.corner ? "corner" : "mid-row"} plot{brief.scheme ? ` in ${brief.scheme}` : ""}. The blue line is how far {brief.rules_pack?.authority || brief.authority || project.envelope?.authority || "LDA"} lets you build.
+            {plotLabel(brief.plot.area_marla)} {brief.plot.corner ? "corner" : "mid-row"} plot{brief.scheme ? ` in ${brief.scheme}` : ""}.{rulesKnown(brief) ? ` The blue line is how far ${brief.rules_pack?.name || brief.authority} lets you build.` : ""}
           </p>
         ) : null}
         <div className="mt-6"><Neighbourhood project={project} /></div>

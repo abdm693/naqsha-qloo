@@ -10,6 +10,7 @@ import { BUDGET_LABEL, FACING_LABEL, plotLabel, toMarla } from "@/api/domain";
 import { cn, feetInches, num } from "@/app/lib/utils";
 import { Button, Dialog, EASE_OUT, Segmented } from "@/app/design/kit";
 import { LEVEL_LABEL, defaultProgram, levelsFor, roomsLine, toFloors, bedroomsIn, bathsIn, type Program } from "./catalogue";
+import { rulesKnown } from "./Understood";
 import { FacingPicker, FloorsEditor, PlotEditor, RoofEditor, StyleEditor, solarEstimate, useCurrentReport } from "./widgets";
 import { solarLabel, tankLabel } from "@/app/lib/roof";
 import { sentenceCase, untitle } from "@/app/plan/model";
@@ -62,7 +63,7 @@ export function BriefSheet({ brief, envelope, save, className }: { brief: Brief 
         </Row>}
         {(b?.scheme || b?.city) && <Row label="Location" empty={!b?.scheme && !b?.city} assumed={auto.has("scheme")} onEdit={() => setEditing("location")}>
           <span>{[b?.scheme, b?.city].filter(Boolean).join(", ")}</span>
-          {b?.authority && <span className="text-[12.5px] text-ink-3">{b.authority === "LDA" ? "LDA rules" : b.rules_pack ? `${b.rules_pack.authority || b.authority} rules, looked up online` : `${b.authority}: its own bylaws`}</span>}
+          {b?.authority && <span className="text-[12.5px] text-ink-3">{b.authority === "LDA" ? "LDA rules" : b.rules_pack ? `${b.rules_pack.name || b.rules_pack.authority} rules` : `${b.city ?? b.authority} rules`}</span>}
         </Row>}
         {b?.facing && <Row label="Facing" empty={!b?.facing} assumed={auto.has("facing")} onEdit={() => setEditing("facing")}>
           {b?.facing && <span>The front faces {FACING_LABEL[b.facing]?.toLowerCase()}</span>}
@@ -119,7 +120,9 @@ export function BriefSheet({ brief, envelope, save, className }: { brief: Brief 
         )}
       </dl>
 
-      <EnvelopeFacts envelope={envelope} corner={!!plot?.corner} authority={b?.rules_pack?.authority || b?.authority} pack={b?.rules_pack} />
+      {rulesKnown(b)
+        ? <EnvelopeFacts envelope={envelope} corner={!!plot?.corner} authority={b?.rules_pack?.name || b?.rules_pack?.authority || b?.authority} pack={b?.rules_pack} />
+        : b?.city ? <p className="mt-4 text-[13.5px] text-ink-3">Looking up {b.city}'s building rules.</p> : null}
       {b?.rules_pack && <RulesSources pack={b.rules_pack} />}
 
       {/* Editors */}
