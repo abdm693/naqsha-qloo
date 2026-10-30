@@ -26,14 +26,16 @@ Naqsha measures how much of the family's taste each design shows. A vision check
 against the family's taste checklist (the materials, colours, details and decisions in their style brief, each tied to Qloo
 evidence), and every concept run also draws the same plot and brief **without** the taste, scored the same way.
 
+![Four families, four countries](docs/screens/00-four-families.jpg)
+
 | Sample family | Their style, from Qloo | Without their taste | Their concept |
 |---|---|---|---|
 | The Maliks, DHA Phase 6, **Lahore** (Istanbul, Abida Parveen, Coke Studio; Kyoto, Spirited Away) | Crafted Heritage Meets Serene Modernism | 23% | **96%** |
 | The Garcias, Travis Heights, **Austin** (Oaxaca, Selena, Coco; Bad Bunny, Marfa) | Oaxacan Earth & Marfa Modern | 29% | **96%** |
-| The Al Mansouris, Al Barsha, **Dubai** (Fairuz, Umm Kulthum, Granada; Tokyo, Dune) | Andalusian Craft Meets Desert Modernism | 27% | **86%** |
-| The Parks, Leslieville, **Toronto** (Seoul, IU, Parasite; Drake, Copenhagen) | Seoul-Copenhagen Minimalist Sanctuary | | |
+| The Al Mansouris, Al Barsha, **Dubai** (Fairuz, Umm Kulthum, Granada; Tokyo, Dune) | Andalusian Craft Meets Desert Modernism | 27% | **89%** |
+| The Parks, Leslieville, **Toronto** (Seoul, IU, Parasite; Drake, Copenhagen) | Seoul-Copenhagen Minimalist Sanctuary | 65% | **100%** |
 
-The built 3D house of the Lahore sample keeps 77% of the family's choices in its photograph. Each city's rules come from
+The Parks' taste is quiet and minimal, close to a typical new house, so their gap is smaller; the score says so honestly. Photographed after it is built in 3D, the Lahore house keeps 77% of the family's choices and the Toronto house 85%. Each city's rules come from
 its own authority (LDA for Lahore; the City of Austin, Dubai Municipality and the City of Toronto researched with Tavily and
 cited), and the house follows local conventions: a majlis and a maid's room in Dubai, a mudroom and a laneway garage in
 Toronto, a covered back porch in Austin. A family who shares no favourites still gets a personal house, read from the taste
