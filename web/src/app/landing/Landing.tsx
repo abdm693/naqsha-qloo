@@ -16,7 +16,7 @@ import { Dusk, LampButton } from "@/app/heart/kit";
 /** The sample families as the hero plays them; the words are the real overlap of their tastes. */
 const STORIES = [
   { city: "lahore", place: "Lahore", family: "The Maliks", people: ["Ammi", "Abbu", "Sara", "Ali"], words: "Contemporary and traditional" },
-  { city: "austin", place: "Austin", family: "The Garcias", people: ["Elena", "Marco", "Sofia", "Mateo"], words: "Nature inspired and fun" },
+  { city: "austin", place: "Austin", family: "The Garcias", people: ["Elena", "Marco", "Sofia", "Mateo"], words: "Adventure and comfort" },
   { city: "dubai", place: "Dubai", family: "The Al Mansouris", people: ["Baba", "Mama", "Noura", "Saeed"], words: "Elegant and inspiring" },
   { city: "toronto", place: "Toronto", family: "The Parks", people: ["Umma", "Appa", "Jiwoo"], words: "Heartwarming" },
 ];
