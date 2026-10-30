@@ -1,0 +1,1018 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-30T19:51:48+00:00",
+  "title": "Design System: Naqsha",
+  "extensions": {
+    "colorMeta": {
+      "lamp": {
+        "role": "primary",
+        "displayName": "Lamp",
+        "canonical": "#FFC46B",
+        "tonalRamp": [
+          "#130900",
+          "#342101",
+          "#593B02",
+          "#825804",
+          "#AD7606",
+          "#D2993D",
+          "#F8BD64",
+          "#FEECD1"
+        ]
+      },
+      "lamp-soft": {
+        "role": "primary",
+        "displayName": "Lamp Soft",
+        "canonical": "#FFE3B0",
+        "tonalRamp": [
+          "#110A00",
+          "#322200",
+          "#553E09",
+          "#765D2D",
+          "#987E4E",
+          "#BCA170",
+          "#E1C593",
+          "#FFECCA"
+        ]
+      },
+      "dusk-1": {
+        "role": "neutral",
+        "displayName": "Deep Dusk",
+        "canonical": "#0E1432",
+        "tonalRamp": [
+          "#050724",
+          "#1B2242",
+          "#374062",
+          "#555F84",
+          "#7581A7",
+          "#97A3CB",
+          "#BBC8F1",
+          "#E9EEFF"
+        ]
+      },
+      "dusk-2": {
+        "role": "neutral",
+        "displayName": "Dusk Raised",
+        "canonical": "#171F48",
+        "tonalRamp": [
+          "#04042B",
+          "#18214A",
+          "#343F6B",
+          "#525E8D",
+          "#7280B1",
+          "#94A3D6",
+          "#B7C7FC",
+          "#E9EEFE"
+        ]
+      },
+      "dusk-3": {
+        "role": "neutral",
+        "displayName": "Dusk Pill",
+        "canonical": "#252E63",
+        "tonalRamp": [
+          "#050131",
+          "#181E51",
+          "#323D73",
+          "#505D96",
+          "#707EBB",
+          "#91A1E0",
+          "#B8C6FE",
+          "#E9EEFF"
+        ]
+      },
+      "dusk-line": {
+        "role": "neutral",
+        "displayName": "Dusk Line",
+        "canonical": "#48528C",
+        "tonalRamp": [
+          "#060032",
+          "#191D52",
+          "#343C74",
+          "#515C97",
+          "#717EBB",
+          "#93A1E1",
+          "#B9C6FF",
+          "#E9EEFF"
+        ]
+      },
+      "dusk-ink": {
+        "role": "neutral",
+        "displayName": "Dusk Ink",
+        "canonical": "#F6F1E8",
+        "tonalRamp": [
+          "#0E0B06",
+          "#28251E",
+          "#45413A",
+          "#656159",
+          "#86827A",
+          "#A9A49C",
+          "#CDC8C0",
+          "#F3EEE5"
+        ]
+      },
+      "dusk-ink-2": {
+        "role": "neutral",
+        "displayName": "Dusk Ink Muted",
+        "canonical": "#BCC1DC",
+        "tonalRamp": [
+          "#08091B",
+          "#202338",
+          "#3D4056",
+          "#5B6077",
+          "#7C819A",
+          "#9FA3BE",
+          "#C2C7E3",
+          "#EAEDFE"
+        ]
+      },
+      "canvas": {
+        "role": "neutral",
+        "displayName": "Warm Ivory",
+        "canonical": "#F8F4ED",
+        "tonalRamp": [
+          "#0D0B07",
+          "#282520",
+          "#45423C",
+          "#64615B",
+          "#85827C",
+          "#A8A49E",
+          "#CCC9C2",
+          "#F2EEE7"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Warm White",
+        "canonical": "#FFFDF9",
+        "tonalRamp": [
+          "#0C0B09",
+          "#262522",
+          "#43423F",
+          "#63615E",
+          "#84827E",
+          "#A7A5A1",
+          "#CBC9C5",
+          "#F0EEEA"
+        ]
+      },
+      "surface-2": {
+        "role": "neutral",
+        "displayName": "Oat",
+        "canonical": "#F2ECE3",
+        "tonalRamp": [
+          "#0E0A05",
+          "#29241E",
+          "#46413A",
+          "#666059",
+          "#878179",
+          "#AAA49C",
+          "#CEC8BF",
+          "#F4EEE5"
+        ]
+      },
+      "surface-3": {
+        "role": "neutral",
+        "displayName": "Pressed Oat",
+        "canonical": "#E9E1D5",
+        "tonalRamp": [
+          "#0F0A04",
+          "#2A241B",
+          "#474137",
+          "#676056",
+          "#888176",
+          "#ABA499",
+          "#D0C8BC",
+          "#F5EDE1"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#E9E1D6",
+        "tonalRamp": [
+          "#0F0A04",
+          "#2A241C",
+          "#474138",
+          "#676057",
+          "#888177",
+          "#ABA499",
+          "#D0C8BD",
+          "#F5EDE2"
+        ]
+      },
+      "line-strong": {
+        "role": "neutral",
+        "displayName": "Strong Line",
+        "canonical": "#D6CBBC",
+        "tonalRamp": [
+          "#110A02",
+          "#2C2418",
+          "#494034",
+          "#696052",
+          "#8B8173",
+          "#AEA395",
+          "#D2C7B8",
+          "#F8EDDD"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#1E1915",
+        "tonalRamp": [
+          "#0F0A07",
+          "#292420",
+          "#47413C",
+          "#66605B",
+          "#87817C",
+          "#AAA49E",
+          "#CFC8C2",
+          "#F4EDE7"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Ink Soft",
+        "canonical": "#4A4039",
+        "tonalRamp": [
+          "#110905",
+          "#2C231D",
+          "#4A4039",
+          "#6A5F57",
+          "#8B8078",
+          "#AEA29A",
+          "#D3C6BE",
+          "#F8ECE3"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Ink Muted",
+        "canonical": "#6E6359",
+        "tonalRamp": [
+          "#110903",
+          "#2C231A",
+          "#4A4037",
+          "#6A5F55",
+          "#8C8076",
+          "#AFA398",
+          "#D3C7BB",
+          "#F9ECE0"
+        ]
+      },
+      "ink-4": {
+        "role": "neutral",
+        "displayName": "Ink Faint",
+        "canonical": "#A89D91",
+        "tonalRamp": [
+          "#110903",
+          "#2C231A",
+          "#4A4036",
+          "#695F54",
+          "#8B8075",
+          "#AEA397",
+          "#D3C7BB",
+          "#F8ECDF"
+        ]
+      },
+      "accent": {
+        "role": "secondary",
+        "displayName": "Jamun",
+        "canonical": "#6B2A5E",
+        "tonalRamp": [
+          "#1A0015",
+          "#440139",
+          "#652559",
+          "#88457A",
+          "#AD669C",
+          "#D289C0",
+          "#F9ACE6",
+          "#FEE6F7"
+        ]
+      },
+      "accent-press": {
+        "role": "secondary",
+        "displayName": "Jamun Pressed",
+        "canonical": "#56214B",
+        "tonalRamp": [
+          "#1B0015",
+          "#400B36",
+          "#612B55",
+          "#834A76",
+          "#A76B98",
+          "#CC8EBC",
+          "#F2B1E1",
+          "#FFE6F7"
+        ]
+      },
+      "accent-soft": {
+        "role": "secondary",
+        "displayName": "Jamun Tint",
+        "canonical": "#F6EBF2",
+        "tonalRamp": [
+          "#0F090D",
+          "#2A2227",
+          "#483F45",
+          "#675E64",
+          "#897F85",
+          "#ACA2A8",
+          "#D0C6CC",
+          "#F6EBF2"
+        ]
+      },
+      "accent-line": {
+        "role": "secondary",
+        "displayName": "Jamun Line",
+        "canonical": "#DDBDD2",
+        "tonalRamp": [
+          "#170411",
+          "#341C2C",
+          "#52384A",
+          "#73576A",
+          "#95788C",
+          "#B99AAF",
+          "#DEBED3",
+          "#FFE6F6"
+        ]
+      },
+      "hud": {
+        "role": "neutral",
+        "displayName": "HUD Umber",
+        "canonical": "#1B1714",
+        "tonalRamp": [
+          "#0E0A08",
+          "#282421",
+          "#46413D",
+          "#65605C",
+          "#86817D",
+          "#A9A4A0",
+          "#CEC8C4",
+          "#F3EDE9"
+        ]
+      },
+      "hud-ink": {
+        "role": "neutral",
+        "displayName": "HUD Ink",
+        "canonical": "#F7F2EC",
+        "tonalRamp": [
+          "#0E0B07",
+          "#282420",
+          "#45413C",
+          "#65605B",
+          "#86817C",
+          "#A9A49F",
+          "#CDC8C2",
+          "#F3EEE8"
+        ]
+      },
+      "hud-ink-2": {
+        "role": "neutral",
+        "displayName": "HUD Ink Muted",
+        "canonical": "#D3C9BF",
+        "tonalRamp": [
+          "#100A04",
+          "#2B241C",
+          "#494038",
+          "#686057",
+          "#8A8177",
+          "#ADA39A",
+          "#D1C7BD",
+          "#F7EDE2"
+        ]
+      },
+      "hud-accent": {
+        "role": "tertiary",
+        "displayName": "HUD Pink",
+        "canonical": "#F2B8DB",
+        "tonalRamp": [
+          "#1B0012",
+          "#3E1130",
+          "#5E2F4E",
+          "#814E6E",
+          "#A46F90",
+          "#C991B3",
+          "#EFB5D8",
+          "#FFE6F5"
+        ]
+      },
+      "pass": {
+        "role": "tertiary",
+        "displayName": "Pass Green",
+        "canonical": "#16704C",
+        "tonalRamp": [
+          "#000F07",
+          "#012D1B",
+          "#014F33",
+          "#1A724E",
+          "#43956F",
+          "#67B991",
+          "#8CDEB4",
+          "#C3FFDE"
+        ]
+      },
+      "pass-soft": {
+        "role": "tertiary",
+        "displayName": "Pass Green Tint",
+        "canonical": "#E6F2EA",
+        "tonalRamp": [
+          "#060D08",
+          "#1F2822",
+          "#3B453E",
+          "#5A645D",
+          "#7B857E",
+          "#9DA8A1",
+          "#C1CDC5",
+          "#E6F2EA"
+        ]
+      },
+      "warn": {
+        "role": "tertiary",
+        "displayName": "Warn Amber",
+        "canonical": "#93520A",
+        "tonalRamp": [
+          "#160700",
+          "#3A1D01",
+          "#633400",
+          "#8F4E03",
+          "#B47033",
+          "#D99357",
+          "#FEB87E",
+          "#FFEADB"
+        ]
+      },
+      "warn-soft": {
+        "role": "tertiary",
+        "displayName": "Warn Amber Tint",
+        "canonical": "#FBEFD9",
+        "tonalRamp": [
+          "#120A00",
+          "#2D2413",
+          "#4A412F",
+          "#6A604D",
+          "#8C816D",
+          "#AFA48F",
+          "#D3C8B2",
+          "#F9EDD7"
+        ]
+      },
+      "fail": {
+        "role": "tertiary",
+        "displayName": "Fail Red",
+        "canonical": "#B42A1F",
+        "tonalRamp": [
+          "#1F0000",
+          "#4D0000",
+          "#800201",
+          "#AF251A",
+          "#D74D3E",
+          "#FE7463",
+          "#FFB3A7",
+          "#FEE9E5"
+        ]
+      },
+      "fail-soft": {
+        "role": "tertiary",
+        "displayName": "Fail Red Tint",
+        "canonical": "#FBE9E5",
+        "tonalRamp": [
+          "#130806",
+          "#2E221F",
+          "#4C3E3B",
+          "#6C5D5A",
+          "#8E7E7B",
+          "#B1A19D",
+          "#D6C5C1",
+          "#FCEAE6"
+        ]
+      },
+      "plan-bed": {
+        "role": "tertiary",
+        "displayName": "Plan Bedroom Wash",
+        "canonical": "#F1ECF5",
+        "tonalRamp": [
+          "#0D0A0F",
+          "#27232A",
+          "#444047",
+          "#635F67",
+          "#858088",
+          "#A8A3AB",
+          "#CCC7D0",
+          "#F1ECF5"
+        ]
+      },
+      "plan-wet": {
+        "role": "tertiary",
+        "displayName": "Plan Wet Room Wash",
+        "canonical": "#E6F0F2",
+        "tonalRamp": [
+          "#060C0E",
+          "#1F2728",
+          "#3C4445",
+          "#5A6365",
+          "#7B8486",
+          "#9EA7A9",
+          "#C1CBCD",
+          "#E7F1F3"
+        ]
+      },
+      "plan-living": {
+        "role": "tertiary",
+        "displayName": "Plan Living Wash",
+        "canonical": "#F4F0E9",
+        "tonalRamp": [
+          "#0D0B07",
+          "#28251F",
+          "#45423C",
+          "#64615B",
+          "#85827C",
+          "#A8A49E",
+          "#CCC9C2",
+          "#F2EEE7"
+        ]
+      },
+      "plan-service": {
+        "role": "tertiary",
+        "displayName": "Plan Service Wash",
+        "canonical": "#EDE7DE",
+        "tonalRamp": [
+          "#0E0A05",
+          "#29241E",
+          "#46413A",
+          "#666059",
+          "#878179",
+          "#AAA49C",
+          "#CEC8BF",
+          "#F4EEE5"
+        ]
+      },
+      "plan-outdoor": {
+        "role": "tertiary",
+        "displayName": "Plan Outdoor Wash",
+        "canonical": "#E8F0E3",
+        "tonalRamp": [
+          "#080D05",
+          "#21271E",
+          "#3E443A",
+          "#5D6459",
+          "#7E8579",
+          "#A0A89C",
+          "#C4CCBF",
+          "#E9F1E4"
+        ]
+      },
+      "author-1": {
+        "role": "tertiary",
+        "displayName": "Author 1",
+        "canonical": "#0D7C72",
+        "tonalRamp": [
+          "#000F0D",
+          "#002C28",
+          "#014D46",
+          "#027167",
+          "#339489",
+          "#5BB8AC",
+          "#80DDD1",
+          "#B9FFF4"
+        ]
+      },
+      "author-2": {
+        "role": "tertiary",
+        "displayName": "Author 2",
+        "canonical": "#6A4FD6",
+        "tonalRamp": [
+          "#0C002D",
+          "#270168",
+          "#4417A2",
+          "#6042C9",
+          "#7F67F0",
+          "#9F94FE",
+          "#C5C1FF",
+          "#EDEDFE"
+        ]
+      },
+      "author-3": {
+        "role": "tertiary",
+        "displayName": "Author 3",
+        "canonical": "#C23F78",
+        "tonalRamp": [
+          "#1D000B",
+          "#490025",
+          "#7B0042",
+          "#A72462",
+          "#CF4B83",
+          "#F770A6",
+          "#FFAEC9",
+          "#FEE8EE"
+        ]
+      },
+      "author-4": {
+        "role": "tertiary",
+        "displayName": "Author 4",
+        "canonical": "#A8641A",
+        "tonalRamp": [
+          "#150700",
+          "#391D00",
+          "#623501",
+          "#8D5003",
+          "#B5702A",
+          "#DB9350",
+          "#FFB879",
+          "#FEEBDA"
+        ]
+      },
+      "author-5": {
+        "role": "tertiary",
+        "displayName": "Author 5",
+        "canonical": "#4F6378",
+        "tonalRamp": [
+          "#000C1C",
+          "#152639",
+          "#314458",
+          "#4F6378",
+          "#70859B",
+          "#92A8BF",
+          "#B5CCE4",
+          "#E3F0FE"
+        ]
+      },
+      "author-6": {
+        "role": "tertiary",
+        "displayName": "Author 6",
+        "canonical": "#2F7A3A",
+        "tonalRamp": [
+          "#001002",
+          "#002F09",
+          "#005116",
+          "#277333",
+          "#4C9654",
+          "#6FBA76",
+          "#93DF99",
+          "#CAFFCC"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display-hero": {
+        "displayName": "Display Hero",
+        "purpose": "The one sentence in the sky on the landing."
+      },
+      "display-words": {
+        "displayName": "Display Words",
+        "purpose": "The word or two the family shares, in Lamp Soft."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "The single question or statement on a dusk screen, below 640px."
+      },
+      "headline-wide": {
+        "displayName": "Headline Wide",
+        "purpose": "The same headline from 640px."
+      },
+      "field-dusk": {
+        "displayName": "Field Dusk",
+        "purpose": "Typing into the dusk; 2rem from 640px."
+      },
+      "hero": {
+        "displayName": "Hero",
+        "purpose": "Indoor page names at the largest size."
+      },
+      "display": {
+        "displayName": "Display",
+        "purpose": "Indoor page and section names."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Indoor section names."
+      },
+      "heading": {
+        "displayName": "Heading",
+        "purpose": "Panel and group headings in Geist."
+      },
+      "body-lg": {
+        "displayName": "Body Large",
+        "purpose": "Dusk reading text and comfortable indoor reading."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Default reading and UI text."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Controls and field labels."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Small notes."
+      },
+      "numeric": {
+        "displayName": "Numeric",
+        "purpose": "Tabular numbers in Geist Mono."
+      }
+    },
+    "shadows": [
+      {
+        "name": "lamp-glow",
+        "value": "0 10px 34px -8px rgb(255 196 107 / .55)",
+        "purpose": "Under the Lamp Button."
+      },
+      {
+        "name": "answered-glow",
+        "value": "0 2px 10px rgb(255 196 107 / .8)",
+        "purpose": "On a person's lit dot."
+      },
+      {
+        "name": "dusk-float",
+        "value": "0 24px 60px -20px rgb(4 6 20 / .9)",
+        "purpose": "The suggestion list on dusk."
+      },
+      {
+        "name": "e1",
+        "value": "0 0 0 1px rgb(74 52 30 / .07), 0 1px 2px rgb(74 52 30 / .05), 0 6px 16px -10px rgb(74 52 30 / .10)",
+        "purpose": "Cards and panels at rest indoors."
+      },
+      {
+        "name": "e2",
+        "value": "0 0 0 1px rgb(74 52 30 / .06), 0 2px 4px rgb(74 52 30 / .04), 0 18px 40px -16px rgb(74 52 30 / .22)",
+        "purpose": "Card hover and menus indoors."
+      },
+      {
+        "name": "e3",
+        "value": "0 0 0 1px rgb(74 52 30 / .06), 0 4px 10px rgb(74 52 30 / .05), 0 36px 80px -28px rgb(74 52 30 / .34)",
+        "purpose": "Sheets and dialogs indoors."
+      },
+      {
+        "name": "focus",
+        "value": "0 0 0 4px rgb(107 42 94 / .20)",
+        "purpose": "Indoor focus halo, on paper only."
+      },
+      {
+        "name": "hud-focus",
+        "value": "0 0 0 2px #1B1714, 0 0 0 4px #F2B8DB",
+        "purpose": "Two-tone focus ring over 3D."
+      },
+      {
+        "name": "glass-light",
+        "value": "0 0 0 1px rgb(74 52 30 / .07), 0 10px 28px -14px rgb(74 52 30 / .20)",
+        "purpose": "Floating chrome indoors, with rgb(255 253 249 / .76) and blur(20px) saturate(1.6)."
+      },
+      {
+        "name": "glass-hud",
+        "value": "inset 0 0 0 1px rgb(255 255 255 / .10)",
+        "purpose": "Glass over 3D, with rgb(27 23 20 / .75) and blur(24px) saturate(1.6); rgb(23 31 72 / .78) on the Heart."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(.22, 1, .36, 1)",
+        "purpose": "Default entrances and the words of the reveal."
+      },
+      {
+        "name": "ease-sheet",
+        "value": "cubic-bezier(.32, .72, 0, 1)",
+        "purpose": "Sheets and shimmer."
+      },
+      {
+        "name": "ease-camera",
+        "value": "cubic-bezier(.65, 0, .35, 1)",
+        "purpose": "3D camera moves."
+      },
+      {
+        "name": "ease-exit",
+        "value": "cubic-bezier(.4, 0, 1, 1)",
+        "purpose": "Leaving elements."
+      },
+      {
+        "name": "dur-press",
+        "value": "120ms",
+        "purpose": "Press feedback."
+      },
+      {
+        "name": "dur-fast",
+        "value": "160ms",
+        "purpose": "Colour and hover changes."
+      },
+      {
+        "name": "dur-base",
+        "value": "240ms",
+        "purpose": "Standard state changes."
+      },
+      {
+        "name": "dur-panel",
+        "value": "320ms",
+        "purpose": "Sheets and panels."
+      },
+      {
+        "name": "dur-slow",
+        "value": "600ms",
+        "purpose": "Media card image scale."
+      },
+      {
+        "name": "spring",
+        "value": "{ type: spring, stiffness: 380, damping: 34 }",
+        "purpose": "The one spring for interface motion."
+      },
+      {
+        "name": "lamp-on",
+        "value": "1.1s easeOut, opacity 0 > .75 > .4 > 1 at 0, .3, .45, 1",
+        "purpose": "A window lighting: it catches, dips, holds."
+      },
+      {
+        "name": "light-spill",
+        "value": "1.4s",
+        "purpose": "The light falling onto the wall."
+      },
+      {
+        "name": "heart-glow",
+        "value": "2.4s ease-out",
+        "purpose": "The heart lighting last."
+      },
+      {
+        "name": "reveal-cadence",
+        "value": "700ms first window, 1000ms between, 1200ms hold, 1500ms to the words",
+        "purpose": "The order of the reveal."
+      },
+      {
+        "name": "words-in",
+        "value": "1.1s ease-out, 16px rise",
+        "purpose": "The shared words arriving."
+      },
+      {
+        "name": "breathe",
+        "value": "1.6s ease-in-out infinite",
+        "purpose": "A loading dot."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "lights on at once, no flicker, no delay",
+        "purpose": "Equivalent for every lit moment."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Lamp Button",
+      "kind": "button",
+      "refersTo": "lamp-button",
+      "description": "The one warm thing you can press on a dusk screen.",
+      "html": "<div class=\"ds-stage\"><button class=\"ds-lamp\">Light the house</button></div>",
+      "css": ".ds-stage { background: var(--color-dusk-1, #0E1432); padding: 24px; } .ds-lamp { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; padding: 0 28px; border: 0; border-radius: 999px; background: var(--color-lamp, #FFC46B); color: var(--color-dusk-1, #0E1432); font: 600 1.0625rem Geist, ui-sans-serif, system-ui, sans-serif; box-shadow: 0 10px 34px -8px rgb(255 196 107 / .55); cursor: pointer; transition: background .2s; } .ds-lamp:hover { background: var(--color-lamp-soft, #FFE3B0); } .ds-lamp:focus-visible { outline: none; box-shadow: 0 0 0 4px rgb(255 196 107 / .4); }"
+    },
+    {
+      "name": "Dusk Field",
+      "kind": "input",
+      "refersTo": "dusk-input",
+      "description": "A field on the dusk: one underline, the family's words set as display.",
+      "html": "<div class=\"ds-stage\"><input class=\"ds-dusk-input\" placeholder=\"A place you miss\" aria-label=\"Something you love\" /></div>",
+      "css": ".ds-stage { background: var(--color-dusk-1, #0E1432); padding: 24px; } .ds-dusk-input { width: 100%; border: 0; border-bottom: 2px solid var(--color-dusk-line, #48528C); background: transparent; padding: 12px 0; font: 700 1.6rem 'Bricolage Grotesque', Geist, ui-sans-serif, system-ui, sans-serif; letter-spacing: -.02em; color: var(--color-dusk-ink, #F6F1E8); caret-color: var(--color-lamp, #FFC46B); outline: none; transition: border-color .16s; } .ds-dusk-input::placeholder { color: var(--color-dusk-ink-2, #BCC1DC); } .ds-dusk-input:focus { border-color: var(--color-lamp, #FFC46B); }"
+    },
+    {
+      "name": "Lit Chip",
+      "kind": "chip",
+      "refersTo": "lit-chip",
+      "description": "Something a person chose, lit on the dusk.",
+      "html": "<div class=\"ds-stage\"><span class=\"ds-lit-chip\"><span class=\"ds-lit-thumb\" aria-hidden=\"true\">P</span>Pakeezah<button class=\"ds-lit-x\" aria-label=\"Remove Pakeezah\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M18 6 6 18M6 6l12 12\"/></svg></button></span></div>",
+      "css": ".ds-stage { background: var(--color-dusk-1, #0E1432); padding: 24px; } .ds-lit-chip { display: inline-flex; align-items: center; gap: 8px; padding: 4px 6px 4px 4px; border-radius: 999px; background: var(--color-lamp-soft, #FFE3B0); color: var(--color-dusk-1, #0E1432); font: 500 .9375rem Geist, ui-sans-serif, system-ui, sans-serif; } .ds-lit-thumb { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 999px; background: var(--color-dusk-3, #252E63); color: var(--color-lamp-soft, #FFE3B0); font-size: 12px; } .ds-lit-x { display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 999px; background: transparent; color: inherit; cursor: pointer; } .ds-lit-x:hover { background: rgb(14 20 50 / .1); } .ds-lit-x:focus-visible { outline: 2px solid var(--color-dusk-1, #0E1432); }"
+    },
+    {
+      "name": "Person Row",
+      "kind": "custom",
+      "refersTo": "dusk-pill",
+      "description": "One line of the family: a dot, a name, and their light or the way to send it.",
+      "html": "<ul class=\"ds-stage ds-people\"><li class=\"ds-person\"><span class=\"ds-dot is-lit\"></span><span class=\"ds-name\">Sara</span><span class=\"ds-on\">Light's on</span></li><li class=\"ds-person\"><span class=\"ds-dot\"></span><span class=\"ds-name\">Ali</span><button class=\"ds-pill\">Send link</button></li></ul>",
+      "css": ".ds-stage { background: var(--color-dusk-1, #0E1432); padding: 24px; } .ds-people { list-style: none; margin: 0; } .ds-person { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 8px 0; border-bottom: 1px solid rgb(72 82 140 / .6); } .ds-dot { width: 10px; height: 10px; border-radius: 999px; background: var(--color-dusk-3, #252E63); } .ds-dot.is-lit { background: var(--color-lamp, #FFC46B); box-shadow: 0 2px 10px rgb(255 196 107 / .8); } .ds-name { flex: 1; font: 400 1.0625rem/1.625rem Geist, ui-sans-serif, system-ui, sans-serif; color: var(--color-dusk-ink, #F6F1E8); } .ds-on { font: 400 .9375rem Geist, ui-sans-serif, system-ui, sans-serif; color: var(--color-lamp-soft, #FFE3B0); } .ds-pill { padding: 6px 12px; border: 0; border-radius: 999px; background: var(--color-dusk-3, #252E63); color: var(--color-dusk-ink, #F6F1E8); font: 500 .9375rem Geist, ui-sans-serif, system-ui, sans-serif; cursor: pointer; } .ds-pill:hover { background: var(--color-dusk-line, #48528C); } .ds-pill:focus-visible { outline: 2px solid var(--color-lamp, #FFC46B); outline-offset: 2px; }"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The next move indoors.",
+      "html": "<button class=\"ds-btn-primary\">Save changes</button>",
+      "css": ".ds-btn-primary { height: 40px; padding: 0 18px; border: 1px solid transparent; border-radius: 999px; background: var(--color-accent, #6B2A5E); color: #fff; font: 500 15px Geist, ui-sans-serif, system-ui, sans-serif; box-shadow: inset 0 1px 0 rgb(255 255 255 / .14), 0 1px 2px rgb(60 20 50 / .20), 0 8px 20px -10px rgb(107 42 94 / .55); cursor: pointer; transition: background .16s, transform .12s; } .ds-btn-primary:hover { background: var(--color-accent-press, #56214B); } .ds-btn-primary:active { transform: scale(.97); } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 4px rgb(107 42 94 / .20); }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "A quieter action on paper.",
+      "html": "<button class=\"ds-btn-secondary\">Try again</button>",
+      "css": ".ds-btn-secondary { height: 40px; padding: 0 18px; border: 1px solid var(--color-line-strong, #D6CBBC); border-radius: 999px; background: var(--color-surface, #FFFDF9); color: var(--color-ink, #1E1915); font: 500 15px Geist, ui-sans-serif, system-ui, sans-serif; box-shadow: 0 1px 2px rgb(74 52 30 / .06); cursor: pointer; transition: background .16s, transform .12s; } .ds-btn-secondary:hover { background: var(--color-surface-2, #F2ECE3); } .ds-btn-secondary:active { transform: scale(.97); } .ds-btn-secondary:focus-visible { outline: none; box-shadow: 0 0 0 4px rgb(107 42 94 / .20); }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "text-field",
+      "description": "A field on paper.",
+      "html": "<label class=\"ds-field-wrap\"><span class=\"ds-field-label\">Plot size</span><input class=\"ds-field\" placeholder=\"10 marla\" /></label>",
+      "css": ".ds-field-wrap { display: flex; flex-direction: column; gap: 6px; } .ds-field-label { font: 500 13px Geist, ui-sans-serif, system-ui, sans-serif; color: var(--color-ink-2, #4A4039); } .ds-field { height: 44px; padding: 0 12px; border: 1px solid var(--color-line-strong, #D6CBBC); border-radius: 12px; background: var(--color-surface, #FFFDF9); color: var(--color-ink, #1E1915); font: 400 15px Geist, ui-sans-serif, system-ui, sans-serif; outline: none; transition: border-color .2s, box-shadow .2s; } .ds-field::placeholder { color: var(--color-ink-4, #A89D91); } .ds-field:focus { border-color: var(--color-accent, #6B2A5E); box-shadow: 0 0 0 4px rgb(107 42 94 / .20); }"
+    },
+    {
+      "name": "Chip",
+      "kind": "chip",
+      "refersTo": "chip-selected",
+      "description": "A selectable chip indoors, shown selected.",
+      "html": "<button class=\"ds-chip\" aria-pressed=\"true\">Ground floor</button>",
+      "css": ".ds-chip { min-height: 32px; padding: 4px 12px; border: 0; border-radius: 10px; background: var(--color-accent-soft, #F6EBF2); color: var(--color-accent, #6B2A5E); font: 500 13px Geist, ui-sans-serif, system-ui, sans-serif; box-shadow: inset 0 0 0 1px var(--color-accent-line, #DDBDD2); cursor: pointer; } .ds-chip:focus-visible { outline: none; box-shadow: 0 0 0 4px rgb(107 42 94 / .20); }"
+    },
+    {
+      "name": "Media Card",
+      "kind": "card",
+      "refersTo": "media-card",
+      "description": "An indoor card: an image with no text on it, the name beneath.",
+      "html": "<a class=\"ds-card\" href=\"#\"><span class=\"ds-card-media\"><svg viewBox=\"0 0 120 90\" width=\"100%\" aria-hidden=\"true\"><rect width=\"120\" height=\"90\" fill=\"#F2ECE3\"/><path d=\"M30 70V42l30-18 30 18v28z\" fill=\"#D6CBBC\"/></svg></span><span class=\"ds-card-title\">The Malik home</span><span class=\"ds-card-caption\">Lahore, updated today</span></a>",
+      "css": ".ds-card { display: block; max-width: 280px; color: var(--color-ink, #1E1915); text-decoration: none; } .ds-card-media { display: block; overflow: hidden; border-radius: 20px; box-shadow: 0 0 0 1px rgb(74 52 30 / .07), 0 1px 2px rgb(74 52 30 / .05), 0 6px 16px -10px rgb(74 52 30 / .10); transition: box-shadow .24s; } .ds-card-media svg { display: block; transition: transform .6s cubic-bezier(.22, 1, .36, 1); } .ds-card:hover .ds-card-media { box-shadow: 0 0 0 1px rgb(74 52 30 / .06), 0 2px 4px rgb(74 52 30 / .04), 0 18px 40px -16px rgb(74 52 30 / .22); } .ds-card:hover svg { transform: scale(1.02); } .ds-card:focus-visible { outline: 2px solid var(--color-accent, #6B2A5E); outline-offset: 2px; } .ds-card-title { display: block; margin-top: 12px; font: 600 1.25rem Geist, ui-sans-serif, system-ui, sans-serif; letter-spacing: -.01em; } .ds-card-caption { display: block; margin-top: 2px; font: 400 .9375rem Geist, ui-sans-serif, system-ui, sans-serif; color: var(--color-ink-3, #6E6359); }"
+    },
+    {
+      "name": "Lit Window",
+      "kind": "custom",
+      "refersTo": "lamp",
+      "description": "The signature: a window that comes on, catching, dipping, then holding.",
+      "html": "<div class=\"ds-stage\"><svg class=\"ds-window\" viewBox=\"0 0 110 130\" width=\"110\" role=\"img\" aria-label=\"A lit window\"><defs><linearGradient id=\"ds-lamp\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#FFE7BD\"/><stop offset=\".55\" stop-color=\"#FFC46B\"/><stop offset=\"1\" stop-color=\"#F2A24E\"/></linearGradient></defs><rect x=\"13\" y=\"13\" width=\"84\" height=\"102\" rx=\"3\" fill=\"#070B1F\"/><rect x=\"18\" y=\"18\" width=\"74\" height=\"92\" fill=\"#141B3F\"/><rect class=\"ds-glass\" x=\"18\" y=\"18\" width=\"74\" height=\"92\" fill=\"url(#ds-lamp)\"/><path d=\"M55 18V110M18 57H92\" stroke=\"#070B1F\" stroke-width=\"3.5\"/></svg></div>",
+      "css": ".ds-stage { background: var(--color-dusk-1, #0E1432); padding: 24px; } .ds-glass { animation: ds-lamp-on 1.1s ease-out both; } @keyframes ds-lamp-on { 0% { opacity: 0; } 30% { opacity: .75; } 45% { opacity: .4; } 100% { opacity: 1; } } @media (prefers-reduced-motion: reduce) { .ds-glass { animation: none; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The House at Dusk",
+    "overview": "A home is the people lit up inside it. Everything outside the house is one dusk: a drenched blue sky with a band of last light on the horizon, a dark street, and a house at street scale whose windows belong to the family. Each person is a window. It stays dark until they answer, and the room in the middle lights last, from the real overlap in the family's tastes.\n\nThe product moves through three places, and each has its own material. Outdoors (landing, the Heart, the private link, the workspace hero) is dusk blue with warm lamp light. Indoors (plan, lists, brief, concepts) is lamp-lit warm paper, where the family has stepped inside to work. The House view is a heads-up display of glass floating over the 3D home. Dusk is sparse and set large, with one sentence and one thing to press. Indoors is calm and denser, a working room with tools in reach.\n\nThis is a replacement world. It retires the cream ground with a saffron-to-plum gradient, the Plus Jakarta Sans display and the style-quiz card grid. The signature motion is a lamp coming on: it catches, dips, then holds, slowly and physically, and it has an instant equivalent under reduced motion.",
+    "keyCharacteristics": [
+      "Dusk blue ground, warm light as the only warm colour on screen",
+      "Lit shapes on the dusk, with no boxed cards",
+      "One display voice set large in the sky, Geist for everything you operate",
+      "A house pinned to the foot of the viewport, copy in the sky above it",
+      "Warm paper and brown shadows indoors, glass over 3D",
+      "Pills for every action, underlines for fields on dusk"
+    ],
+    "rules": [
+      {
+        "name": "The Lamp Means Someone Rule",
+        "body": "On the dusk, warm light belongs to a person or something a person does: a window they lit, their dot, the thing they chose, the one button they can press. The horizon and the neighbours' windows are the only other warmth, and they are scenery.",
+        "section": "colors"
+      },
+      {
+        "name": "The Three Worlds Rule",
+        "body": "Lamp lives outdoors, jamun lives indoors, HUD pink lives over 3D. A screen sits in one world. Indoors, lamp appears only as a small ring or dot on the family's own chosen or live thing.",
+        "section": "colors"
+      },
+      {
+        "name": "The Earned Light Rule",
+        "body": "The heart's light comes from data. It never lights on a guess, a timer or a loading state.",
+        "section": "colors"
+      },
+      {
+        "name": "The Compliance Hues Rule",
+        "body": "Green, amber and red mean rule outcomes and errors, indoors, and nothing else.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Voice Rule",
+        "body": "What the house says is Bricolage 700. What you operate is Geist. A line of dusk copy is one or the other, with no third voice.",
+        "section": "typography"
+      },
+      {
+        "name": "The Sentence Case Rule",
+        "body": "All type is sentence case with tight or neutral tracking. There are no eyebrows and no uppercase labels.",
+        "section": "typography"
+      },
+      {
+        "name": "The Street Scale Rule",
+        "body": "On dusk screens the house is pinned to the foot of the viewport at full width, taking 38 to 58dvh and passing no pointer events. Copy sits in the sky above it on a higher layer. The drawing crops from the bottom centre, so the ground stays on the floor of the screen at any aspect ratio. Keep text above the 86% stop of the sky, since Dusk Ink Muted falls to 1.1:1 on the horizon band.",
+        "section": "layout"
+      },
+      {
+        "name": "The Light Is Lift Rule",
+        "body": "On dusk, a thing comes forward by glowing. Indoors it comes forward on a brown shadow. Neutral black shadows do not appear on paper.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do build every outdoor screen from the sky and the one Lamp Button, with one sentence and the house below.",
+      "Do use Display Words in Lamp Soft for anything the family actually shares, and only that.",
+      "Do step indoors for work: plan, lists, brief and concepts go on Warm Ivory with Warm White surfaces.",
+      "Do use `glass-hud` for anything floating over the 3D house, with the two-tone HUD focus ring.",
+      "Do tint indoor shadows brown (`rgb(74 52 30)`), matching e1 to e3.",
+      "Do give every lit moment a reduced-motion state and a text equivalent.",
+      "Do use `--ease-out` and the shared spring (stiffness 380, damping 34) for interface motion, and keep the slow lamp timing for lights only.",
+      "Do use the family's own words and pictures as the visual content; a thumbnail is a circle."
+    ],
+    "donts": [
+      "Don't put a boxed card around a control on the dusk.",
+      "Don't add a warm colour outdoors that isn't lamp light, the horizon or a neighbour's window.",
+      "Don't light the heart before the overlap is real.",
+      "Don't bring back the saffron-to-plum gradient, Plus Jakarta Sans, or the `taste-*` colours on new surfaces.",
+      "Don't use jamun or the compliance hues on dusk, or lamp as an indoor accent.",
+      "Don't set text on the horizon band.",
+      "Don't use eyebrows, uppercase labels or positive display tracking.",
+      "Don't set reading text in Ink Faint.",
+      "Don't name a data source anywhere in the app; the feature speaks in its own words."
+    ]
+  }
+}

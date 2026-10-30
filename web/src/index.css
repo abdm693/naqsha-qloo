@@ -1,11 +1,8 @@
 @import "tailwindcss";
 
 /*
- * Naqsha design tokens (docs/design/DESIGN.md §2), "Warm" edition.
- * Home is where the heart is: the app should feel like a lived-in room, not a drafting table. Warm ivory canvas,
- * warm white surfaces, warm greys for ink and lines, and one deep accent for "next move" or "selected".
- * Big headings use a modern geometric sans (Plus Jakarta Sans, bold and tight); all UI text stays Geist.
- * The app is light only; anything over 3D or photos uses glass-hud.
+ * Naqsha design tokens (DESIGN.md). Three worlds: outdoors is dusk blue where the only warm light is a lamp; indoors is warm
+ * paper; over 3D or photos everything uses glass-hud. Display type is Bricolage Grotesque; all UI text stays Geist.
  */
 @theme {
   --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, sans-serif;
@@ -85,6 +82,7 @@
   --text-heading--letter-spacing: -.01em; --text-heading--font-weight: 600;
   --text-body-lg: 1.0625rem; --text-body-lg--line-height: 1.625rem;
   --text-body: .9375rem;   --text-body--line-height: 1.375rem;
+  --text-small: .875rem;   --text-small--line-height: 1.25rem;
   --text-label: .8125rem;  --text-label--line-height: 1.125rem; --text-label--font-weight: 500;
   --text-caption: .75rem;  --text-caption--line-height: 1rem;
   --text-caption--letter-spacing: .01em; --text-caption--font-weight: 500;
