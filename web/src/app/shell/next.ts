@@ -74,7 +74,7 @@ export function useDefaultNext(view: ViewId, project: Project | null): NextMove 
     switch (view) {
       case "brief":
         if (project.stage === "setup" || conceptsRunning) return null;
-        if (!project.taste) return { label: "Add your taste", run: () => to("taste") };
+        if (!project.taste) return { label: "Who's home?", run: () => to("taste") };
         return {
           label: "Show me concepts",
           run: () => {

@@ -1,49 +1,13 @@
 /**
- * Naqsha Taste: the family tells Naqsha what they love (places, films, music, food, brands), the taste agent reads the
- * taste behind it (Qloo's taste graph, on the server), and the house is designed from what it finds. Three states: the
- * composer (which opens on the neighbourhood, read as soon as the place is known), the live reading (every step shows as
- * it happens), and the profile with the style brief, where each decision shows the evidence behind it. The product never
- * names its data sources: to the family this is simply Naqsha reading their taste.
+ * The family's home after the reveal: how much of them is in it, a room for each person, and the reasons for anyone who
+ * wants them. The product never names its data sources.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
-import { ArrowRight, Check, MapPin, Plus, RefreshCw, Sparkles, X } from "lucide-react";
-import type { Evidence, FoundFavourite, Project, StyleBrief, Taste, TasteInput, TasteProfile } from "@contracts/api-types";
+import { MapPin, Sparkles } from "lucide-react";
+import type { Evidence, Project, StyleBrief, Taste } from "@contracts/api-types";
 import { api, assetUrl, errorMessage } from "@/api/client";
 import { cn } from "@/app/lib/utils";
-import { canEdit } from "@/app/lib/views";
-import { useViewNav } from "@/app/design/nav";
 import { useProject } from "@/app/store/project";
-import { Button } from "@/app/ui/Button";
-import { Neighbourhood } from "./Neighbourhood";
-
-const KINDS: { kind: string; label: string; hint: string }[] = [
-  { kind: "destination", label: "Places you loved", hint: "Istanbul, Kyoto, Hunza…" },
-  { kind: "film", label: "Films and shows", hint: "Coke Studio, Studio Ghibli, The Crown…" },
-  { kind: "artist", label: "Music", hint: "Abida Parveen, Coldplay…" },
-  { kind: "restaurant", label: "Restaurants and cafés", hint: "Your favourite spot in town" },
-  { kind: "brand", label: "Brands", hint: "Khaadi, IKEA, Aesop…" },
-  { kind: "book", label: "Books and podcasts", hint: "Anything you keep going back to" },
-];
-
-type Person = { label: string; role: string; items: Record<string, string[]> };
-const blankPerson = (label: string, role: string): Person => ({ label, role, items: {} });
-
-function initialPeople(project: Project): Person[] {
-  const prev = project.taste?.input?.people;
-  if (prev?.length) {
-    return prev.map((p) => ({
-      label: p.label,
-      role: p.role ?? "",
-      items: p.favourites.reduce<Record<string, string[]>>((acc, f) => {
-        const k = f.kind || "destination";
-        (acc[k] ||= []).push(f.name);
-        return acc;
-      }, {}),
-    }));
-  }
-  return [blankPerson("Parents", "parents"), blankPerson("Children", "kids")];
-}
 
 /** Tags that say nothing useful about a home, or that a family would not want said about them (older readings kept some). */
 const UNHELPFUL = new Set(["seductive", "sexy", "marriage", "motivated", "professional", "ethnicity", "elite", "authoritative", "beauty oriented",
@@ -54,382 +18,20 @@ const shown = <T extends { name: string }>(tags: T[] | undefined): T[] => (tags 
 
 const gradient = "linear-gradient(120deg, var(--color-taste-1, #E8A33D), var(--color-taste-2, #D9486B) 55%, var(--color-taste-3, #6B3FA0))";
 
-export function TasteView({ project, onProjectChange }: { project: Project; onProjectChange(p: Project): void }) {
-  const editor = canEdit(project);
-  const [editing, setEditing] = useState(!project.taste);
-  const [running, setRunning] = useState(false);
-  const [steps, setSteps] = useState<{ id: string; message: string; tool?: string; done?: boolean }[]>([]);
-  const [found, setFound] = useState<FoundFavourite[]>([]);
-  const [missing, setMissing] = useState<{ who: string; asked: string }[]>([]);
-  const [profile, setProfile] = useState<TasteProfile | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  async function read(input: TasteInput) {
-    setRunning(true);
-    setEditing(false);
-    setSteps([]);
-    setFound([]);
-    setMissing([]);
-    setProfile(null);
-    setError(null);
-    try {
-      await api.readTaste(project.id, input, {
-        step: (s) => setSteps((xs) => [...xs.map((x) => ({ ...x, done: true })), s]),
-        favourites: (f) => {
-          setFound(f.found);
-          setMissing(f.missing);
-        },
-        profile: (p) => setProfile(p),
-        taste: (t: Taste) => {
-          setSteps((xs) => xs.map((x) => ({ ...x, done: true })));
-          const next = { ...project, taste: t };
-          onProjectChange(next);
-          useProject.setState({ project: next });
-        },
-        error: (e) => setError(e.message),
-      });
-    } catch (e) {
-      setError(errorMessage(e));
-    } finally {
-      setRunning(false);
-    }
-  }
-
-  return (
-    <div className="h-full overflow-y-auto bg-canvas">
-      <div className="mx-auto max-w-[1180px] px-4 pb-40 pt-[calc(var(--chrome-top,72px)+20px)] sm:px-8">
-        {editing && editor && !running ? (
-          <Composer project={project} onCancel={project.taste ? () => setEditing(false) : undefined} onRead={read} />
-        ) : running || (!project.taste && (steps.length || error)) ? (
-          <Reading project={project} steps={steps} found={found} missing={missing} profile={profile} error={error} onRetry={() => setEditing(true)} />
-        ) : project.taste ? (
-          <Profile taste={project.taste} project={project} editor={editor} onEdit={() => setEditing(true)} onProjectChange={onProjectChange} />
-        ) : (
-          <p className="text-body text-ink-3">The family hasn't shared their taste yet.</p>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ---- the composer ----------------------------------------------------------------------------------------------------
-function Composer({ project, onRead, onCancel }: { project: Project; onRead(i: TasteInput): void; onCancel?: () => void }) {
-  const [people, setPeople] = useState<Person[]>(() => initialPeople(project));
-  const brief = project.brief;
-  const [location, setLocation] = useState(project.taste?.input?.location || [brief?.scheme, brief?.city].filter(Boolean).join(", "));
-  const [notes, setNotes] = useState(project.taste?.input?.notes || "");
-  const total = people.reduce((n, p) => n + Object.values(p.items).flat().length, 0);
-
-  const update = (i: number, fn: (p: Person) => Person) => setPeople((ps) => ps.map((p, j) => (j === i ? fn(p) : p)));
-  const submit = () =>
-    onRead({
-      people: people
-        .map((p) => ({ label: p.label.trim() || "Family", role: p.role || null, favourites: Object.entries(p.items).flatMap(([kind, names]) => names.map((name) => ({ kind, name }))) }))
-        .filter((p) => p.favourites.length),
-      location: location.trim() || null,
-      notes: notes.trim() || null,
-    });
-
-  return (
-    <div>
-      <header className="flex flex-wrap items-end justify-between gap-6">
-        <div className="max-w-[760px]">
-          <TasteBadge />
-          <h1 className="mt-4 font-display text-[clamp(2.2rem,5vw,3.6rem)] leading-[1.02] tracking-[-.035em] text-ink">
-            A home should feel like the people in it.
-          </h1>
-          <p className="mt-4 text-body-lg text-ink-2">
-            A home is where you live and who you live with. Tell us what each of you loves: places you've been, what you watch
-            and listen to, where you like to eat. Naqsha reads the taste behind it and designs the house, the rooms and the
-            garden from that.
-          </p>
-        </div>
-        <ReadButton total={total} onClick={submit} onCancel={onCancel} />
-      </header>
-
-      <div className="mt-8">
-        <Neighbourhood project={project} title="Where you'll live" sub="Read from your neighbourhood" />
-      </div>
-
-      <div className="mt-10">
-        <SectionTitle title="Who will live there" sub="A few favourites each is enough. No style quiz, no mood boards." />
-      </div>
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        {people.map((p, i) => (
-          <PersonCard
-            key={i}
-            person={p}
-            index={i}
-            onChange={(fn) => update(i, fn)}
-            onRemove={people.length > 1 ? () => setPeople((ps) => ps.filter((_, j) => j !== i)) : undefined}
-          />
-        ))}
-        {people.length < 5 && (
-          <button
-            type="button"
-            onClick={() => setPeople((ps) => [...ps, blankPerson(`Person ${ps.length + 1}`, "")])}
-            className="grid min-h-[160px] place-items-center rounded-card border border-dashed border-line-strong text-body text-ink-3 transition hover:border-ink-4 hover:text-ink"
-          >
-            <span className="inline-flex items-center gap-2"><Plus className="size-4" /> Add someone</span>
-          </button>
-        )}
-      </div>
-
-      <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_1fr]">
-        <label className="rounded-card bg-surface p-5 shadow-e1">
-          <span className="flex items-center gap-2 text-small font-medium text-ink-2"><MapPin className="size-4" /> Where the house will be</span>
-          <input
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            placeholder="DHA Phase 6, Lahore"
-            className="mt-2 w-full bg-transparent text-body-lg text-ink outline-none placeholder:text-ink-4"
-          />
-          <span className="mt-1 block text-small text-ink-3">We read how the area feels from the places people love there.</span>
-        </label>
-        <label className="rounded-card bg-surface p-5 shadow-e1">
-          <span className="text-small font-medium text-ink-2">Anything else about how you live</span>
-          <input
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Big family dinners, Abbu reads every evening…"
-            className="mt-2 w-full bg-transparent text-body-lg text-ink outline-none placeholder:text-ink-4"
-          />
-        </label>
-      </div>
-
-      <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
-        <ReadButton total={total} onClick={submit} onCancel={onCancel} />
-        {location.trim() && (
-          <button type="button" onClick={() => onRead({ people: [], location: location.trim(), notes: notes.trim() || null })}
-            className="text-small font-medium text-ink-2 underline decoration-line-strong underline-offset-4 hover:text-ink">
-            No favourites yet? Design from the taste of {location.trim().split(",")[0]} for now
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function ReadButton({ total, onClick, onCancel }: { total: number; onClick(): void; onCancel?: () => void }) {
-  return (
-    <div className="flex flex-wrap items-center gap-3">
-      <button
-        type="button"
-        disabled={total < 2}
-        onClick={onClick}
-        className="taste-glow inline-flex h-12 items-center gap-2 rounded-full px-6 text-body font-semibold text-white shadow-e2 transition hover:brightness-110 disabled:cursor-not-allowed disabled:shadow-none disabled:saturate-50"
-        style={{ backgroundImage: gradient }}
-      >
-        <Sparkles className="size-4" /> Read our taste
-      </button>
-      {onCancel && <Button variant="quiet" onClick={onCancel}>Cancel</Button>}
-      <span className="text-small text-ink-3">{total < 2 ? "Add at least two favourites" : `${total} favourites`}</span>
-    </div>
-  );
-}
-
-function PersonCard({ person, index, onChange, onRemove }: { person: Person; index: number; onChange(fn: (p: Person) => Person): void; onRemove?: () => void }) {
-  const [more, setMore] = useState(() => KINDS.slice(3).some((k) => person.items[k.kind]?.length));
-  const kinds = more ? KINDS : KINDS.slice(0, 3);
-  return (
-    <section className="rounded-card bg-surface p-5 shadow-e1">
-      <div className="flex items-center gap-3">
-        <span className="grid size-9 place-items-center rounded-full text-small font-semibold text-white" style={{ backgroundImage: gradient, filter: `hue-rotate(${index * 35}deg)` }}>
-          {(person.label.trim()[0] || "?").toUpperCase()}
-        </span>
-        <input
-          aria-label="Who"
-          value={person.label}
-          onChange={(e) => onChange((p) => ({ ...p, label: e.target.value }))}
-          className="min-w-0 flex-1 bg-transparent text-heading text-ink outline-none"
-        />
-        {onRemove && (
-          <button type="button" aria-label={`Remove ${person.label}`} onClick={onRemove} className="rounded-full p-1.5 text-ink-3 hover:bg-surface-2 hover:text-ink">
-            <X className="size-4" />
-          </button>
-        )}
-      </div>
-      <div className="mt-4 space-y-3">
-        {kinds.map((k) => (
-          <ChipField
-            key={k.kind}
-            label={k.label}
-            hint={k.hint}
-            values={person.items[k.kind] || []}
-            onChange={(vals) => onChange((p) => ({ ...p, items: { ...p.items, [k.kind]: vals } }))}
-          />
-        ))}
-        {!more && (
-          <button type="button" onClick={() => setMore(true)} className="inline-flex items-center gap-1.5 text-small font-medium text-accent hover:underline">
-            <Plus className="size-3.5" /> Restaurants, brands, books
-          </button>
-        )}
-      </div>
-    </section>
-  );
-}
-
-function ChipField({ label, hint, values, onChange }: { label: string; hint: string; values: string[]; onChange(v: string[]): void }) {
-  const [text, setText] = useState("");
-  const add = () => {
-    const t = text.trim().replace(/,$/, "");
-    if (t && !values.includes(t)) onChange([...values, t]);
-    setText("");
-  };
-  return (
-    <div>
-      <div className="text-small font-medium text-ink-3">{label}</div>
-      <div className="mt-1.5 flex flex-wrap items-center gap-1.5 rounded-control border border-line bg-canvas/60 px-2 py-1.5 focus-within:border-accent">
-        {values.map((v) => (
-          <span key={v} className="inline-flex items-center gap-1 rounded-full bg-surface px-2.5 py-1 text-small text-ink shadow-e1">
-            {v}
-            <button type="button" aria-label={`Remove ${v}`} onClick={() => onChange(values.filter((x) => x !== v))} className="text-ink-3 hover:text-ink">
-              <X className="size-3" />
-            </button>
-          </span>
-        ))}
-        <input
-          value={text}
-          onChange={(e) => (e.target.value.endsWith(",") ? (setText(e.target.value), setTimeout(add)) : setText(e.target.value))}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              add();
-            } else if (e.key === "Backspace" && !text && values.length) onChange(values.slice(0, -1));
-          }}
-          onBlur={add}
-          placeholder={values.length ? "" : hint}
-          className="min-w-[140px] flex-1 bg-transparent px-1 py-1 text-body text-ink outline-none placeholder:text-ink-4"
-        />
-      </div>
-    </div>
-  );
-}
-
-// ---- the live reading ------------------------------------------------------------------------------------------------
-function Reading({ project, steps, found, missing, profile, error, onRetry }: {
-  project: Project; steps: { id: string; message: string; tool?: string; done?: boolean }[]; found: FoundFavourite[]; missing: { who: string; asked: string }[];
-  profile: TasteProfile | null; error: string | null; onRetry(): void;
-}) {
-  const tags = shown(profile?.family);
-  return (
-    <div className="grid gap-8 lg:grid-cols-[minmax(0,420px)_1fr]">
-      <section>
-        <TasteBadge live={!error} />
-        <h1 className="mt-4 font-display text-[clamp(2rem,4vw,3rem)] leading-[1.05] tracking-[-.035em] text-ink">Reading your taste</h1>
-        <ol className="mt-6 space-y-3" aria-live="polite">
-          <AnimatePresence initial={false}>
-            {steps.map((s) => (
-              <motion.li key={s.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-start gap-3">
-                <span className={cn("mt-0.5 grid size-5 shrink-0 place-items-center rounded-full", s.done ? "bg-pass-soft text-pass" : "bg-surface shadow-e1")}>
-                  {s.done ? <Check className="size-3" /> : <span className="size-1.5 animate-breathe rounded-full" style={{ backgroundImage: gradient }} />}
-                </span>
-                <span className={cn("text-body", s.done ? "text-ink-3" : "text-ink")}>
-                  {s.message}
-                </span>
-              </motion.li>
-            ))}
-          </AnimatePresence>
-        </ol>
-        {error && (
-          <div className="mt-6 rounded-card bg-fail-soft p-4 text-body text-fail">
-            {error}
-            <div className="mt-3"><Button size="sm" icon={<RefreshCw className="size-4" />} onClick={onRetry}>Change favourites</Button></div>
-          </div>
-        )}
-      </section>
-      <section className="space-y-6">
-        {found.length > 0 && (
-          <div>
-            <h2 className="text-small font-medium uppercase tracking-[.12em] text-ink-3">Your favourites</h2>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {found.map((f, i) => (
-                <motion.span key={f.eid + i} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.04 }}
-                  className="inline-flex items-center gap-2 rounded-full bg-surface py-1 pl-1 pr-3 text-small text-ink shadow-e1">
-                  {f.image ? <img src={f.image} alt="" className="size-6 rounded-full object-cover" /> : <span className="size-6 rounded-full bg-surface-2" />}
-                  {f.name}
-                  <span className="text-ink-4">· {f.who}</span>
-                </motion.span>
-              ))}
-              {missing.map((m) => (
-                <span key={m.who + m.asked} className="inline-flex items-center rounded-full border border-dashed border-line-strong px-3 py-1 text-small text-ink-3">
-                  {m.asked} · couldn't find this one
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-        {tags.length > 0 && (
-          <div>
-            <h2 className="text-small font-medium uppercase tracking-[.12em] text-ink-3">The taste behind them</h2>
-            <TagCloud tags={tags.map((t) => ({ name: t.name, weight: t.affinity ?? 0.5 }))} />
-          </div>
-        )}
-        {!!project.locality?.places.length && <Neighbourhood project={project} compact title="Where you'll live" />}
-      </section>
-    </div>
-  );
-}
-
-// ---- the profile -----------------------------------------------------------------------------------------------------
-function Profile({ taste, project, editor, onEdit, onProjectChange }: { taste: Taste; project: Project; editor: boolean; onEdit(): void; onProjectChange(p: Project): void }) {
-  const goTo = useViewNav();
-  const st = useProject();
+// ---- the family's home, once the heart is known ------------------------------------------------------------------------
+/** What's left after the reveal: how much of them is in it, their rooms, and the reasons for anyone who wants them. */
+export function ProfileBody({ taste, project, editor, onProjectChange }: { taste: Taste; project: Project; editor: boolean; onProjectChange(p: Project): void }) {
   const s = taste.style;
   const p = taste.profile;
   const ev = s.evidence || {};
-  const design = () => {
-    void st.generateConcepts();
-    goTo("concepts");
-  };
-
   return (
-    <div className="space-y-10">
-      {/* Hero */}
-      <section className="relative overflow-hidden rounded-panel p-7 text-white shadow-e3 sm:p-10" style={{ backgroundImage: gradient }}>
-        <div className="pointer-events-none absolute -right-24 -top-24 size-80 rounded-full bg-white/10 blur-2xl" />
-        {!!p.favourites?.length && (
-          <ul aria-label="Your favourites" className="absolute right-8 top-10 hidden w-[300px] flex-wrap justify-end gap-2 xl:flex">
-            {p.favourites.slice(0, 12).map((f, i) => (
-              <motion.li key={f.eid + i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 + i * 0.04 }}
-                className="inline-flex items-center gap-2 rounded-full bg-white/15 py-1 pl-1 pr-3 text-small text-white backdrop-blur">
-                {f.image ? <img src={f.image} alt="" className="size-6 rounded-full object-cover" /> : <span className="grid size-6 place-items-center rounded-full bg-white/25 text-[11px]">{f.name[0]}</span>}
-                {f.name}
-              </motion.li>
-            ))}
-          </ul>
-        )}
-        <TasteBadge onDark />
-        <h1 className="mt-4 max-w-[820px] xl:max-w-[640px] font-display text-[clamp(2rem,4.2vw,3.25rem)] leading-[1.05] tracking-[-.035em]">{s.headline}</h1>
-        <p className="mt-4 max-w-[720px] xl:max-w-[620px] text-body-lg text-white/90">{s.story}</p>
-        {p.locality_only && (
-          <p className="mt-3 max-w-[620px] text-small text-white/85">Read from {p.area?.location || "your area"}: add your favourites to make it yours.</p>
-        )}
-        <div className="mt-6 flex flex-wrap gap-2">
-          {shown(p.family).slice(0, 10).map((t) => (
-            <span key={t.eid} className="rounded-full bg-white/15 px-3 py-1 text-small backdrop-blur">{t.name}</span>
-          ))}
-        </div>
-        <div className="mt-8 flex flex-wrap gap-3">
-          {editor && (
-            <button type="button" onClick={design} className="inline-flex h-11 items-center gap-2 rounded-full bg-white px-5 text-body font-semibold text-ink shadow-e2 transition hover:bg-white/90">
-              Design our home from this <ArrowRight className="size-4" />
-            </button>
-          )}
-          {editor && (
-            <button type="button" onClick={onEdit} className="inline-flex h-11 items-center gap-2 rounded-full bg-white/15 px-5 text-body text-white backdrop-blur transition hover:bg-white/25">
-              Change favourites
-            </button>
-          )}
-        </div>
-      </section>
-
+    <div className="space-y-12">
       <Impact taste={taste} project={project} />
 
       {/* Rooms */}
       {!!s.rooms?.length && (
         <section>
-          <SectionTitle title="Inside: a room for each of you" sub="Each room follows one person's taste. Switch whose, and picture it again." />
+          <SectionTitle title="Inside: a room for each of you" />
           <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {s.rooms.map((r, i) => (
               <RoomCard key={i} index={i} room={r} people={(s.people || []).map((x) => x.label)} ev={ev} project={project} editor={editor} onProjectChange={onProjectChange} />
@@ -438,12 +40,12 @@ function Profile({ taste, project, editor, onEdit, onProjectChange }: { taste: T
         </section>
       )}
 
-      {/* Where they'll live: the plot on its map among the places people love around it */}
-      {!!project.locality?.places.length && (
-        <Neighbourhood project={project} title="Where you'll live" sub={`Around ${project.locality.location.split(",")[0]}`} />
-      )}
 
-
+      <details className="group">
+        <summary className="cursor-pointer list-none font-display text-[1.5rem] tracking-[-.02em] text-ink marker:hidden">
+          Why it looks like this <span aria-hidden className="ml-1 inline-block text-ink-3 transition group-open:rotate-90">›</span>
+        </summary>
+        <div className="mt-8 space-y-10">
       {/* Each person */}
       {!!s.people?.length && (
         <section>
@@ -557,39 +159,21 @@ function Profile({ taste, project, editor, onEdit, onProjectChange }: { taste: T
         </section>
       )}
 
-      <p className="text-small text-ink-3">
-        Taste signals describe what people with a taste like yours love; Naqsha's architect turned them into design choices.{" "}
-        {project.taste?.at ? `Read ${new Date(project.taste.at).toLocaleDateString()}.` : ""}
-      </p>
+        </div>
+      </details>
     </div>
   );
 }
 
 // ---- measured impact ---------------------------------------------------------------------------------------------------
 function Impact({ taste, project }: { taste: Taste; project: Project }) {
-  const s = taste.style;
-  const p = taste.profile;
   const fitted = project.concepts.filter((c) => c.from_taste && typeof c.taste_fit?.score === "number");
   const chosen = project.concepts.find((c) => c.id === project.selected_concept_id && typeof c.taste_fit?.score === "number");
   const best = chosen ?? [...fitted].sort((a, b) => (b.taste_fit!.score ?? 0) - (a.taste_fit!.score ?? 0))[0];
   const base = taste.baseline;
-  const stats = [
-    { n: p.locality_only ? (p.area?.places.length ?? 0) : (p.favourites?.length ?? 0), label: p.locality_only ? "local places read" : "favourites read" },
-    { n: Object.keys(s.evidence || {}).length, label: "taste signals behind the design" },
-    { n: s.decisions?.length ?? 0, label: "design decisions from your taste" },
-    { n: s.rooms?.length ?? 0, label: "rooms styled for someone" },
-  ];
   return (
     <section aria-labelledby="impact-title">
-      <SectionTitle title="How much of you is in it" sub="The same plot, drawn twice: once as a typical new house, once from your taste. Then we check each picture for your choices." />
-      <dl className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {stats.map((x) => (
-          <div key={x.label} className="rounded-card bg-surface p-5 shadow-e1">
-            <dt className="text-small text-ink-3">{x.label}</dt>
-            <dd className="mt-1 font-display text-[2.4rem] leading-none text-ink">{x.n}</dd>
-          </div>
-        ))}
-      </dl>
+      <SectionTitle title="How much of you is in it" sub="The same plot, drawn with you and without you." />
       {base && best && (
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <FitCard title="Without your taste" sub="The same plot and brief, a typical new house" url={base.url} fit={base.taste_fit?.score} muted />
@@ -799,39 +383,6 @@ function EvidenceChip({ e, ev }: { e: Evidence; ev: Record<string, Evidence> }) 
         </span>
       )}
     </span>
-  );
-}
-
-/** The taste behind the favourites, strongest first: the top three lead, the rest carry a small strength bar. */
-function TagCloud({ tags }: { tags: { name: string; weight: number }[] }) {
-  const shown = tags.slice(0, 18);
-  const max = Math.max(0.01, ...shown.map((t) => t.weight));
-  return (
-    <ul className="mt-4 flex flex-wrap items-center gap-2">
-      {shown.map((t, i) => {
-        const w = Math.max(0.15, Math.min(1, t.weight / max));
-        const lead = i < 3;
-        return (
-          <motion.li
-            key={t.name}
-            initial={{ opacity: 0, y: 8, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ delay: i * 0.05, type: "spring", stiffness: 380, damping: 34 }}
-            className={cn(
-              "inline-flex items-center gap-2.5 rounded-full",
-              lead ? "taste-gradient px-4 py-2 text-body-lg font-semibold text-white shadow-e2" : "bg-surface px-3.5 py-1.5 text-body text-ink shadow-e1",
-            )}
-          >
-            {t.name}
-            {!lead && (
-              <span aria-hidden className="h-1 w-7 overflow-hidden rounded-full bg-surface-2">
-                <span className="taste-gradient block h-full rounded-full" style={{ width: `${w * 100}%` }} />
-              </span>
-            )}
-          </motion.li>
-        );
-      })}
-    </ul>
   );
 }
 

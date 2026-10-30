@@ -209,6 +209,10 @@ export interface Project {
   house_taste_fit?: (TasteFit & { version_id: string }) | null;
   /** The neighbourhood, read as soon as the place is known. */
   locality?: Locality | null;
+  /** Who lives here and who has answered. */
+  family?: Family | null;
+  /** What they share: the heart of the home. */
+  heart?: Heart | null;
 }
 
 // ---- taste (Qloo) ----------------------------------------------------------------------------------------------------
@@ -233,6 +237,27 @@ export interface TasteProfile {
   locality_only?: boolean;
 }
 export interface TastePlace { eid: string; name: string; address?: string; image?: string; tags: string[]; lat?: number | null; lon?: number | null; category?: string | null }
+export interface FamilyMember { id: string; name: string; answered: boolean; token?: string }
+export interface Family { people: FamilyMember[] }
+export interface Pick { id?: string | null; name: string; kind?: string | null; image?: string | null; heart?: boolean }
+export interface SuggestedThing { id: string; name: string; kind: string; label: string; image?: string | null; where?: string | null }
+export interface Heart {
+  words: string[];
+  line?: string | null;
+  room?: string | null;
+  /** all: everyone shares it. most: most of them do. together: how they read as one family. */
+  level: "all" | "most" | "together" | "none";
+  people: { id: string; name: string; room?: string | null; line?: string | null }[];
+  between: { names: string[]; space: string }[];
+  near?: { name: string; image?: string | null; category?: string | null }[];
+  at: string;
+}
+export interface HomeLink {
+  you: { name: string; favourites: Pick[] };
+  where?: string | null;
+  family: { name: string; you: boolean; answered: boolean }[];
+  heart: boolean;
+}
 export interface GeoPoint { name?: string; lat: number; lon: number; label?: string }
 export interface LocalPlace { id: string; name: string; lat: number; lon: number; image?: string | null; address?: string | null; category?: string | null; feel: string[] }
 export interface Locality {

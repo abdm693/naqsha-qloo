@@ -15,6 +15,9 @@ import type {
   Comment,
   CommentAnchor,
   Envelope,
+  HomeLink,
+  Pick,
+  SuggestedThing,
   Me,
   Member,
   Project,
@@ -101,6 +104,15 @@ export interface Api {
   readTaste(pid: string, body: TasteInput, handlers: SSEHandlers, opts?: StreamOptions): Promise<void>;
   /** Style one room: re-read it for one person's taste (or everyone's) and/or picture it. Returns the project. */
   styleRoom(pid: string, index: number, body: { follows?: string; image?: boolean }): Promise<Project>;
+  /** What someone may mean as they type, with pictures. */
+  suggest(q: string, signal?: AbortSignal): Promise<{ results: SuggestedThing[] }>;
+  /** Who lives here. A new name gets a private link. Returns the project. */
+  setFamily(pid: string, people: { id?: string; name: string }[]): Promise<Project>;
+  answerHere(pid: string, mid: string, favourites: Pick[]): Promise<Project>;
+  openLink(token: string): Promise<HomeLink>;
+  answerLink(token: string, favourites: Pick[]): Promise<HomeLink>;
+  /** Find what the family shares. Returns the project. */
+  readHeart(pid: string): Promise<Project>;
   /** Read the neighbourhood (map, feel, ideas) for the brief's place, or the one given. Returns the project. */
   readLocality(pid: string, body?: { location?: string }): Promise<Project>;
   /** Night versions of concepts (same camera), streamed as `concept` events with night_url filled in. */
@@ -264,6 +276,12 @@ const realApi: Api = {
   readTaste: (pid, body, handlers, opts) => stream(`${p(pid)}/taste`, body, handlers, { idleTimeoutMs: 120_000, ...opts }),
   styleRoom: (pid, index, body) => http("POST", `${p(pid)}/taste/rooms/${index}`, body),
   readLocality: (pid, body) => http("POST", `${p(pid)}/locality`, body ?? {}),
+  suggest: (q, signal) => http("GET", `/suggest?q=${encodeURIComponent(q)}`, undefined, signal),
+  setFamily: (pid, people) => http("PUT", `${p(pid)}/family`, { people }),
+  answerHere: (pid, mid, favourites) => http("POST", `${p(pid)}/family/${e(mid)}/answer`, { favourites }),
+  openLink: (token) => http("GET", `/link/${encodeURIComponent(token)}`),
+  answerLink: (token, favourites) => http("POST", `/link/${encodeURIComponent(token)}`, { favourites }),
+  readHeart: (pid) => http("POST", `${p(pid)}/heart`),
   conceptsNight: (pid, body, handlers, opts) => stream(`${p(pid)}/concepts/night`, body, handlers, { idleTimeoutMs: 120_000, ...opts }),
   selectConcept: (pid, cid) => http("POST", `${p(pid)}/concepts/${e(cid)}/select`),
 

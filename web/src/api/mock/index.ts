@@ -304,6 +304,38 @@ export const mockApi: Api = {
     return clone(p);
   },
 
+  async suggest() {
+    return { results: [] };
+  },
+  async setFamily(pid, people) {
+    const p = editable(pid);
+    p.family = { people: people.map((x, i) => ({ id: x.id ?? `m_${i}`, name: x.name, answered: false, token: `${pid}.m_${i}.mock` })) };
+    touch(p);
+    save();
+    return clone(p);
+  },
+  async answerHere(pid, mid) {
+    const p = editable(pid);
+    p.family?.people.forEach((x) => { if (x.id === mid) x.answered = true; });
+    touch(p);
+    save();
+    return clone(p);
+  },
+  async openLink() {
+    return { you: { name: "You", favourites: [] }, family: [{ name: "You", you: true, answered: false }], heart: false };
+  },
+  async answerLink() {
+    return { you: { name: "You", favourites: [] }, family: [{ name: "You", you: true, answered: true }], heart: false };
+  },
+  async readHeart(pid) {
+    const p = editable(pid);
+    await latency(1200);
+    p.heart = { words: ["Traditional", "exquisite"], line: "A graceful home where treasured heritage meets fine craftsmanship.", room: "a central courtyard", level: "all",
+      people: (p.family?.people ?? []).map((x) => ({ id: x.id, name: x.name, room: "a room of their own", line: null })), between: [], at: new Date().toISOString() };
+    touch(p);
+    save();
+    return clone(p);
+  },
   async readLocality(pid, body) {
     await latency(1400);
     const p = editable(pid);

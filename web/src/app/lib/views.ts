@@ -11,7 +11,7 @@ export type SwitchViewId = Exclude<ViewId, "revisions">;
 
 export const VIEWS: { id: SwitchViewId; label: string }[] = [
   { id: "brief", label: "Brief" },
-  { id: "taste", label: "Taste" },
+  { id: "taste", label: "Heart" },
   { id: "concepts", label: "Concepts" },
   { id: "plan", label: "Plan" },
   { id: "house", label: "House" },

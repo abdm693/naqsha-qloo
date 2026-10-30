@@ -10,7 +10,7 @@
 @theme {
   --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-  --font-display: "Plus Jakarta Sans", "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Bricolage Grotesque", "Geist", ui-sans-serif, system-ui, sans-serif;
   --font-urdu: "Noto Nastaliq Urdu", serif;
 
   --color-canvas: #F8F4ED;      /* page (warm ivory) */
@@ -48,6 +48,12 @@
   --color-taste-3: #7E3A8C;     /* jamun */
   --color-taste-ink: #7A2E57;   /* text on taste-soft: 7.4:1 */
   --color-taste-soft: #FCEFE8;
+
+  /* Dusk: the world outside the house. Lamp light is the only warm colour in it, and it always means a person. */
+  --color-dusk-1: #0E1432;  --color-dusk-2: #171F48;  --color-dusk-3: #252E63;
+  --color-dusk-line: #48528C;
+  --color-dusk-ink: #F6F1E8;  --color-dusk-ink-2: #BCC1DC;
+  --color-lamp: #FFC46B;  --color-lamp-soft: #FFE3B0;
 
   --color-hud: #1B1714;  --color-hud-ink: #F7F2EC;
   /* 4.7:1 over glass-hud (.75) on the brightest sky. */
@@ -298,3 +304,7 @@
 @media (prefers-reduced-motion: reduce) { .nbh-pin-pulse { animation: none; opacity: 0; } }
 .maplibregl-marker:has(.nbh-place.is-lit), .maplibregl-marker:has(.nbh-place:hover), .maplibregl-marker:has(.nbh-place:focus-visible) { z-index: 3; }
 .nbh-place { display: block; }
+
+/* The sky at the last of the light. */
+.dusk-sky { background: linear-gradient(180deg, #0E1432 0%, #161E4A 46%, #2A3268 70%, #5F5688 86%, #C28C78 97%, #E3AD82 100%) fixed; color-scheme: dark; }
+.dusk-sky ::selection { background: var(--color-lamp); color: var(--color-dusk-1); }

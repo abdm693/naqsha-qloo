@@ -17,6 +17,7 @@ import { AuthPage } from "./auth/AuthPage";
 import { AuthDialog } from "./auth/AuthDialog";
 import { ProjectShell } from "./shell/ProjectShell";
 import { ClientView } from "./share/ClientView";
+import { HomeLinkPage } from "@/app/heart/HomeLinkPage";
 import { Toaster } from "./ui/Toast";
 import { buttonClass } from "./ui/Button";
 import { ErrorBoundary } from "./ui/ErrorBoundary";
@@ -84,6 +85,7 @@ export function App() {
               <Route path=":view" element={null} />
             </Route>
             <Route path="/s/:token" element={<ClientView />} />
+            <Route path="/h/:token" element={<HomeLinkPage />} />
             <Route path="/signin" element={<Navigate to="/app/signin" replace />} />
             <Route path="/signup" element={<Navigate to="/app/signup" replace />} />
             <Route path="/p/:id/*" element={<LegacyProject />} />

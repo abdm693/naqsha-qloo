@@ -49,7 +49,8 @@ UNHELPFUL = {"seductive", "sexy", "marriage", "motivated", "professional", "ethn
              "industry professionals", "the justice seeker", "insightful", "beauty oriented", "romantically inclined",
              "athletic", "athletes", "sporty", "weddings", "freedom", "dynamic", "ethnic", "ethnic diversity", "culturally aware",
              "affluent", "wealthy", "world traveler", "global perspective", "business travelers", "seasonal residents", "remote",
-             "volcanoes", "coral reefs", "canyons", "scuba diving", "hot springs", "camping"}
+             "volcanoes", "coral reefs", "canyons", "scuba diving", "hot springs", "camping", "sensual", "developing", "volcanic landscapes",
+             "geisha performances", "flamenco shows", "caves", "digital", "editorial", "informative", "utility"}
 BRAND_GENRES = ["urn:tag:genre:brand:fashion", "urn:tag:genre:brand:retail"]   # textiles and objects, not cars
 MAKER_TAGS = ["urn:tag:category:place:art_gallery", "urn:tag:category:place:furniture_store", "urn:tag:genre:place:furniture_store",
               "urn:tag:category:place:interior_designer", "urn:tag:category:place:home_goods_store", "urn:tag:category:place:handicraft"]
@@ -151,8 +152,39 @@ async def search(query: str, kind: str | None = None, take: int = 3) -> list[dic
     return [_entity(e) for e in data.get("results") or []]
 
 
+SUGGEST_TYPES = ["urn:entity:artist", "urn:entity:movie", "urn:entity:tv_show", "urn:entity:destination", "urn:entity:brand",
+                 "urn:entity:place", "urn:entity:book"]
+SUGGEST_KIND = {"artist": "Music", "movie": "Film", "tv_show": "Show", "destination": "Place", "brand": "Brand", "place": "Spot",
+                "book": "Book"}
+
+
+async def suggest(query: str, take: int = 6) -> list[dict]:
+    """What someone may mean as they type: real things with pictures, so they choose the Selena they mean. Venues are searched
+    apart (there are so many that they would crowd out cities, artists and films), then exact and prefix matches come first."""
+    q = query.strip().lower()
+    if len(q) < 2:
+        return []
+    known, spots = await asyncio.gather(get("/search", {"query": query, "types": SUGGEST_TYPES[:5] + SUGGEST_TYPES[6:], "take": 12}),
+                                        get("/search", {"query": query, "types": "urn:entity:place", "take": 4}))
+    out, seen = [], set()
+    for tier, data in enumerate((known, spots)):
+        for e in data.get("results") or []:
+            x = _entity(e)
+            kind = str(((e.get("types") or [e.get("subtype") or ""])[0])).rsplit(":", 1)[-1]
+            name = (x.get("name") or "").strip()
+            if not name or kind not in SUGGEST_KIND or (name.lower(), kind) in seen:
+                continue
+            seen.add((name.lower(), kind))
+            rank = 0 if name.lower() == q else 1 if name.lower().startswith(q) else 2
+            out.append((rank, tier, -(x.get("popularity") or 0), {"id": x["id"], "name": name, "kind": kind, "label": SUGGEST_KIND[kind],
+                                                                  "image": x.get("image"), "where": (x.get("address") or "")[:60] or None}))
+    out.sort(key=lambda r: r[:3])
+    return [r[3] for r in out[:take]]
+
+
 async def resolve(favourites: list[dict]) -> list[dict]:
-    """[{kind, name, who?}] -> the same items with the matched Qloo entity (or None when Qloo doesn't know it)."""
+    """[{kind, name, who?, id?}] -> the same items with their Qloo entity (or None when Qloo doesn't know it). Something the
+    person picked keeps the entity they picked; only bare names are searched."""
     def best(name: str, hits: list[dict]) -> dict | None:
         """The exact name if Qloo has it (Marrakech, not a venue called "Nass Marrakech"), else the most popular match."""
         q = name.strip().lower()
@@ -161,6 +193,8 @@ async def resolve(favourites: list[dict]) -> list[dict]:
         return max(pool, key=lambda h: h.get("popularity") or 0) if exact else (pool[0] if pool else None)
 
     async def one(f: dict) -> dict:
+        if f.get("id"):
+            return {**f, "entity": {"id": f["id"], "name": f["name"], "type": f.get("kind"), "image": f.get("image"), "tags": []}}
         try:
             hits = await search(f["name"], f.get("kind"), take=6)
             if not hits and f.get("kind"):
