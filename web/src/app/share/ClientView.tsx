@@ -354,7 +354,7 @@ function ClientShell({ token }: { token: string }) {
                   ? `You approved version ${version.n}. ${sharedBy ?? "The owner"} can see it in the comments.`
                   : tab === "house"
                     ? `${touch ? "Tap" : "Click"} a spot on the house to leave a note, or walk through it room by room.`
-                    : `This is version ${version?.n ?? 1}, checked against LDA rules.`
+                    : `This is version ${version?.n ?? 1}, checked against the rules.`
               }
               defaultPlaceholder={`Leave a note for ${owner}`}
               defaultSuggestions={[]}

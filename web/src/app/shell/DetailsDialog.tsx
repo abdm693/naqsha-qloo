@@ -28,7 +28,7 @@ export function DetailsDialog({ open, onClose, project }: { open: boolean; onClo
     if (b.solar) rows.push(["Roof", solarLabel(b.solar) ?? b.solar]);
   }
   if (e) {
-    rows.push([`${e.authority ?? "LDA"} rules`, `${e.band}: ${e.max_coverage_pct}% coverage, ${e.max_height_ft} ft high, setbacks ${e.setbacks_ft.front}′ front and ${e.setbacks_ft.rear}′ rear`]);
+    rows.push([`${e.authority ?? ""} rules`.trim(), `${e.band}: ${e.max_coverage_pct}% coverage, ${e.max_height_ft} ft high, setbacks ${e.setbacks_ft.front}′ front and ${e.setbacks_ft.rear}′ rear`]);
   }
   // The latest version and its age, said the same way as the Versions popover ("v2 · 2 hours ago").
   const latestV = [...project.versions].sort((a, b) => b.n - a.n)[0];

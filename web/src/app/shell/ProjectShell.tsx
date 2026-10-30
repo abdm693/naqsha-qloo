@@ -209,7 +209,7 @@ function Shell({ project, view }: { project: Project; view: ViewId }) {
         if (current) return "Your plan follows the concept marked Chosen. Open another to plan it instead.";
         return "Good choice. I'll plan the floors around it next.";
       case "plan":
-        if (!current) return "I'll lay out the floors and check every LDA rule as I go.";
+        if (!current) return "I'll lay out the floors and check every rule as I go.";
         return counts ? planLine(counts) : null;
       case "house": {
         if (!editor) return null;

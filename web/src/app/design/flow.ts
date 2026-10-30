@@ -104,7 +104,7 @@ function designStageLine(stage: string, fails: number[]): string {
       return n ? `Fixing ${plural(n, "issue")}` : "Refining the plan";
     }
     case "compliance":
-      return "Checking LDA and livability rules";
+      return "Checking the rules and livability";
     case "review":
     case "critique":
     case "self_review":

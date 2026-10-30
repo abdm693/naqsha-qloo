@@ -37,7 +37,8 @@ const FAMILIES = [["The Maliks", "Lahore"], ["The Garcias", "Austin"], ["The Al 
 async function clean(p, city) {
   const t = await p.locator("body").innerText();
   if (/qloo/i.test(t)) throw new Error(`${city}: the app names Qloo`);
-  if (city !== "Lahore" && /\b(marla|kanal|LDA|DHA|Bahria|mumty)\b/i.test(t)) throw new Error(`${city}: Lahore words: ${t.match(/\b(marla|kanal|LDA|DHA|Bahria|mumty)\b/i)[0]}`);
+  const m = city !== "Lahore" && t.match(/.{0,50}\b(marla|kanal|LDA|DHA|Bahria|mumty)\b.{0,50}/i);
+  if (m) throw new Error(`${city} on ${new URL(p.url()).pathname.split("/").pop()}: Lahore words: ${m[0]}`);
 }
 
 async function imagesLoaded(p, min) {
@@ -47,7 +48,7 @@ async function imagesLoaded(p, min) {
 async function walk(p, family, city) {
   await p.goto(BASE + "/");
   await p.getByRole("heading", { name: "Four sample families, four homes." }).waitFor({ timeout: 20000 });
-  const card = p.getByRole("button", { name: new RegExp(`${family}, ${city}`) });
+  const card = p.getByRole("button", { name: new RegExp(`${family}, ${city}`) }).last();  // the card in the list, not the hero's line
   await card.waitFor({ timeout: 20000 });
   await p.waitForFunction((n) => [...document.querySelectorAll("button")].some((b) => b.textContent.includes(n) && !b.disabled), `${family}, ${city}`, { timeout: 20000 });
   await card.click();
@@ -99,8 +100,8 @@ await check("phone", async () => {
   const q = await c.newPage();
   try {
     await q.goto(BASE + "/");
-    await q.getByRole("button", { name: /The Garcias, Austin/ }).scrollIntoViewIfNeeded({ timeout: 20000 });
-    await q.getByRole("button", { name: /The Garcias, Austin/ }).click();
+    await q.getByRole("button", { name: /The Garcias, Austin/ }).last().scrollIntoViewIfNeeded({ timeout: 20000 });
+    await q.getByRole("button", { name: /The Garcias, Austin/ }).last().click();
     await q.waitForURL(/\/taste/, { timeout: 60000 });
     await q.getByRole("button", { name: "Look inside" }).waitFor({ timeout: 30000 });
     const over = await q.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);

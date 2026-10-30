@@ -20,6 +20,7 @@ import { area, coveredArea, isRoofLevel, levelName, levelsOf, roomsOn, SITE_TYPE
 import { useProject } from "@/app/store/project";
 import { planSolarLabel, planTankLabel } from "@/app/lib/roof";
 import { categoryOf, firstSentence, isReview, reviewLine, statusLine, summarize, tallyLine, valueLine } from "./compliance";
+import { rulesTitle } from "@/app/lib/locale";
 
 export type Paper = "a3" | "a4";
 export const PAPER: Record<Paper, { w: number; h: number; label: string }> = {
@@ -345,7 +346,7 @@ function AreaSchedule({ plan, report }: { plan: BuildingPlan; report: Version["c
         <tr>
           <td>
             Floor area for FAR
-            <span style={{ display: "block", fontSize: mm(2.3), color: "#6E6E73" }}>What LDA counts towards the floor area ratio</span>
+            <span style={{ display: "block", fontSize: mm(2.3), color: "#6E6E73" }}>What counts towards the floor area ratio</span>
           </td>
           <td className="mono" style={{ textAlign: "right" }}>{num(m.total_floor_area_sqft)}</td>
         </tr>
@@ -388,7 +389,7 @@ function ComplianceSheets({ project, version, paper, onPages, block }: { project
   const items: Item[] = useMemo(() => {
     const out: Item[] = [];
     const groups = [
-      { title: `LDA rules · ${tallyLine(s.ldaTally)}`, list: s.lda },
+      { title: `${rulesTitle()} · ${tallyLine(s.ldaTally)}`, list: s.lda },
       { title: `Livable home · ${tallyLine(s.livableTally)}`, list: s.livable },
       // Advice, not rules: never counted, printed after the rules.
       { title: `Architect's notes · ${reviewLine(s.review.length)}, not counted`, list: s.review },

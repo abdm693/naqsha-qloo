@@ -105,7 +105,7 @@ export function PrintDialog({ open, onClose, project, version }: { open: boolean
         open={open}
         onClose={onClose}
         title="Print or save as PDF"
-        description={`Landscape sheets for your contractor and the LDA file. Floors print at 1:${scale}.`}
+        description={`Landscape sheets for your contractor and the permit file. Floors print at 1:${scale}.`}
         actions={
           <>
             <Button variant="quiet" onClick={onClose}>

@@ -10,6 +10,7 @@ import { cn, feetInches, num } from "@/app/lib/utils";
 import { EASE_OUT, Meter } from "@/app/design/kit";
 import { firstSentence, LDA_SECTIONS, ldaSection, notesLine, reviewLine, statusLine, summarize, tallyLine, valueLine, type Tally } from "./compliance";
 import { sentenceCase } from "./model";
+import { rulesLabel, rulesTitle } from "@/app/lib/locale";
 
 export function ComplianceChip({ ref, report, plan, asBuilt, onClick, active }: { ref?: Ref<HTMLButtonElement>; report: ComplianceReport; plan?: BuildingPlan; asBuilt?: ComplianceReport | null; onClick: () => void; active?: boolean }) {
   const s = useMemo(() => summarize(report, plan, asBuilt), [report, plan, asBuilt]);
@@ -31,7 +32,7 @@ export function ComplianceChip({ ref, report, plan, asBuilt, onClick, active }: 
       <span className="font-mono tabular-nums">
         {s.ldaPass}/{s.lda.length}
       </span>
-      <span className={active ? "text-white/70" : "text-ink-3"}>LDA</span>
+      <span className={active ? "text-white/70" : "text-ink-3"}>{rulesLabel()}</span>
       {s.livable.length > 0 && (
         <>
           <span className={active ? "text-white/40" : "text-ink-4"}>·</span>
@@ -94,8 +95,8 @@ export function CompliancePanel({
           : "I'm building this version in 3D. Ask me to fix these once it's ready."
       : "Ask me to fix it, or change the plan yourself."
     : s.approvalReady
-      ? `Passes all ${s.ldaTally.total} LDA checks${s.livableTally.total ? (s.livableIssues ? `. ${s.livableIssues} livable ${s.livableIssues === 1 ? "point" : "points"} to check.` : ` and ${s.livableTally.total} livable rules.`) : "."}`
-      : `${s.ldaTally.pass} of ${s.ldaTally.total} LDA checks pass. Look at the ${checks === 1 ? "one" : checks} marked below before you submit.`;
+      ? `Passes all ${s.ldaTally.total} ${rulesLabel()} checks${s.livableTally.total ? (s.livableIssues ? `. ${s.livableIssues} livable ${s.livableIssues === 1 ? "point" : "points"} to check.` : ` and ${s.livableTally.total} livable rules.`) : "."}`
+      : `${s.ldaTally.pass} of ${s.ldaTally.total} ${rulesLabel()} checks pass. Look at the ${checks === 1 ? "one" : checks} marked below before you submit.`;
   const setbackChecks = s.lda.filter((c) => c.id.startsWith("setback.") && c.id !== "setback.envelope" && c.id !== "setback.side");
 
   return (
@@ -116,7 +117,7 @@ export function CompliancePanel({
 
       {/* LDA rules */}
       <section className="mt-6">
-        <GroupHeading title="LDA rules" t={s.ldaTally} />
+        <GroupHeading title={rulesTitle()} t={s.ldaTally} />
         <div className="grid grid-cols-2 gap-x-5 gap-y-4 px-5 pt-3">
           <Metric label="Ground coverage" value={`${num(m.coverage_pct, 1)}%`} limit={`max ${num(env.max_coverage_pct)}%`} ratio={m.coverage_pct / env.max_coverage_pct} />
           <Metric label="Height" value={feetInches(m.height_ft)} limit={`max ${feetInches(env.max_height_ft)}`} ratio={m.height_ft / env.max_height_ft} />
@@ -227,7 +228,7 @@ export function CompliancePanel({
       {s.asBuilt.length > 0 && (
         <section className="mt-6">
           <GroupHeading title="As built" t={s.asBuiltTally} line={notesLine(s.notes)} />
-          <p className="px-5 pt-0.5 text-[12.5px] text-ink-3">What I found while building the house in 3D. These aren't counted in the LDA or livable checks above.</p>
+          <p className="px-5 pt-0.5 text-[12.5px] text-ink-3">What I found while building the house in 3D. These aren't counted in the rules or livable checks above.</p>
           <ul className="px-3 pt-1">
             {s.asBuilt.map((c) => (
               <Row key={c.id} c={c} selected={selectedId === c.id} onSelect={onSelect} onFix={!running ? onFix : undefined} always />

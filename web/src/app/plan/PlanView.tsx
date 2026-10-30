@@ -291,7 +291,7 @@ export function PlanView({ project, onProjectChange }: { project: Project; onPro
           ) : null}
           <h1 className="mt-8 text-title text-ink">Ready to draw the plan</h1>
           <p className="mx-auto mt-2 max-w-[440px] text-body-lg text-ink-2">
-            I'll lay out every floor inside your LDA envelope, check it against every rule and fix what fails, then build it in 3D. It takes about five minutes.
+            I'll lay out every floor inside what the rules allow, check it against every rule and fix what fails, then build it in 3D. It takes about five minutes.
           </p>
           <Button variant="primary" size="lg" className="mt-7" onClick={() => void flow.design(project.id)}>
             Draw the plan

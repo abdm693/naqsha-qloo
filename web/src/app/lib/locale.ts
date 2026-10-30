@@ -28,6 +28,11 @@ export function midLabel(): string {
   return intl ? "Inside lot" : "Mid-row";
 }
 
+/** "LDA rules" in Pakistan, "Local rules" elsewhere: a heading. */
+export function rulesTitle(): string {
+  return intl ? "Local rules" : "LDA rules";
+}
+
 /** "LDA" in Pakistan, "local rules" elsewhere. */
 export function rulesLabel(): string {
   return intl ? "local rules" : "LDA";
