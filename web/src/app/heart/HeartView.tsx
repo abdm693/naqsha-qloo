@@ -20,7 +20,8 @@ const heading = "font-display text-[2.8rem] leading-[1.02] tracking-[-.03em] tex
 
 export function HeartView({ project, onProjectChange }: { project: Project; onProjectChange(p: Project): void }) {
   const editor = canEdit(project);
-  const [revealing, setRevealing] = useState(false);
+  // A sample family's reveal plays once on arrival, so the first thing a visitor sees is their lights coming on.
+  const [revealing, setRevealing] = useState(() => !!project.heart?.words.length && !!project.cloned_from && firstVisit(project.id));
   useAskContext({ hidden: true });
 
   const commit = (p: Project) => {
@@ -52,6 +53,14 @@ export function HeartView({ project, onProjectChange }: { project: Project; onPr
       </Dusk>
     </div>
   );
+}
+
+function firstVisit(id: string): boolean {
+  try {
+    if (sessionStorage.getItem(`naqsha.revealed.${id}`)) return false;
+    sessionStorage.setItem(`naqsha.revealed.${id}`, "1");
+  } catch { /* no storage: it simply plays */ }
+  return true;
 }
 
 function Who({ project, editor, onDone }: { project: Project; editor: boolean; onDone(p: Project): void }) {
@@ -186,7 +195,8 @@ function AnswerHere({ project, person, onClose, onDone }: { project: Project; pe
 function Reveal({ project, onDone, onFail }: { project: Project; onDone(p: Project): void; onFail(): void }) {
   const still = useReducedMotion();
   const people = (project.family?.people ?? []).filter((p) => p.answered);
-  const [result, setResult] = useState<Project | null>(null);
+  const told = !!project.heart?.words.length;  // a replay: the answer is already in hand
+  const [result, setResult] = useState<Project | null>(told ? project : null);
   const [lit, setLit] = useState(0);
   const [heart, setHeart] = useState(false);
   const [words, setWords] = useState(false);
@@ -194,7 +204,7 @@ function Reveal({ project, onDone, onFail }: { project: Project; onDone(p: Proje
   const started = useRef(false);
 
   useEffect(() => {
-    if (started.current) return;
+    if (started.current || told) return;
     started.current = true;
     api.readHeart(project.id).then(setResult).catch((e) => setError(errorMessage(e)));
   }, [project.id]);
@@ -216,7 +226,7 @@ function Reveal({ project, onDone, onFail }: { project: Project; onDone(p: Proje
   }, [result, lit, people.length, still]);
 
   useEffect(() => {
-    if (!words || !result) return;
+    if (!words || !result || result.heart?.threads?.length) return;
     let on = true;
     api.traceHeart(project.id).then((p) => { if (on) setResult(p); }).catch(() => {});
     return () => { on = false; };
@@ -226,6 +236,7 @@ function Reveal({ project, onDone, onFail }: { project: Project; onDone(p: Proje
   return (
     <>
       <section aria-live="polite" className="relative z-10 mx-auto flex min-h-[46dvh] w-full max-w-[1120px] flex-col justify-end px-5 pt-[calc(var(--chrome-top,72px)+20px)] sm:px-8">
+        {!words && !error && <p className="font-display text-[clamp(1.75rem,4.5vw,2.75rem)] leading-[1.1] tracking-[-.025em] text-dusk-ink">{joinNames(people.map((p) => p.name))} answered alone.</p>}
         {error ? (
           <div><p className="text-body-lg text-dusk-ink">{error}</p><div className="mt-4"><LampButton onClick={onFail}>Back</LampButton></div></div>
         ) : (
@@ -235,7 +246,7 @@ function Reveal({ project, onDone, onFail }: { project: Project; onDone(p: Proje
                 <p className="text-body-lg text-dusk-ink-2">{levelLine(h.level)}</p>
                 <h1 className="mt-1 font-display text-[clamp(3.2rem,11vw,6rem)] leading-[.98] tracking-[-.035em] text-lamp-soft">{joinWords(h.words)}</h1>
                 <Threads heart={h} />
-                <div className="mt-6"><LampButton onClick={() => onDone(result!)}>See your home</LampButton></div>
+                <div className="mt-6"><LampButton onClick={() => onDone(result!)}>See the home</LampButton></div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -276,6 +287,10 @@ function Threads({ heart }: { heart: NonNullable<Project["heart"]> }) {
 
 function levelLine(level: string): string {
   return level === "all" ? "What you all share" : level === "most" ? "What most of you share" : "Together, you are";
+}
+
+function joinNames(names: string[]): string {
+  return names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}` : names[0] ?? "";
 }
 
 function joinWords(words: string[]): string {
@@ -326,7 +341,7 @@ function Home({ project, editor, onChange, onAgain }: { project: Project; editor
           {editor && (
             <div className="mt-6 flex flex-wrap items-center gap-5">
               {designed
-                ? <LampButton onClick={() => goTo("concepts")}>See your home <ArrowRight className="size-4" /></LampButton>
+                ? <LampButton onClick={() => goTo("concepts")}>See the home <ArrowRight className="size-4" /></LampButton>
                 : <LampButton loading={!!building} onClick={() => void build()}>{building ?? "Build our home around it"}</LampButton>}
               <button type="button" onClick={onAgain} className="text-body text-dusk-ink-2 underline underline-offset-4 hover:text-dusk-ink">Replay</button>
             </div>
