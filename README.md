@@ -55,6 +55,23 @@ Only favourites and a place name are sent to Qloo, never names or personal data.
 8. **House.** The 3D model is written as code against our House SDK (three.js), built from the chosen concept feature by feature and furnished from the family's palettes and materials, room by room. A vision check compares it with the concept and rebuilds what's missing. Photos from the road, the corner, the garden and the air are made from the model.
 9. **Walk, comment, revise.** Walk through in first person, pin a note on any wall, share a link so relatives can comment from their phones. The revision agent applies the notes in the family's taste, re-checks the rules and answers each one.
 
+## Screens
+
+Captured from the live app with Playwright.
+
+| | |
+|---|---|
+| ![Each person's favourites](docs/screens/11-composer.jpg) | ![The family's taste, read with Qloo](docs/screens/02-taste-hero.jpg) |
+| **Taste.** Each person adds a few favourites as chips. | **Their style.** Qloo's reading of the family, and the favourites behind it. |
+| ![Measured impact](docs/screens/03-impact.jpg) | ![Decisions with their Qloo evidence](docs/screens/05-decisions.jpg) |
+| **What Qloo changed.** The same brief without their taste scores 23%; theirs, 96%. | **Decisions.** Every choice cites the Qloo signals behind it. |
+| ![A room for each person](docs/screens/06-rooms.jpg) | ![Concepts with their taste fit](docs/screens/07-concepts.jpg) |
+| **Rooms.** Each follows one person's taste; switch it and picture it. | **Concepts.** One per taste direction, each with its measured fit. |
+| ![The plan](docs/screens/08-plan.jpg) | ![The house in 3D](docs/screens/09-house.jpg) |
+| **Plan.** Every bylaw check passes. | **House.** Built in 3D from the concept and the family's palettes. |
+| ![Photos from four angles](docs/screens/10-photos.jpg) | ![Landing](docs/screens/01-landing.jpg) |
+| **Photos.** Made from the 3D model, from four angles. | **Start.** Open the sample home, or start your own. |
+
 ## Models
 
 | Step | Model |
