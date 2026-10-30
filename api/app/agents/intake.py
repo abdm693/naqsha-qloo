@@ -446,11 +446,14 @@ def defaults_for(brief: dict, prof: dict | None = None) -> tuple[dict, list[str]
     put("storeys", p.get("storeys") or (1 if marla < 4 else 2))
     put("bedrooms", p.get("bedrooms") or (2 if marla < 4 else 3 if marla < 7 else 4 if marla < 15 else 5))
     put("bathrooms", b["bedrooms"] + 1)
-    if not b.get("spaces"):
+    said = b.get("spaces") or []
+    if not said:
         b["spaces"] = _local_spaces(b, prof, marla)
         auto.append("spaces")
         if any(str(s).startswith("car_porch") for s in b["spaces"]):
             auto.append("porch")  # the car bay in the default spaces is Naqsha's choice too
+    elif len(said) < 3:  # "a kitchen we can all be in" is a wish, not the whole program: the usual rooms stay
+        b["spaces"] = said + [s for s in _local_spaces(b, prof, marla) if s not in said]
     put("style", p.get("style") or "Modern Contemporary")
     put("facing", "N")
     put("budget", "standard")

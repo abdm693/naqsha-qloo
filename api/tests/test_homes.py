@@ -257,3 +257,8 @@ def test_build_and_photo_prompts_read_it(monkeypatch):
 @pytest.mark.parametrize("kind,attached", [("row", True), ("townhouse", True), ("detached", False), ("semi-detached", False), (None, False)])
 def test_only_a_row_gets_the_side_road_check(kind, attached):
     assert locale.attached({"home_form": kind}) is attached
+
+
+def test_naming_one_room_keeps_the_usual_rooms():
+    b, _ = intake.defaults_for({**AUSTIN, "spaces": ["kitchen"]}, profile())
+    assert b["spaces"][0] == "kitchen" and "tv_lounge" in b["spaces"] and len(b["spaces"]) > 3
