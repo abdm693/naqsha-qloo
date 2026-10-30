@@ -275,7 +275,7 @@ function Threads({ heart }: { heart: NonNullable<Project["heart"]> }) {
             {[...things].map(([name, x]) => (
               <span key={name} className="inline-flex items-center gap-2 text-body text-dusk-ink">
                 <Thumb src={x.image} name={name} size={30} />
-                <span>{name} <span className="text-dusk-ink-2">{x.people.join(", ")}</span></span>
+                <span>{name} <span className="text-dusk-ink-2">· {joinNames(x.people)}</span></span>
               </span>
             ))}
           </li>

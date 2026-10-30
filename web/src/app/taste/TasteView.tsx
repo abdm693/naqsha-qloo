@@ -188,11 +188,11 @@ function Impact({ taste, project }: { taste: Taste; project: Project }) {
 
 function FitCard({ title, sub, url, fit, delta, muted }: { title: string; sub?: string; url: string; fit?: number | null; delta?: number; muted?: boolean }) {
   return (
-    <figure className={cn("overflow-hidden rounded-card bg-surface shadow-e1", !muted && "taste-ring")}>
+    <figure className={cn("overflow-hidden rounded-card bg-surface shadow-e1", !muted && "ring-2 ring-lamp")}>
       <div className="relative aspect-[16/10]">
         <img src={assetUrl(url, { w: 960 })} alt={title} className={cn("size-full object-cover", muted && "saturate-[.6]")} loading="lazy" />
         {typeof fit === "number" && (
-          <span className={cn("absolute left-3 top-3 rounded-full px-3 py-1 text-small font-semibold shadow-e2", muted ? "bg-surface text-ink-2" : "taste-gradient text-white")}>
+          <span className={cn("absolute left-3 top-3 rounded-full px-3 py-1 text-small font-semibold shadow-e2", muted ? "bg-surface text-ink-2" : "bg-dusk-1 text-lamp-soft")}>
             Taste fit {fit}%{typeof delta === "number" && delta > 0 ? `  ·  +${delta} points` : ""}
           </span>
         )}
@@ -241,7 +241,7 @@ function RoomCard({ index, room, people, ev, project, editor, onProjectChange }:
         {busy && (
           <div className="absolute inset-0 grid place-items-center bg-ink/35 backdrop-blur-[2px]">
             <span className="inline-flex items-center gap-2 rounded-full bg-surface px-3 py-1.5 text-small text-ink shadow-e2">
-              <span className="taste-gradient size-2 animate-breathe rounded-full" />
+              <span className="size-2 animate-breathe rounded-full bg-lamp" />
               {busy === "image" ? "Picturing the room…" : "Restyling for their taste…"}
             </span>
           </div>
@@ -300,7 +300,7 @@ function RoomCard({ index, room, people, ev, project, editor, onProjectChange }:
 export function TasteBadge({ live, onDark }: { live?: boolean; onDark?: boolean }) {
   return (
     <span className={cn("inline-flex items-center gap-2 rounded-full px-3 py-1 text-small font-medium", onDark ? "bg-white/15 text-white backdrop-blur" : "bg-surface text-ink shadow-e1")}>
-      <span className={cn("size-2 rounded-full", live && "animate-breathe", onDark ? "bg-white" : "taste-gradient")} />
+      <span className={cn("size-2 rounded-full", live && "animate-breathe", onDark ? "bg-white" : "bg-lamp")} />
       Naqsha Taste
     </span>
   );

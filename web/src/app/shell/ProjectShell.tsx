@@ -331,7 +331,7 @@ function Shell({ project, view }: { project: Project; view: ViewId }) {
       ) : (
         <div className="pointer-events-none absolute inset-x-0 top-0 z-[31] grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-3 p-[var(--chrome)]">
           <div className="flex min-w-0 justify-start">
-            <TitleCapsule project={project} tone={tone} onDetails={() => setDetails(true)} />
+            <TitleCapsule project={project} tone={tone} onDetails={() => setDetails(true)} view={view} />
           </div>
           {/* Always a centre cell, even when the switch has nothing to show, so People keeps the right column. */}
           <div className="flex justify-center">

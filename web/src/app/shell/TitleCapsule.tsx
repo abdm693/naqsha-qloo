@@ -164,7 +164,7 @@ export function TitleCapsule({
             {project.name}
           </button>
         )}
-        {!compact && status && (
+        {!compact && status && view !== "taste" && (
           <span className={cn("tabular truncate text-[12px] font-medium leading-[14px]", hud ? "text-hud-ink-2" : "text-ink-3")}>
             {status}
           </span>
