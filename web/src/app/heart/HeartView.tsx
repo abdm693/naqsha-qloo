@@ -215,6 +215,13 @@ function Reveal({ project, onDone, onFail }: { project: Project; onDone(p: Proje
     return () => { clearTimeout(a); clearTimeout(b); };
   }, [result, lit, people.length, still]);
 
+  useEffect(() => {
+    if (!words || !result) return;
+    let on = true;
+    api.traceHeart(project.id).then((p) => { if (on) setResult(p); }).catch(() => {});
+    return () => { on = false; };
+  }, [words, !!result, project.id]);
+
   const h = result?.heart;
   return (
     <>
@@ -227,7 +234,8 @@ function Reveal({ project, onDone, onFail }: { project: Project; onDone(p: Proje
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}>
                 <p className="text-body-lg text-dusk-ink-2">{levelLine(h.level)}</p>
                 <h1 className="mt-1 font-display text-[clamp(3.2rem,11vw,6rem)] leading-[.98] tracking-[-.035em] text-lamp-soft">{joinWords(h.words)}</h1>
-                <div className="mt-5"><LampButton onClick={() => onDone(result!)}>See your home</LampButton></div>
+                <Threads heart={h} />
+                <div className="mt-6"><LampButton onClick={() => onDone(result!)}>See your home</LampButton></div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -235,6 +243,34 @@ function Reveal({ project, onDone, onFail }: { project: Project; onDone(p: Proje
       </section>
       <Scene windows={people.map((p, i) => ({ id: p.id, name: p.name, lit: i < lit }))} heart={heart} title={heart ? "Every light is on, and the heart of the house is lit" : "The windows are coming on"} />
     </>
+  );
+}
+
+/** The proof of the reveal: the one thing of each person's that led to the word. */
+function Threads({ heart }: { heart: NonNullable<Project["heart"]> }) {
+  if (!heart.threads?.length) return null;
+  return (
+    <motion.ul initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }} className="mt-5 flex flex-col gap-2.5">
+      {heart.threads.map((t) => {
+        const things = new Map<string, { image?: string | null; people: string[] }>();
+        t.hands.forEach((h) => {
+          const x = things.get(h.name) ?? { image: h.image, people: [] };
+          x.people.push(h.person);
+          things.set(h.name, x);
+        });
+        return (
+          <li key={t.word} className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            {heart.threads!.length > 1 && <span className="w-full text-small text-dusk-ink-2 sm:w-28">{t.word[0].toUpperCase() + t.word.slice(1)}</span>}
+            {[...things].map(([name, x]) => (
+              <span key={name} className="inline-flex items-center gap-2 text-body text-dusk-ink">
+                <Thumb src={x.image} name={name} size={30} />
+                <span>{name} <span className="text-dusk-ink-2">{x.people.join(", ")}</span></span>
+              </span>
+            ))}
+          </li>
+        );
+      })}
+    </motion.ul>
   );
 }
 
@@ -255,6 +291,12 @@ function Home({ project, editor, onChange, onAgain }: { project: Project; editor
   const [building, setBuilding] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const designed = project.concepts.some((c) => c.from_taste);
+  useEffect(() => {
+    if (!editor || h.threads?.length) return;
+    let on = true;
+    api.traceHeart(project.id).then((p) => { if (on) onChange({ ...project, heart: p.heart }); }).catch(() => {});
+    return () => { on = false; };
+  }, [editor, project.id, h.threads?.length]);
 
   async function build() {
     setError(null);
@@ -280,7 +322,7 @@ function Home({ project, editor, onChange, onAgain }: { project: Project; editor
         <div className="relative z-10">
           <p className="text-body-lg text-dusk-ink-2">{levelLine(h.level)}</p>
           <h1 className="mt-1 font-display text-[clamp(3.2rem,11vw,6rem)] leading-[.98] tracking-[-.035em] text-lamp-soft">{joinWords(h.words)}</h1>
-          {h.line && <p className="mt-4 max-w-[34rem] text-body-lg text-dusk-ink">{h.line}</p>}
+          <Threads heart={h} />
           {editor && (
             <div className="mt-6 flex flex-wrap items-center gap-5">
               {designed

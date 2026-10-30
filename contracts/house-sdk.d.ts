@@ -49,6 +49,8 @@ export type MaterialPreset =
   | "fabric" | "velvet" | "leather" | "linen"
   // misc
   | "ceramic_white" | "plastic"
+  // pitched roofs
+  | "roof_shingle" | "roof_tile" | "roof_slate" | "roof_metal"
   // outdoor
   | "grass" | "paving" | "gravel" | "soil" | "water" | "asphalt";
 
@@ -152,6 +154,10 @@ export interface HouseSDK {
    * that covers the top flight with its door AT the top landing, at roof level; openings only in the wall between the
    * two rooms they name, on their own level. plan.roof.water_tank.material "plastic" = blue ribbed tank, "concrete" =
    * rendered RCC box; plan.roof.solar keeps a roof area clear ("panels" also builds tilted rows on a steel frame).
+   * A pitched roof comes from plan.roof.pitched (the place's usual roof); pass `roof` only to change it: gable or hip,
+   * over the top storey's walls, eaves at the top of the parapet (it reads as a knee wall), gable ends in the exterior
+   * wall material. The roof level is then an attic: no stair tower, tank or solar frame. `roof: { form: "flat" }` keeps
+   * the flat roof with its parapet.
    * Example: s.structure({ exterior_wall: "plaster_white", interior_wall: { preset: "paint", color: "#efe9df" },
    *   floors: { default: "porcelain_tile", drawing: "marble_white", bedroom: "wood_floor_oak", bath: "ceramic_tile",
    *   porch: "paving" }, window_frame: "metal_black", door: "wood_teak", railing: "glass", boundary_wall: "plaster_grey",
@@ -170,6 +176,17 @@ export interface HouseSDK {
     boundary_wall?: MaterialSpec;
     gate?: MaterialSpec;
     plinth?: MaterialSpec;
+    roof?: {
+      form: "flat" | "gable" | "hip";
+      pitch_deg?: number; // default 30
+      /** "along_road": slopes face the road. "across_road": a gable end faces the road. A long span turns the ridge. */
+      ridge?: "along_road" | "across_road" | "auto";
+      /** a MaterialSpec ("roof_shingle", "roof_tile", "roof_slate", "roof_metal", or { preset, color }) or plain words */
+      material?: MaterialSpec | string;
+      overhang_ft?: number; // eaves, default 1.5; cut back at a party wall and the plot edge
+      fascia?: MaterialSpec;
+      soffit?: MaterialSpec;
+    };
   }): void;
 
   room(id: string): RoomHandle;
@@ -266,8 +283,13 @@ export interface HouseSDK {
     tree(at: Pt, o?: { kind?: "palm" | "ashoka" | "neem" | "ornamental" | "bush"; height_ft?: number }): void;
     hedge(from: Pt, to: Pt, o?: { height_ft?: number }): void;
     /** Street, kerb and pavement in front of the plot (y < 0), plus simple neighbouring houses for context
-     *  (tagged kind "context": viewers ghost them when they block the view). */
-    street(o?: { road_width_ft?: number; neighbours?: boolean; streetlights?: boolean }): void;
+     *  (tagged kind "context": viewers ghost them when they block the view). The neighbours follow plan.site.street: in a
+     *  row or standing apart, with the place's roofs and walls. The other options override it; usually pass none. */
+    street(o?: {
+      road_width_ft?: number; neighbours?: boolean; streetlights?: boolean;
+      form?: "row" | "detached" | "semi-detached"; side_gap_ft?: number; storeys?: number;
+      roof?: { form: "flat" | "gable" | "hip"; pitch_deg?: number; ridge?: string };
+    }): void;
   };
 
   lights: {

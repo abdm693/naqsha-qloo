@@ -61,6 +61,8 @@
 - An item that breaks a rule is slid along, made a slim column against the boundary wall, moved into a wider lawn or yard nearby, or left out (a hedge keeps the stretches that break none), with a warning in the build log.
 
 ## Roof
+- **Pitched roofs**: `plan.roof.pitched` (gable or hip) is the place's usual roof, and `s.structure()` builds it from the plan. Pass `roof` in `s.structure` to change its material, pitch, overhang or ridge, or `roof: { form: "flat" }` to drop it. It covers the bounding rectangle of the top storey's enclosed rooms, so a one-storey wing keeps a flat roof with a parapet. The eaves start at the parapet top; what the plan calls the parapet is a knee wall under them, and `s.face(side).top_h_ft` still gives its top, so cladding ends at the eaves. Gable ends take the exterior wall material. The roof level becomes an attic: no stair tower, roof door, tank, solar frame or roof terrace; furnish nothing there. Overhangs stop at party walls and the plot edge.
+- `plan.site.boundary_wall.front_height_ft` 0 is an open front: no front wall, no gates or gate pillars (the plan's gates still mark the way in), and the side walls start level with the house. Don't add a gate or front wall in the facade sections then; use `boundary_wall: "wood_cladding"` for timber fences.
 - `plan.roof.water_tank.material`: "plastic" (blue ribbed tank on a pad) or "concrete" (rendered RCC box). Do not model your own tank.
 - `plan.roof.solar`: the engine keeps its area clear ("panels" also builds the panel rows). Keep the roof clear: no domes, cupolas, chhatris, minarets or pergolas unless the brief asks; they are reported when they stand in the solar area.
 

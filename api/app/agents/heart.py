@@ -27,14 +27,41 @@ tastes truly share. Choose what will become the heart of their home. JSON only:
 Plain, warm English. Use only words you are given for the heart. No slogans, no "not X but Y". Never mention data, tags or scores."""
 
 
-async def _reading(ids: list[str]) -> set[str]:
+async def _reading(ids: list[str]) -> dict[str, dict]:
+    """Taste Analysis for a set of favourites: {lowercase word: {name, affinity}}."""
     data = await qloo.insights("urn:tag", take=50, signal__interests__entities=ids, filter__tag__types=qloo.DESIGN_TAGS + qloo.PLACE_TAGS,
                                diversify__by="subtype", diversify__take=12)
-    return {t["name"].strip() for t in qloo._tags(data) if t.get("name") and t["name"].strip().lower() not in qloo.UNHELPFUL}
+    out: dict[str, dict] = {}
+    for t in qloo._tags(data):
+        name = (t.get("name") or "").strip()
+        if name and name.lower() not in qloo.UNHELPFUL and name.lower() not in out:
+            out[name.lower()] = {"name": name, "affinity": t.get("affinity") or 0}
+    return out
 
 
-def _fold(words: set[str]) -> dict[str, str]:
-    return {w.lower(): w for w in sorted(words)}
+async def _threads(words: list[str], rows: list[dict]) -> list[dict]:
+    """The proof of the reveal: for each word, the one thing of each person's that carries it, found by reading each favourite
+    on its own. Someone whose word only appears across their favourites together simply isn't shown."""
+    sem = asyncio.Semaphore(5)
+
+    async def alone(i: str) -> tuple[str, dict]:
+        async with sem:
+            try:
+                return i, await _reading([i])
+            except qloo.QlooError as e:
+                log.warning("reading %s failed: %s", i, e)
+                return i, {}
+    read = dict(await asyncio.gather(*[alone(i) for i in {i for r in rows for i in r["ids"]}]))
+    out = []
+    for w in words:
+        k, hands = w.lower(), []
+        for r in rows:
+            best = max((i for i in r["ids"] if k in read.get(i, {})), key=lambda i: read[i][k]["affinity"], default=None)
+            if best:
+                hands.append({"person": r["name"], "name": r["loved"][best]["name"], "image": r["loved"][best].get("image")})
+        if hands:
+            out.append({"word": w, "hands": hands})
+    return out
 
 
 async def read(people: list[dict], home: dict) -> dict:
@@ -42,21 +69,21 @@ async def read(people: list[dict], home: dict) -> dict:
     resolved = await asyncio.gather(*[qloo.resolve([{**f, "who": p["name"]} for f in p.get("favourites") or []]) for p in people])
     rows = []
     for p, items in zip(people, resolved):
-        ids = [r["entity"]["id"] for r in items if r.get("entity")]
-        rows.append({"id": p["id"], "name": p["name"], "ids": ids, "named": [r["name"] for r in items], "words": {}})
-    got = await asyncio.gather(*[_reading(r["ids"]) if r["ids"] else asyncio.sleep(0, set()) for r in rows], return_exceptions=True)
+        loved = {r["entity"]["id"]: {"name": r["name"], "image": r.get("image") or r["entity"].get("image")} for r in items if r.get("entity")}
+        rows.append({"id": p["id"], "name": p["name"], "ids": list(loved), "loved": loved, "named": [r["name"] for r in items], "words": {}})
+    got = await asyncio.gather(*[_reading(r["ids"]) if r["ids"] else asyncio.sleep(0, {}) for r in rows], return_exceptions=True)
     for r, w in zip(rows, got):
         if isinstance(w, Exception):
             log.warning("reading %s failed: %s", r["name"], w)
-            w = set()
-        r["words"] = _fold(w)
+            w = {}
+        r["words"] = w
     rows = [r for r in rows if r["words"]] or rows
     if not any(r["words"] for r in rows):
-        return {"words": [], "line": None, "room": None, "level": "none", "people": [], "between": [], "at": db.now()}
+        return {"words": [], "line": None, "room": None, "level": "none", "people": [], "between": [], "threads": [], "at": db.now()}
 
     keys = [set(r["words"]) for r in rows]
     shared, level = set.intersection(*keys), "all"
-    pairs = [{"names": [a["name"], b["name"]], "words": sorted(a["words"][k] for k in set(a["words"]) & set(b["words"]))}
+    pairs = [{"names": [a["name"], b["name"]], "words": sorted(a["words"][k]["name"] for k in set(a["words"]) & set(b["words"]))}
              for a, b in combinations(rows, 2)]
     if not shared and len(rows) > 2:  # the words most of them share
         counts: dict[str, int] = {}
@@ -68,13 +95,15 @@ async def read(people: list[dict], home: dict) -> dict:
             shared, level = {w for w, n in counts.items() if n == top}, "most"
     if not shared:  # nothing in common by name: how they read as one family
         together = await _reading(list(dict.fromkeys(i for r in rows for i in r["ids"])))
-        shared, level = set(_fold(together)), "together"
-    names = {k: next(r["words"][k] for r in rows if k in r["words"]) if any(k in r["words"] for r in rows) else k for k in shared}
+        shared, level = set(together), "together"
+        for r in rows:
+            r["words"] = {**together, **r["words"]}
+    names = {k: next(r["words"][k]["name"] for r in rows if k in r["words"]) for k in shared}
     heart_words = sorted(names.values())
     own = []
     for i, r in enumerate(rows):
         others = set().union(*[k for j, k in enumerate(keys) if j != i]) if len(rows) > 1 else set()
-        own.append({"name": r["name"], "only": sorted(r["words"][k] for k in set(r["words"]) - others)[:14], "loves": r["named"][:6]})
+        own.append({"name": r["name"], "only": sorted(r["words"][k]["name"] for k in set(r["words"]) - others)[:14], "loves": r["named"][:6]})
     prompt = (f"THE HOME: {json.dumps(home)}\nHEART WORDS: {', '.join(heart_words[:30])}\nWHAT EACH PERSON HAS OF THEIR OWN: {json.dumps(own)}\n"
               f"WHAT PAIRS SHARE: {json.dumps(pairs)[:1500]}")
     out: dict = {}
@@ -91,7 +120,16 @@ async def read(people: list[dict], home: dict) -> dict:
                         "line": str(by.get(r["name"], {}).get("line") or "")[:100] or None} for r in rows],
             "between": [{"names": b["names"], "space": str(b.get("space") or "")[:40]} for b in out.get("between") or []
                         if isinstance(b, dict) and b.get("names") and b.get("space")][:3],
-            "shared": heart_words[:12], "at": db.now()}
+            "threads": [], "shared": heart_words[:12], "at": db.now()}
+
+
+async def trace(people: list[dict], words: list[str]) -> list[dict]:
+    """Which of each person's favourites carries each heart word. Slower than the words, so it arrives just after them."""
+    resolved = await asyncio.gather(*[qloo.resolve([{**f, "who": p["name"]} for f in p.get("favourites") or []]) for p in people])
+    rows = [{"name": p["name"], "ids": [r["entity"]["id"] for r in items if r.get("entity")],
+             "loved": {r["entity"]["id"]: {"name": r["name"], "image": r.get("image") or r["entity"].get("image")} for r in items if r.get("entity")}}
+            for p, items in zip(people, resolved)]
+    return await _threads(words, rows)
 
 
 SKIP_NEAR = {"convention center", "meeting planning service", "hotel", "resort hotel", "tourist attraction", "lake", "park", "shopping mall",

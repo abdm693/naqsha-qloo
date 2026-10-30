@@ -122,6 +122,9 @@ export interface Roof {
   water_tank?: { rect: Rect; height_ft: number; material?: "plastic" | "concrete" };
   /** Rooftop solar: "ready" keeps a clear, unshaded area; "panels" also places panel rows. Rect = reserved array area. */
   solar?: { mode: "ready" | "panels"; rect?: Rect };
+  /** Set by Naqsha from the place's home profile; leave it out. A pitched roof over the top storey: the parapet becomes the
+   *  knee wall and the roof level an attic, so no room, tank or solar goes on it. */
+  pitched?: { form: "gable" | "hip"; pitch_deg: number; ridge?: string; material?: string; overhang_ft?: number };
 }
 
 export interface Gate {
@@ -138,12 +141,23 @@ export interface Site {
   road_width_ft?: number;
   authority: Authority;
   scheme?: string; // e.g. "Johar Town", "DHA Phase 6"
-  city: string; // "Lahore"
+  city: string; // "Lahore", "Austin"
   coordinates?: { lat: number; lng: number };
   /** Setbacks the design applies (≥ the LDA minimums); side setbacks are named left/right. */
   setbacks_ft: { front: number; rear: number; left: number; right: number };
   boundary_wall: { front_height_ft: number; side_height_ft: number; rear_height_ft: number };
   gates: Gate[];
+  /** Set by Naqsha from the place's home profile; leave it out. How the neighbouring houses stand, for the 3D street. */
+  street?: {
+    form?: "row" | "detached" | "semi-detached";
+    side_gap_ft?: number;
+    setback_ft?: number;
+    storeys?: number;
+    front_wall?: boolean;
+    roof_tank?: boolean;
+    walls?: string[];
+    roof?: { form?: string; pitch_deg?: number; ridge?: string };
+  };
 }
 
 export interface Style {

@@ -113,6 +113,8 @@ export interface Api {
   answerLink(token: string, favourites: Pick[]): Promise<HomeLink>;
   /** Find what the family shares. Returns the project. */
   readHeart(pid: string): Promise<Project>;
+  /** Which of each person's favourites led to the heart. Returns the project. */
+  traceHeart(pid: string): Promise<Project>;
   /** Read the neighbourhood (map, feel, ideas) for the brief's place, or the one given. Returns the project. */
   readLocality(pid: string, body?: { location?: string }): Promise<Project>;
   /** Night versions of concepts (same camera), streamed as `concept` events with night_url filled in. */
@@ -282,6 +284,7 @@ const realApi: Api = {
   openLink: (token) => http("GET", `/link/${encodeURIComponent(token)}`),
   answerLink: (token, favourites) => http("POST", `/link/${encodeURIComponent(token)}`, { favourites }),
   readHeart: (pid) => http("POST", `${p(pid)}/heart`),
+  traceHeart: (pid) => http("POST", `${p(pid)}/heart/trace`),
   conceptsNight: (pid, body, handlers, opts) => stream(`${p(pid)}/concepts/night`, body, handlers, { idleTimeoutMs: 120_000, ...opts }),
   selectConcept: (pid, cid) => http("POST", `${p(pid)}/concepts/${e(cid)}/select`),
 

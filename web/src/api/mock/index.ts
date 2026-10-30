@@ -336,6 +336,9 @@ export const mockApi: Api = {
     save();
     return clone(p);
   },
+  async traceHeart(pid) {
+    return clone(editable(pid));
+  },
   async readLocality(pid, body) {
     await latency(1400);
     const p = editable(pid);

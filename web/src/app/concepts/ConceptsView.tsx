@@ -196,14 +196,6 @@ export function ConceptsView({ project, onProjectChange }: { project: Project; o
   );
 
   const brief = project.brief;
-  const chips = [
-    brief?.plot ? (brief.plot.corner ? "Corner" : "Mid-row") : null,
-    brief?.facing ? `Faces ${FACING_LABEL[brief.facing]?.toLowerCase()}` : null,
-    brief?.solar && brief.solar !== "none" ? solarLabel(brief.solar) : null,
-    tankLabel(brief?.water_tank),
-    brief?.style ? sentenceCase(brief.style) : null,
-  ].filter(Boolean) as string[];
-
   const pendingRoots = run && !run.baseId ? run.slots.filter((s) => s.status !== "done") : [];
   const pendingRemix = run && run.baseId ? run.slots.filter((s) => s.status !== "done") : [];
   const chosen = project.selected_concept_id;
@@ -217,10 +209,9 @@ export function ConceptsView({ project, onProjectChange }: { project: Project; o
         <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
           <div className="min-w-0">
             <h1 className="text-title text-ink">Concepts</h1>
-            {chips.length > 0 && <p className="mt-1 text-[13.5px] text-ink-3">{chips.join(" · ")}</p>}
             {run?.running && run.note && (
               <p className="mt-2 inline-flex items-center gap-2 rounded-full bg-surface px-3 py-1 text-[13px] text-ink shadow-e1" aria-live="polite">
-                <span className="taste-gradient size-2 animate-breathe rounded-full" /> {run.note}
+                <span className="size-2 animate-breathe rounded-full bg-accent" /> {run.note}
               </p>
             )}
           </div>
@@ -439,26 +430,16 @@ function Tile({ l, light, nightShown, nightFailed, chosen, onOpen, small }: { l:
           <span className="font-medium">{l.label}</span>
           <span className="text-ink-3"> · {l.name}</span>
         </span>
+        {!small && !chosen && typeof l.concept.taste_fit?.score === "number" && (
+          <span className="shrink-0 text-[13px] font-medium text-ink-2">{l.concept.taste_fit.score}% you</span>
+        )}
         {chosen && (
           <span className="inline-flex shrink-0 items-center gap-1.5 text-[13px] font-medium text-accent">
-            <span className="size-1.5 rounded-full bg-accent" /> Chosen
+            <span className="size-1.5 rounded-full bg-accent" /> Chosen{typeof l.concept.taste_fit?.score === "number" ? ` · ${l.concept.taste_fit.score}% you` : ""}
           </span>
         )}
         {light === "night" && nightFailed && <span className="shrink-0 text-[12.5px] text-ink-3">Night view unavailable</span>}
       </figcaption>
-      {!small && typeof l.concept.taste_fit?.score === "number" && (
-        <p className="mt-1 px-0.5 text-[12.5px] text-ink-3">
-          <span className="font-semibold text-ink">Taste fit {l.concept.taste_fit.score}%</span>
-          {" "}· {l.concept.taste_fit.items.filter((x) => x.status === "present").length} of {l.concept.taste_fit.judged} of your choices visible
-        </p>
-      )}
-      {!small && l.concept.from_taste && l.concept.why && (
-        <p className="mt-1 inline-flex items-center gap-1.5 px-0.5 text-[12.5px] font-medium text-ink-2">
-          <span className="size-1.5 rounded-full" style={{ backgroundImage: "linear-gradient(120deg, var(--color-taste-1, #E8A33D), var(--color-taste-2, #D9486B), var(--color-taste-3, #6B3FA0))" }} />
-          {l.concept.why}
-        </p>
-      )}
-      {!small && l.concept.summary && <p className="mt-0.5 line-clamp-2 px-0.5 text-[13px] leading-[18px] text-ink-3">{l.concept.summary}</p>}
     </motion.figure>
   );
 }

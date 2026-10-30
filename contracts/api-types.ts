@@ -10,6 +10,14 @@ export interface Brief {
   /** Researched building rules (Tavily + Gemini) when the authority isn't one Naqsha ships rules for. */
   rules_pack?: RulesPack;
   city: string;
+  country?: string;
+  /** What the profile says homes are like here (absent until the place has been read). */
+  local?: BriefLocal;
+  /** How plot sizes are said: what the family spoke in, else brief.local.units. */
+  units?: PlotUnits;
+  /** Only when the family asked: these override the place's usual form and roof. */
+  home_form?: HomeForm;
+  roof_form?: RoofForm;
   authority: Authority;
   scheme?: string;
   coordinates?: { lat: number; lng: number };
@@ -209,10 +217,55 @@ export interface Project {
   house_taste_fit?: (TasteFit & { version_id: string }) | null;
   /** The neighbourhood, read as soon as the place is known. */
   locality?: Locality | null;
+  /** What a family home is in this place: researched, cached by place, read by the concepts, plan, 3D and photos. */
+  homes?: HomeProfile | null;
   /** Who lives here and who has answered. */
   family?: Family | null;
   /** What they share: the heart of the home. */
   heart?: Heart | null;
+}
+
+// ---- the local home profile (agents/homes.py) --------------------------------------------------------------------------
+export type HomeForm = "detached" | "semi-detached" | "row" | "compound" | "townhouse";
+export type RoofForm = "flat" | "gable" | "hip";
+export type PlotUnits = "marla" | "sqft" | "sqm";
+export interface HomeProfile {
+  key?: string;
+  place: string;
+  country?: string;
+  /** One plain line on the kind of home that is usual here. */
+  summary: string;
+  authority?: { code: string; name: string } | null;
+  style?: string;
+  form?: { type: HomeForm; street_relation: string; side_gap_ft: number | null; front_setback_ft: number | null };
+  roof?: { form: RoofForm; pitch_deg: number; material: string; ridge: string; overhang_ft: number | null; stair_tower: boolean; tower_name: string };
+  walls?: string[];
+  lot?: { width_ft: number; depth_ft: number } | null;
+  storeys?: number;
+  bedrooms?: number;
+  parking?: { type: string; cars: number; description: string };
+  outdoor?: { front: string; back: string; porch: string; front_boundary: string; boundary: string };
+  rooms?: { living_room: string; spaces: string[]; include: string[]; avoid: string[]; planning: string; touches: string[] };
+  services?: { roof_tank: "none" | "plastic" | "concrete"; basement: boolean; heating: string; cooling: string };
+  climate?: string;
+  planting?: string;
+  units?: PlotUnits;
+  researched?: boolean;
+  sources?: { title: string; url: string }[];
+}
+/** brief.local: the profile's decided facts, for what can't wait for the whole profile. */
+export interface BriefLocal {
+  units?: PlotUnits;
+  form?: HomeForm;
+  side_gap_ft?: number;
+  roof?: { form: RoofForm; pitch_deg?: number; ridge?: string; material?: string; overhang_ft?: number | null };
+  stair_tower?: boolean;
+  parking?: string;
+  cars?: number;
+  front_boundary?: string;
+  roof_tank?: string;
+  living_room?: string;
+  lot?: { width_ft: number; depth_ft: number };
 }
 
 // ---- taste (Qloo) ----------------------------------------------------------------------------------------------------
@@ -249,6 +302,8 @@ export interface Heart {
   level: "all" | "most" | "together" | "none";
   people: { id: string; name: string; room?: string | null; line?: string | null }[];
   between: { names: string[]; space: string }[];
+  /** For each word, the one thing of each person's that carries it. */
+  threads?: { word: string; hands: { person: string; name: string; image?: string | null }[] }[];
   near?: { name: string; image?: string | null; category?: string | null }[];
   at: string;
 }

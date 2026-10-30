@@ -685,6 +685,21 @@ async def read_heart(pid: str, me: Identity = Depends(auth.identity)):
     return public(await db.update_project(pid, heart=found, brief=new_brief, brief_changed=bool(p.get("versions"))), role)
 
 
+@app.post("/api/projects/{pid}/heart/trace")
+async def trace_heart(pid: str, me: Identity = Depends(auth.identity)):
+    """The proof under the words: which of each person's favourites led there."""
+    p, role = await access(pid, me, "edit")
+    found = p.get("heart") or {}
+    if not found.get("words"):
+        raise HTTPException(400, "There is no heart yet.")
+    if found.get("threads"):
+        return public(p, role)
+    people = [m for m in (p.get("family") or {}).get("people") or [] if m.get("favourites")]
+    threads = await heart.trace(people, found["words"])
+    fresh = await db.get_project(pid) or p
+    return public(await db.update_project(pid, heart={**(fresh.get("heart") or found), "threads": threads}), role)
+
+
 # --- the neighbourhood ------------------------------------------------------------------------------------------------
 class LocalityBody(BaseModel):
     location: str | None = None
