@@ -103,7 +103,7 @@ await check("family", async (p) => {
   await p.getByRole("radio", { name: "Taste" }).first().click();
   const cards = p.locator("section").filter({ has: p.locator('input[aria-label="Who"]') });
   const add = async (card, field, value) => {
-    const inp = cards.nth(card).locator(`xpath=.//div[div[normalize-space()="${field}"]]//input`).first();
+    const inp = cards.nth(card).locator(`xpath=.//div[normalize-space()="${field}"]/following-sibling::div[1]//input`).first();
     await inp.fill(value); await inp.press("Enter");
   };
   await add(0, "Places you loved", "Istanbul"); await add(0, "Music", "Abida Parveen"); await add(0, "Films and shows", "Coke Studio");
