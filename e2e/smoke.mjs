@@ -95,10 +95,9 @@ await check("family", async (p) => {
   const box = p.getByRole("textbox").first();
   await box.fill("10 marla mid-row plot in DHA Phase 6 Lahore, facing north. Two storeys, four bedrooms, parents downstairs.");
   await box.press("Enter");
-  const decide = p.getByRole("button", { name: /Decide everything for me/ }).first();
-  await decide.waitFor({ timeout: 120000 }).then(() => decide.click()).catch(() => {});
-  await p.getByRole("button", { name: /Add your taste/ }).first().waitFor({ timeout: 180000 });
-  await p.getByRole("button", { name: /Add your taste/ }).first().click();
+  // once the brief has a place, go straight to Taste (it can run before the brief is finished)
+  await p.getByText("DHA Phase 6").first().waitFor({ timeout: 120000 });
+  await p.getByRole("radio", { name: "Taste" }).first().click();
   const cards = p.locator("section").filter({ has: p.locator('input[aria-label="Who"]') });
   const add = async (card, field, value) => {
     const inp = cards.nth(card).locator("div", { hasText: field }).locator("input").last();
