@@ -42,8 +42,11 @@ await check("landing", async (p) => {
 await check("sample", async (p) => {
   await p.goto(BASE + "/");
   await p.getByRole("button", { name: "Explore a sample home" }).click();
-  await p.waitForURL(/\/house/, { timeout: 60000 });
-  await p.getByText(/LDA|CDA/).first().waitFor({ timeout: 60000 });
+  await p.waitForURL(/\/taste/, { timeout: 60000 });
+  await p.getByText("Taste by Qloo").first().waitFor({ timeout: 60000 });
+  await p.getByRole("radio", { name: "House" }).first().click();
+  await p.waitForURL(/\/house/, { timeout: 30000 });
+  await p.getByText(/LDA|CDA|local rules/).first().waitFor({ timeout: 60000 });
   await p.waitForFunction(() => !document.body.innerText.includes("Assembling your home"), null, { timeout: 180000 });
 }, page);
 

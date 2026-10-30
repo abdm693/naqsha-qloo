@@ -49,7 +49,7 @@ export async function openSampleHome(navigate: (to: string) => void, sampleId?: 
       return false;
     }
     const p = await api.cloneProject(id);
-    navigate(`/app/p/${p.id}/${p.current_version_id ? "house" : ""}`);
+    navigate(`/app/p/${p.id}/${p.taste ? "taste" : p.current_version_id ? "house" : ""}`);  // the family's taste first: it is what shaped the house
     return true;
   } catch (e) {
     toast.error("Couldn't open the sample home", e);
