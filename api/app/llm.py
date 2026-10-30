@@ -152,7 +152,7 @@ def parse_json(text: str):
         raise
 
 
-START_TIMEOUT = 420.0   # waiting for the stream to open (includes the client's own retries)
+START_TIMEOUT = 180.0   # waiting for the stream to open (includes the client's own retries)
 FIRST_CHUNK_TIMEOUT = 240.0
 IDLE_TIMEOUT = 90.0     # between chunks once tokens are flowing (reasoning tokens count)
 

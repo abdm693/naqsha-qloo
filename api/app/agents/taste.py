@@ -253,6 +253,9 @@ async def explore(brief: dict, taste: dict, ev: Evidence, max_steps: int = 5) ->
                 result = {"ok": True}
             else:
                 calls += 1
+                # the agent may cite evidence ids (E3) where Qloo ids are needed
+                a["entity_ids"] = [ev.items[i]["id"] if i in ev.items and ev.items[i].get("id") else i for i in a.get("entity_ids") or []
+                                   if isinstance(i, str)]
                 try:
                     if name == "qloo_taste":
                         yield "step", {"id": f"x{calls}", "message": "Asking Qloo for more of the taste behind them", "tool": name}
@@ -269,7 +272,7 @@ async def explore(brief: dict, taste: dict, ev: Evidence, max_steps: int = 5) ->
                         where = a.get("location") or loc
                         kw = (a.get("keyword") or "").strip()
                         yield "step", {"id": f"x{calls}", "message": f"Looking for {kw or 'places'} in {where} that suit the family", "tool": name}
-                        tag_ids = [t["id"] for t in await qloo.find_tags(kw, take=6) if "place" in (t.get("type") or "")][:3] if kw else None
+                        tag_ids = [t["id"] for t in await qloo.find_tags(kw, take=6) if (t.get("type") or "").split(":")[2:3] in (["category"], ["genre"], ["offerings"]) and (t.get("type") or "").endswith(":place")][:3] if kw else None
                         fam = [v["id"] for v in ev.items.values() if v["eid"].startswith("E") and any("favourite" in x for x in v["via"])]
                         ps = await qloo.places_near(where, fam[:12], tag_ids, take=6)
                         result = [{"eid": ev.add("P", x, f"{kw or 'places'} in {where}"), "name": x["name"], "address": x.get("address"),
@@ -328,9 +331,15 @@ async def write(brief: dict, taste: dict, ev: Evidence) -> dict:
     prompt = (f"THE HOME: {json.dumps(home)}\nTHE FAMILY: {json.dumps(people)}\nLOCALITY: {_location(brief, taste) or 'unknown'}\n"
               f"EXTRA WORDS FROM THE FAMILY: {taste.get('notes') or '-'}\n\nEVIDENCE (Qloo):\n{ev.compact()}\n\nWrite the style brief.")
     out = None
-    async for kind, val in llm.stream_json(config.MODEL_TASTE, prompt, WRITE_SYSTEM, max_tokens=12000, attempts=2, thinking="LOW"):
-        if kind == "result":
-            out = val[0]
+    for model, limit in ((config.MODEL_TASTE, 150), (config.MODEL_INTAKE, 120)):  # Argon, then Flash if Argon is slow or busy
+        try:
+            text = await asyncio.wait_for(llm.generate_text(model, prompt, system=WRITE_SYSTEM + "\n" + llm.NUM_RULE, max_tokens=12000,
+                                                            json_mode=True, thinking=False), timeout=limit)
+            out = llm.parse_json(text)
+            if out.get("headline"):
+                break
+        except Exception as e:
+            log.warning("style brief with %s failed: %r", model, e)
     return _clean(out or {}, ev)
 
 

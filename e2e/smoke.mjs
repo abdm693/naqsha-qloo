@@ -1,5 +1,6 @@
 // End-to-end checks of the deployed app as a guest, with Playwright (Chromium). Each check prints PASS/FAIL and leaves a
-// screenshot in e2e/out/. Usage: node smoke.mjs [base_url] [check ...]   checks: landing sample photos match drawing rules
+// screenshot in e2e/out/. Usage: node smoke.mjs [base_url] [check ...]
+// checks: landing sample taste match photos drawing rules family
 import { chromium } from "playwright";
 import fs from "node:fs";
 
@@ -33,7 +34,7 @@ page.on("pageerror", (e) => errors.push(e.message));
 await check("landing", async (p) => {
   await p.goto(BASE + "/");
   await p.getByRole("heading", { level: 1 }).waitFor();
-  for (const t of ["Start from your own drawing", "Rules for your city", "See it from every angle", "Nemotron"]) {
+  for (const t of ["Start from your own drawing", "Rules for your city", "Qloo"]) {
     await p.getByText(t, { exact: false }).first().waitFor({ timeout: 10000 });
   }
 }, page);
@@ -44,6 +45,15 @@ await check("sample", async (p) => {
   await p.waitForURL(/\/house/, { timeout: 60000 });
   await p.getByText(/LDA|CDA/).first().waitFor({ timeout: 60000 });
   await p.waitForFunction(() => !document.body.innerText.includes("Assembling your home"), null, { timeout: 180000 });
+}, page);
+
+await check("taste", async (p) => {
+  await p.getByRole("radio", { name: "Taste" }).or(p.getByRole("tab", { name: "Taste" })).first().click();
+  await p.getByText("Taste by Qloo").first().waitFor({ timeout: 30000 });
+  await p.getByText(/A room for each of you/).first().waitFor({ timeout: 30000 });
+  await p.getByText("Because").first().waitFor({ timeout: 30000 });
+  await p.goBack();
+  await p.waitForURL(/\/house/, { timeout: 30000 });
 }, page);
 
 await check("match", async (p) => {
@@ -77,6 +87,26 @@ await check("rules", async (p) => {
   await box.fill("We have a 10 marla plot in G-11 Islamabad, a CDA sector, 35 by 65 ft, mid-row, facing west. Two storeys, 3 bedrooms.");
   await box.press("Enter");
   await p.getByText(/researched on the web/).first().waitFor({ timeout: 180000 });
+}, page);
+
+await check("family", async (p) => {
+  // a new family: one message, then their favourites, read with Qloo into a style brief
+  await p.goto(BASE + "/app");
+  const box = p.getByRole("textbox").first();
+  await box.fill("10 marla mid-row plot in DHA Phase 6 Lahore, facing north. Two storeys, four bedrooms, parents downstairs.");
+  await box.press("Enter");
+  await p.getByRole("button", { name: /Add your taste/ }).first().waitFor({ timeout: 180000 });
+  await p.getByRole("button", { name: /Add your taste/ }).first().click();
+  const cards = p.locator("section").filter({ has: p.locator('input[aria-label="Who"]') });
+  const add = async (card, field, value) => {
+    const inp = cards.nth(card).locator("div", { hasText: field }).locator("input").last();
+    await inp.fill(value); await inp.press("Enter");
+  };
+  await add(0, "Places you loved", "Istanbul"); await add(0, "Music", "Abida Parveen"); await add(0, "Films and shows", "Coke Studio");
+  await add(1, "Places you loved", "Kyoto"); await add(1, "Films and shows", "Spirited Away");
+  await p.getByRole("button", { name: /Read our taste with Qloo/ }).first().click();
+  await p.getByText(/Found in Qloo/i).first().waitFor({ timeout: 60000 });
+  await p.getByText(/What your taste decided/).first().waitFor({ timeout: 300000 });
 }, page);
 
 console.log(errors.length ? `page errors: ${errors.slice(0, 5).join(" | ")}` : "no page errors");

@@ -1,4 +1,4 @@
-"""Run the planning loop (Nemotron on Token Factory) on a fixture brief, without Firestore. Usage: python scripts/try_plan.py brief.json out.json"""
+"""Run the planning loop (Gemini on Vertex AI) on a fixture brief, without Firestore. Usage: python scripts/try_plan.py brief.json out.json"""
 import asyncio, json, sys, time, logging
 from dotenv import load_dotenv
 load_dotenv("../.env")

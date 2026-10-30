@@ -7,7 +7,7 @@ export type Stage = "setup" | "concepts" | "planning" | "building" | "ready" | "
 export interface BriefPlot { width_ft: number; depth_ft: number; area_marla: number; corner: boolean }
 
 export interface Brief {
-  /** Researched building rules (Tavily + Nemotron) when the authority isn't one Naqsha ships rules for. */
+  /** Researched building rules (Tavily + Gemini) when the authority isn't one Naqsha ships rules for. */
   rules_pack?: RulesPack;
   city: string;
   authority: Authority;
@@ -99,7 +99,7 @@ export interface ConceptSpec { summary: string; palette: Record<string, string>;
 /** A photograph of the house as built, made from a capture of the 3D model at one camera angle. */
 export interface HouseView { angle: "front" | "corner" | "garden" | "aerial" | "interior"; label: string; url: string; model_url?: string; model?: string; created_at: string }
 
-/** How the 3D model compares with the chosen concept, feature by feature (Nemotron VL). */
+/** How the 3D model compares with the chosen concept, feature by feature (Gemini). */
 export interface ConceptMatch {
   score: number | null;
   summary: string;
@@ -111,7 +111,7 @@ export interface ConceptMatch {
   reverted?: { score: number | null; at?: string };
 }
 
-/** The family's own drawing, read room by room (Nemotron VL) and used as the starting layout. */
+/** The family's own drawing, read room by room (Gemini) and used as the starting layout. */
 export interface ImportedDrawing {
   images: string[];
   rooms: number;

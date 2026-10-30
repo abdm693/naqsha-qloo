@@ -1,4 +1,4 @@
-> **Note.** This design rationale was written while Naqsha was prototyped on Gemini. Every text and vision agent now runs on NVIDIA Nemotron via Nebius Token Factory; the model mapping, the new fixer agent, drawing import, rule research and the concept match are described in the [README](../README.md). The plan → rules → build-as-code design below is unchanged.
+> **Note.** This design rationale covers the core of Naqsha. This edition runs every agent on Gemini (Vertex AI) and adds the taste layer from Qloo's taste graph; see the [README](../README.md) for the taste agent, room styling and the model mapping.
 
 # Naqsha (working name): from an idea to a walkable, LDA-compliant 3D home
 
