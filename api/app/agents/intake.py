@@ -843,7 +843,7 @@ def summary(b: dict) -> str:
             f"{b.get('storeys')}-storey, {b.get('bedrooms')} bedrooms and {b.get('bathrooms')} baths, {b.get('style')}")
 
 
-AUTO_NAME_RE = re.compile(r"^\d+(\.\d+)?\s+(marla|kanal)\s+(home|house)(,\s*.+)?$", re.I)
+AUTO_NAME_RE = re.compile(r"^[\d.,× ]+\s*(marla|kanal|ft|sq ft)\s+(home|house)(,\s*.+)?$", re.I)
 
 
 def auto_name(project: dict, brief: dict) -> str | None:
@@ -859,8 +859,13 @@ def auto_name(project: dict, brief: dict) -> str | None:
     if not p:
         return None
     m = p["area_marla"]
-    size = marla_label(m)
-    where = brief.get("scheme") or {"DHA": "DHA Lahore", "BAHRIA": "Bahria Town"}.get(brief.get("authority") or "", brief.get("city") or "Lahore")
+    from .. import locale
+    if locale.is_pakistan(brief):
+        size = marla_label(m)
+        where = brief.get("scheme") or {"DHA": "DHA Lahore", "BAHRIA": "Bahria Town"}.get(brief.get("authority") or "", brief.get("city") or "Lahore")
+    else:  # outside Pakistan: the plot in feet and the neighbourhood and city ("40 × 100 ft home, Hyde Park, Austin")
+        size = f"{p.get('width_ft', 0):g} × {p.get('depth_ft', 0):g} ft" if p.get("width_ft") else f"{round(m * 272.25):,} sq ft"
+        where = ", ".join(x for x in (brief.get("scheme"), brief.get("city")) if x) or "your city"
     new = f"{size} home, {where}"
     return new if new != name else None
 
