@@ -11,6 +11,7 @@ History is replayed from the project's messages collection on every turn, so any
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 import logging
@@ -30,6 +31,7 @@ from . import homes, intake
 
 log = logging.getLogger("naqsha.setup")
 APP = "naqsha-setup"
+TURN_TIMEOUT_S = 150.0
 MAX_FOLLOWUPS = 1  # one judgment question before the setup goes ahead; everything else is an assumption they can change
 
 INSTRUCTION = """You are Naqsha, a calm, experienced architect setting up a new home with a family, anywhere in the world.
@@ -353,13 +355,14 @@ async def agent_turn(project: dict, brief: dict, before: dict, history: list[dic
     final_text = ""
     steps = 0
     try:
-        async for event in runner.run_async(user_id=pid, session_id=session.id, new_message=msg):
-            if event.get_function_calls():
-                steps += 1
-            if event.content and event.content.parts and not event.get_function_calls() and not event.get_function_responses():
-                final_text += "".join(p.text or "" for p in event.content.parts if not getattr(p, "thought", False))
-            if turn.reply or steps > 4:
-                break
+        async with asyncio.timeout(TURN_TIMEOUT_S):  # a model call that hangs must never leave a family staring at a spinner
+            async for event in runner.run_async(user_id=pid, session_id=session.id, new_message=msg):
+                if event.get_function_calls():
+                    steps += 1
+                if event.content and event.content.parts and not event.get_function_calls() and not event.get_function_responses():
+                    final_text += "".join(p.text or "" for p in event.content.parts if not getattr(p, "thought", False))
+                if turn.reply or steps > 4:
+                    break
     except Exception:
         log.exception("setup agent failed; falling back to the question bank")
     if turn.reply and turn.reply.get("text"):
