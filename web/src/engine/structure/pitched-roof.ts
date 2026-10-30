@@ -48,6 +48,7 @@ const SHELL_T = 0.35; // roof build-up, top surface to soffit
 const FASCIA = 0.6;
 const MAX_SPAN = 38; // no ordinary ridge spans more: the roof turns
 const MAX_RISE = 15;
+const WING_MIN = 6; // narrower than this, the strip is an eave, not a wing
 
 /** The roof asked for, from s.structure({ roof }) over plan.roof.pitched; null for a flat roof. Forgiving, like the SDK. */
 export function pitchSpec(asked: unknown, planned: unknown): PitchSpec | null {
@@ -134,6 +135,94 @@ export function poly(mb: MeshBuilder, pts: P3[], want: [number, number, number],
     else mb.vertex(p.x, p.y, p.z, n.x, n.y, n.z);
   }
   for (let i = 1; i + 1 < order.length; i++) mb.idx.push(base, base + i, base + i + 1);
+}
+
+export interface Wing { box: Box2; axis: RidgeAxis; open0: boolean; open1: boolean; side: "l" | "r" | "f" | "b" }
+
+/** The single-storey parts around the upper storey, each a rectangle for its own small gable. Its ridge runs along the wing, so
+ *  the slope falls to its eave against the upper wall and never crosses the windows there. Terraces and balconies stay open. */
+export function wingBoxes(core: Box2, rooms: Box2[], decks: Box2[]): Wing[] {
+  const far = 1e6;
+  const sides: { side: Wing["side"]; axis: RidgeAxis; area: Box2 }[] = [
+    { side: "l", axis: "y", area: { x0: -far, x1: core.x0, y0: -far, y1: far } },
+    { side: "r", axis: "y", area: { x0: core.x1, x1: far, y0: -far, y1: far } },
+    { side: "f", axis: "x", area: { x0: core.x0, x1: core.x1, y0: -far, y1: core.y0 } },
+    { side: "b", axis: "x", area: { x0: core.x0, x1: core.x1, y0: core.y1, y1: far } },
+  ];
+  const clip = (a: Box2, b: Box2): Box2 | null => {
+    const c = { x0: Math.max(a.x0, b.x0), x1: Math.min(a.x1, b.x1), y0: Math.max(a.y0, b.y0), y1: Math.min(a.y1, b.y1) };
+    return c.x1 - c.x0 > 0.5 && c.y1 - c.y0 > 0.5 ? c : null;
+  };
+  const wings: Wing[] = [];
+  for (const { side, axis, area } of sides) {
+    const parts = rooms.map((r) => clip(r, area)).filter((r): r is Box2 => !!r);
+    if (!parts.length) continue;
+    const box: Box2 = {
+      x0: side === "r" ? core.x1 : Math.min(...parts.map((r) => r.x0)), x1: side === "l" ? core.x0 : Math.max(...parts.map((r) => r.x1)),
+      y0: side === "b" ? core.y1 : Math.min(...parts.map((r) => r.y0)), y1: side === "f" ? core.y0 : Math.max(...parts.map((r) => r.y1)),
+    };
+    if (Math.min(box.x1 - box.x0, box.y1 - box.y0) < WING_MIN || decks.some((d) => clip(d, box))) continue;
+    wings.push({ box, axis, side, open0: false, open1: false });
+  }
+  // a front or back wing runs on into the side wing it meets, so the two slopes cross in a valley
+  for (const w of wings.filter((x) => x.axis === "x")) {
+    for (const n of wings.filter((x) => x.axis === "y" && x.box.y0 < w.box.y1 && x.box.y1 > w.box.y0)) {
+      if (n.side === "l") { w.box = { ...w.box, x0: (n.box.x0 + n.box.x1) / 2 }; w.open0 = true; }
+      else { w.box = { ...w.box, x1: (n.box.x0 + n.box.x1) / 2 }; w.open1 = true; }
+    }
+  }
+  return wings;
+}
+
+/** The gables over the wings: same pitch and materials as the main roof, on the storey's lower parapet. */
+function buildWings(ctx: BuildCtx, spec: PitchSpec, core: Box2, mesh: { top: MeshBuilder; under: MeshBuilder; trim: MeshBuilder; band: MeshBuilder }): void {
+  const plan = ctx.plan;
+  const upper = plan.levelBelow(plan.roof);
+  const lower = upper && plan.levelBelow(upper);
+  if (!upper || !lower) return;
+  const t = EXT_T / 2;
+  const box = (r: { rect: { x: number; y: number; w: number; d: number } }): Box2 => ({ x0: r.rect.x - t, x1: r.rect.x + r.rect.w + t, y0: r.rect.y - t, y1: r.rect.y + r.rect.d + t });
+  const rooms = plan.roomsOn(lower.id).filter((r) => r.cat === "enclosed").map(box);
+  const decks = plan.roomsOn(upper.id).filter((r) => r.type === "balcony" || r.type === "terrace").map(box);
+  const env = ctx.model.envelope;
+  const knee = upper.elev + Math.min(plan.parapet, 3);
+  const sill = upper.elev - 0.02;
+  for (const w of wingBoxes(core, rooms, decks)) {
+    const b = w.box;
+    const ov = Math.min(spec.overhang, 1.5);
+    const room = { l: b.x0 - Math.max(env.x0, 0), r: Math.min(env.x1, plan.plotW) - b.x1, f: b.y0 - Math.max(env.y0, 0), b: Math.min(env.y1, plan.plotD) - b.y1 };
+    const eaves = w.side === "l" ? clamp(room.l, 0, ov) : w.side === "r" ? clamp(room.r, 0, ov) : w.side === "f" ? clamp(room.f, 0, ov) : clamp(room.b, 0, ov);
+    const rake0 = clamp(w.axis === "y" ? room.f : room.l, 0, 1), rake1 = clamp(w.axis === "y" ? room.b : room.r, 0, 1);
+    const outer: Box2 = w.axis === "y"
+      ? { x0: b.x0 - (w.side === "l" ? eaves : 0), x1: b.x1 + (w.side === "r" ? eaves : 0), y0: b.y0 - rake0, y1: b.y1 + rake1 }
+      : { x0: b.x0 - (w.open0 ? 0 : rake0), x1: b.x1 + (w.open1 ? 0 : rake1), y0: b.y0 - (w.side === "f" ? eaves : 0), y1: b.y1 + (w.side === "b" ? eaves : 0) };
+    const G = roofGeom(outer, knee + SHELL_T - eaves * Math.tan(spec.pitch * DEG), spec.pitch, "gable", w.axis);
+    for (const p of G.planes) {
+      poly(mesh.top, p, [0, 1, 0], 0, true);
+      poly(mesh.under, p, [0, -1, 0], -SHELL_T);
+      const [a, c] = p;
+      const out: [number, number, number] = w.axis === "x" ? [0, 0, a[1] <= outer.y0 + 1e-6 ? -1 : 1] : [a[0] <= outer.x0 + 1e-6 ? -1 : 1, 0, 0];
+      poly(mesh.trim, [[a[0], a[1], a[2] - FASCIA], [c[0], c[1], c[2] - FASCIA], [c[0], c[1], c[2] + 0.02], [a[0], a[1], a[2] + 0.02]], out);
+    }
+    const [s0, s1] = w.axis === "x" ? [outer.y0, outer.y1] : [outer.x0, outer.x1];
+    const mid = (s0 + s1) / 2;
+    const ends: [number, number, boolean][] = w.axis === "x" ? [[b.x0, -1, w.open0], [b.x1, 1, w.open1]] : [[b.y0, -1, false], [b.y1, 1, false]];
+    for (const [c, dir, open] of ends) {
+      if (open) continue;
+      const P = (u: number, h: number): P3 => (w.axis === "x" ? [c, u, h] : [u, c, h]);
+      const n: [number, number, number] = w.axis === "x" ? [dir, 0, 0] : [0, 0, dir];
+      const a = w.axis === "x" ? b.y0 : b.x0, z = w.axis === "x" ? b.y1 : b.x1;
+      const top = (u: number) => G.eave + Math.min(u - s0, s1 - u, (s1 - s0) / 2) * G.tan - SHELL_T + 0.03;
+      const wall: P3[] = [P(a, sill), P(z, sill), P(z, top(z)), P(mid, top(mid)), P(a, top(a))];
+      poly(mesh.band, wall, n);
+      poly(mesh.band, wall, [-n[0], 0, -n[2]]);
+      for (const u of [s0, s1]) poly(mesh.trim, [P(u, G.eave), P(mid, G.top), P(mid, G.top - FASCIA), P(u, G.eave - FASCIA)], n);
+    }
+    const r = w.axis === "x" ? [outer.x0, outer.x1] : [outer.y0, outer.y1];
+    const c = 0.42;
+    if (w.axis === "x") mesh.top.box(r[0] * FT, (G.top - 0.12) * FT, (mid - c) * FT, r[1] * FT, (G.top + 0.1) * FT, (mid + c) * FT);
+    else mesh.top.box((mid - c) * FT, (G.top - 0.12) * FT, r[0] * FT, (mid + c) * FT, (G.top + 0.1) * FT, r[1] * FT);
+  }
 }
 
 /** The rectangle the roof covers (outer wall faces), or null when the top storey has no enclosed room. */
@@ -270,6 +359,7 @@ export function buildPitchedRoof(ctx: BuildCtx, spec: PitchSpec, wall: THREE.Mat
     if (axis === "x") top.box(x0 * FT, (G.top - 0.12) * FT, (y0 - w) * FT, x1 * FT, (G.top + 0.1) * FT, (y0 + w) * FT);
     else top.box((x0 - w) * FT, (G.top - 0.12) * FT, y0 * FT, (x0 + w) * FT, (G.top + 0.1) * FT, y1 * FT);
   }
+  buildWings(ctx, spec, rect, { top, under, trim, band });
   flushPanels(ctx, G, kit);
   const g = kit.build();
   ctx.add(g, { kind: "roof", level: plan.roof.id, id: "pitched_roof", label: spec.form === "hip" ? "Hip roof" : "Gable roof" });
