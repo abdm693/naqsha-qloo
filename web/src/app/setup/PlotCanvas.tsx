@@ -70,7 +70,7 @@ export function PlotCanvas({
     : `M0 0H${W}V${D}H0Z`;
 
   return (
-    <svg viewBox={`${vx0} ${vy0} ${vw} ${vh}`} className={className} role="img" aria-label={`Plot ${num(W, 1)} by ${num(D, 1)} feet${corner ? ", corner" : ""}, with the LDA envelope`} style={{ opacity: faint ? 0.55 : 1 }}>
+    <svg viewBox={`${vx0} ${vy0} ${vw} ${vh}`} className={className} role="img" aria-label={`Plot ${num(W, 1)} by ${num(D, 1)} feet${corner ? ", corner" : ""}, with the area you can build on`} style={{ opacity: faint ? 0.55 : 1 }}>
       <defs>
         <pattern id={`n-${id}`} width={3 * s} height={3 * s} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
           <path d={`M0 0V${3 * s}`} stroke="rgb(17 17 19 / 0.06)" strokeWidth={0.5 * k} />
