@@ -517,13 +517,18 @@ async def fit(image: tuple[bytes, str], style: dict) -> dict | None:
     if not items:
         return None
     ask = "CHECKLIST:\n" + "\n".join(f"{x['id']}: {x['what']}" for x in items)
-    try:
-        text = await asyncio.wait_for(llm.generate_text(
-            config.MODEL_VISION, [gtypes.Part.from_bytes(data=image[0], mime_type=image[1]), ask], system=FIT_SYSTEM,
-            max_tokens=3000, json_mode=True, thinking=False, temperature=0), timeout=90)
-        got = {x.get("id"): x for x in llm.parse_json(text).get("items") or [] if isinstance(x, dict)}
-    except Exception as e:
-        log.warning("taste fit failed: %r", e)
+    got: dict = {}
+    for attempt in (1, 2):  # the reading can come back cut short or late
+        try:
+            text = await asyncio.wait_for(llm.generate_text(
+                config.MODEL_VISION, [gtypes.Part.from_bytes(data=image[0], mime_type=image[1]), ask], system=FIT_SYSTEM,
+                max_tokens=3000, json_mode=True, thinking=False, temperature=0), timeout=90)
+            got = {x.get("id"): x for x in llm.parse_json(text).get("items") or [] if isinstance(x, dict)}
+            if got:
+                break
+        except Exception as e:
+            log.warning("taste fit, attempt %d: %r", attempt, e)
+    if not got:
         return None
     out, num, den = [], 0.0, 0
     for x in items:
