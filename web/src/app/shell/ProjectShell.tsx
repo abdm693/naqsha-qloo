@@ -22,6 +22,7 @@ import { ConceptsView } from "@/app/concepts/ConceptsView";
 import { PlanView } from "@/app/plan/PlanView";
 import { RevisionsView } from "@/app/revisions/RevisionsView";
 import { TasteView } from "@/app/taste/TasteView";
+import { setLocaleFrom } from "@/app/lib/locale";
 import { useAsk, useAskStore } from "./ask";
 import { buildCommands } from "./commands";
 import { ConversationSheet } from "./ConversationSheet";
@@ -57,6 +58,7 @@ export function ProjectShell() {
   const loadState = useProject((s) => s.loadState);
   const loadError = useProject((s) => s.loadError);
   const project = useProject((s) => (s.pid === id && !s.shareToken ? s.project : null));
+  setLocaleFrom(project?.brief);  // plot sizes and rule labels follow where the home is
   const epoch = useAuth((s) => s.epoch);
   const resetShell = useShell((s) => s.reset);
 

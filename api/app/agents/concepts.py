@@ -16,7 +16,7 @@ from typing import AsyncIterator
 
 from google.genai import types
 
-from .. import busy, config, llm
+from .. import busy, config, llm, locale
 from ..gemini import client
 from ..store import blobs, db
 
@@ -47,7 +47,7 @@ FALLBACK_TAKES = [
     {"title": "Courtyard screen", "direction": "A perforated metal screen wraps the first floor over a recessed glass entrance"},
 ]
 
-TAKES_SYSTEM = """You are a Lahore architect proposing four genuinely different exterior design directions for one house, all within
+TAKES_SYSTEM = """You are an architect in the family's city proposing four genuinely different exterior design directions for one house, all within
 the family's chosen style. Vary the massing and the material palette (not the camera or the light): e.g. a floating upper box, a
 brick-and-jaali screen, stepped terraces, a courtyard screen. Each must be buildable on the plot and respect the brief (storeys,
 porch, roof). Never add minarets, domes, chhatris or cupolas unless the brief asks for them.
@@ -122,7 +122,7 @@ def concept_prompt(brief: dict, take: dict | None = None, instruction: str | Non
     style = brief.get("style") or "Modern Contemporary"
     hints = taste_language(taste) or STYLE_HINTS.get(style, brief.get("style_notes") or "")
     storeys = {1: "single-storey", 2: "double-storey", 3: "triple-storey"}.get(brief.get("storeys") or 2, "double-storey")
-    where = brief.get("scheme") or {"DHA": "DHA Lahore", "BAHRIA": "Bahria Town Lahore"}.get(brief.get("authority"), "a Lahore housing society")
+    where = locale.place(brief) if not locale.is_pakistan(brief) else (brief.get("scheme") or {"DHA": "DHA Lahore", "BAHRIA": "Bahria Town Lahore"}.get(brief.get("authority"), "a Lahore housing society")) + ", Pakistan"
     porch = next((s for s in brief.get("spaces", []) if s.startswith("car_porch")), "car_porch:1")
     cars = porch.split(":")[1] if ":" in porch else "1"
     direction = f" This design's direction: {take['direction']}." if take else ""
@@ -131,9 +131,8 @@ def concept_prompt(brief: dict, take: dict | None = None, instruction: str | Non
     width = p.get("width_ft", 35)
     row = "" if p.get("corner") else ", one house in a continuous row of houses (a mid-row plot),"
     return (
-        f"Photorealistic architectural photograph of a {style} {storeys} family house{row} on a {width:g} ft wide plot in {where}, "
-        f"Pakistan. Style language: {hints}.{direction} Typical Lahore layout: boundary wall with a sliding gate, a "
-        f"{cars}-car porch within the building line, a small front lawn. {_roof_sentence(brief)} {_site_sentence(brief)} "
+        f"Photorealistic architectural photograph of a {style} {storeys} family house{row} on a {width:g} ft wide plot in {where}. "
+        f"Style language: {hints}.{direction} {locale.street_context(brief, cars)} {_roof_sentence(brief)} {_site_sentence(brief)} "
         f"{camera} High-end real-estate photography, realistic materials and proportions. No people. Absolutely no text, "
         f"numbers, signs, house plaques or watermarks anywhere in the image.{extra}"
     )

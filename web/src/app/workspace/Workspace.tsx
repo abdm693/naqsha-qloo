@@ -2,6 +2,7 @@
  * The workspace (/app, DESIGN.md §6 "Workspace"): the wordmark and the account, a composer to start a home in one
  * message, then Your homes · Shared with you · Samples in a 3/2/1-column grid with real thumbnails.
  */
+import { isPakistan } from "@/app/lib/locale";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
@@ -326,7 +327,7 @@ function caption(p: Project): string {
   bits.push(`Version ${v}`);
   if (p.cloned_from) bits.push("From the samples");
   else if (p.members_count) bits.push(`Shared with ${p.members_count}`);
-  else if (p.brief?.plot?.area_marla) bits.push(plotLabel(p.brief.plot.area_marla));
+  else if (p.brief?.plot?.area_marla) bits.push(plotLabel(p.brief.plot.area_marla, !isPakistan(p.brief)));
   bits.push(relativeTime(p.updated_at));
   return bits.join(" · ");
 }
@@ -384,7 +385,7 @@ function SampleCard({ sample: s, opening, onOpen }: { sample: Project; opening: 
     <Card
       media={<Thumb p={s} />}
       title={sampleTitle(s.name)}
-      caption={[b?.plot?.area_marla ? plotLabel(b.plot.area_marla) : null, b?.style ? sentenceCase(b.style) : null, "Ready to walk"].filter(Boolean).join(" · ")}
+      caption={[b?.plot?.area_marla ? plotLabel(b.plot.area_marla, !isPakistan(b)) : null, b?.style ? sentenceCase(b.style) : null, "Ready to walk"].filter(Boolean).join(" · ")}
       onClick={onOpen}
       label={`Explore the sample: ${sampleTitle(s.name)}`}
       badge={opening ? <StatusChip tone="progress" className="glass-light">Opening</StatusChip> : <StatusChip className="glass-light" dot={false}>Sample</StatusChip>}

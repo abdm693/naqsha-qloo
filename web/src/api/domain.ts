@@ -1,3 +1,4 @@
+import { isIntl } from "@/app/lib/locale";
 /** Shared domain vocabulary: plot presets, styles and spaces (used by the UI and the mock). */
 
 export const MARLA_SQFT = 225; // Lahore District (LDA definition)
@@ -22,8 +23,9 @@ export function toMarla(width_ft: number, depth_ft: number): number {
  * How people say plot sizes: "10 marla" (a 35×65 plot is 10.1 marla, but it is sold as 10), "7.5 marla",
  * "1 kanal", "1 kanal 4 marla". Sizes within 0.15 marla of a whole number snap to it.
  */
-export function plotLabel(marla: number): string {
+export function plotLabel(marla: number, intl: boolean = isIntl()): string {
   if (!marla || !Number.isFinite(marla)) return "—";
+  if (intl) return `${Math.round((marla * 272.25) / 10) * 10 >= 1000 ? (Math.round((marla * 272.25) / 10) * 10).toLocaleString("en") : Math.round(marla * 272.25)} sq ft`;
   const snapped = Math.abs(marla - Math.round(marla)) <= 0.15 ? Math.round(marla) : Math.round(marla * 10) / 10;
   if (snapped >= 20) {
     const kanal = Math.floor(snapped / 20);

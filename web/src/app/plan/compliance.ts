@@ -1,3 +1,4 @@
+import { rulesLabel } from "@/app/lib/locale";
 /**
  * Compliance, read for people: two counted groups, "LDA rules" and "Livable home" (contracts: ComplianceCheck.category),
  * values with units ("10 ft (min 10 ft)"), and, when a report predates the livable checks, the five livable rules
@@ -191,7 +192,7 @@ export type Summary = ReturnType<typeof summarize>;
  * the architect's notes.
  */
 export function statusLine(s: Summary): string {
-  const bits = [`${s.ldaTally.pass}/${s.ldaTally.total} LDA`];
+  const bits = [`${s.ldaTally.pass}/${s.ldaTally.total} ${rulesLabel()}`];
   if (s.livableTally.total) bits.push(`${s.livableTally.pass}/${s.livableTally.total} livable`);
   if (s.fails.length) bits.push(`${s.fails.length} to fix`);
   if (s.warns.length) bits.push(`${s.warns.length} to check`);

@@ -24,7 +24,7 @@ const benefits = (counts: SampleCounts | null): { title: string; line: string }[
     title: "Checked against the bylaws, every time",
     // The counts are the 10 marla sample's own (they move when the rules do); without them, no number is promised.
     line: counts
-      ? `Every bylaw that applies to your plot (LDA in this prototype: ${counts.lda} checks on a 10 marla) and ${counts.livable} livable rules: setbacks, coverage, height, stairs to the roof, railings at every drop.`
+      ? `Every bylaw that applies to your plot (${counts.lda} checks on the Lahore sample; anywhere else the agent researches the local rules and cites them) and ${counts.livable} livable rules: setbacks, coverage, height, stairs, railings at every drop.`
       : "Every bylaw that applies to your plot (LDA in this prototype), and the livable rules: setbacks, coverage, height, stairs to the roof, railings at every drop.",
   },
   { title: "Start from your own drawing", line: "Have a naqsha from your architect, or a sketch on paper? Upload a photo of it. Naqsha reads every room and builds from your layout, changing only what the rules need." },

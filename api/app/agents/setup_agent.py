@@ -31,8 +31,9 @@ log = logging.getLogger("naqsha.setup")
 APP = "naqsha-setup"
 KNOWN_FIELDS = set(intake.ASK_ORDER) | {"budget", "bathrooms", "spaces", "rooms"}
 
-INSTRUCTION = """You are Naqsha, a calm, experienced architect setting up a new home with a family (Lahore first, but anywhere).
-You speak like a warm professional: brief, second person, in marla and feet. One to three short sentences. Never say Argon,
+INSTRUCTION = """You are Naqsha, a calm, experienced architect setting up a new home with a family, anywhere in the world.
+You speak like a warm professional: brief, second person, in the units people use there (marla and feet in Pakistan; square
+feet or square metres elsewhere). Plots are recorded in feet (width × depth); convert metres yourself. One to three short sentences. Never say Argon,
 agent, AI, model or SDK. No emoji, no exclamation marks.
 
 Every turn:
@@ -95,9 +96,9 @@ class Turn:
             asked you to, listed in decided_for_them).
 
             Args:
-              city: City, e.g. "Lahore".
+              city: City, e.g. "Lahore", "Austin", "Dubai", "Toronto".
               authority: LDA, DHA or BAHRIA in Lahore (LDA for ordinary Lahore schemes such as Johar Town); elsewhere the
-                local authority's short code, e.g. CDA (Islamabad), SBCA (Karachi), RDA, FDA, MDA, DM (Dubai).
+                local authority's short code, e.g. CDA (Islamabad), SBCA (Karachi), DM (Dubai), COA (Austin), TOR (Toronto).
               scheme: Housing scheme or society, e.g. "Johar Town", "DHA Phase 6".
               plot_marla: Plot area in marla (1 kanal = 20 marla).
               plot_width_ft: Plot frontage in feet, if given.
@@ -248,7 +249,7 @@ class Turn:
 # Cities whose development authority Naqsha knows by name; their rules are researched on the web (Tavily) on first use.
 CITY_AUTHORITY = {"islamabad": "CDA", "karachi": "SBCA", "rawalpindi": "RDA", "faisalabad": "FDA", "multan": "MDA",
                   "gujranwala": "GDA", "peshawar": "PDA", "quetta": "QDA", "hyderabad": "HDA", "sialkot": "SDA",
-                  "dubai": "DM", "abu dhabi": "ADM", "sharjah": "SM"}
+                  "dubai": "DM", "abu dhabi": "ADM", "sharjah": "SM", "austin": "COA", "toronto": "TOR"}
 LAHORE_AUTHORITIES = {"LDA", "DHA", "BAHRIA", "OTHER"}
 
 

@@ -20,7 +20,7 @@ from typing import AsyncIterator
 
 from google.genai import types
 
-from .. import config, llm
+from .. import config, locale, llm
 from ..compliance import lda, planning
 from ..gemini import client
 from ..store import blobs, db
@@ -118,7 +118,7 @@ ROOF: solar-ready roofs stay clear: no minarets, domes or chhatris unless asked;
 roof.water_tank.material follows brief.water_tank ("plastic" sits on the stair tower, its rect inside roof.mumty.rect;
 "concrete" sits on the roof slab beside it). roof.solar = {"mode": brief.solar} when it is "ready" or "panels".
 
-Pakistani planning sense: the drawing room near the entrance (guests enter from the porch); a family TV lounge at the heart;
+Pakistani planning sense (homes in Pakistan; elsewhere follow LOCAL PLANNING in the prompt): the drawing room near the entrance (guests enter from the porch); a family TV lounge at the heart;
 the kitchen beside the dining with a dirty kitchen or service access at the rear; a car porch at the front within the
 building line; on larger plots the master bedroom upstairs at the front with a balcony and a servant quarter at the rear.
 Style: palette (hex) and materials matching the brief and the chosen concept image.
@@ -154,8 +154,9 @@ def _plan_prompt(brief: dict, env: dict, concept: str | None, imported: dict | N
                  "position and its porch. Change only what the regulations, a buildable plan or the conventions above require "
                  "(tiling, setbacks, stair geometry, baths on an outside wall), and say in notes exactly what you changed and "
                  "why. Name rooms as the drawing names them.\n\n")
+    local = locale.planning_sense(brief)
     return (
-        drawn +
+        drawn + (f"LOCAL PLANNING: {local}\n\n" if local else "") +
         f"BRIEF:\n{json.dumps(_brief_for_prompt(brief), indent=1)}\n\n"
         f"LDA ENVELOPE (deterministic, from the regulations):\n{json.dumps({k: v for k, v in env.items() if k != '_band'}, indent=1)}\n\n"
         + storey_limit_note(brief, env) +
@@ -390,7 +391,7 @@ async def make_plan(project: dict) -> AsyncIterator[tuple[str, dict]]:
 
 
 # --- Step 2: the architect's self-review ------------------------------------------------------------------------------
-REVIEW_SYSTEM = """You are a senior Lahore architect reviewing floor plans drawn by a junior before they go to the family. Software
+REVIEW_SYSTEM = """You are a senior architect reviewing floor plans drawn by a junior before they go to the family. Software
 has already checked the LDA regulations and the hard livability rules; your job is the judgement software can't make. Study the
 drawings (road at the bottom of each sheet) with the room table and the adjacency list, and critique like an architect:
 - circulation: natural routes, no rooms used as corridors, no wasted passages, the kitchen-dining-lounge relationship;
@@ -794,10 +795,10 @@ Order and naming:
    (drawing, lounges, master bedroom).
 4. `furnish_<room_id> [furniture]`: ONE section per enclosed room (and the porch: a car). Place key pieces explicitly with
    `against`/`along_ft` or `at`/`rot_deg` in room-local feet, sized to the room. Use s.auto_furnish(room) only for minor rooms.
-   Include Pakistani touches: ceiling fans, split ACs in bedrooms and lounges, a prayer mat if there's a prayer room.
+   Include the local touches given in LOCAL TOUCHES below (fixtures, cooling or heating, appliances typical where the home is).
    Never put a TV, painting, mirror, wardrobe or bookshelf across a door or window; keep 3 ft clear in front of every door and
    a 3 ft path through each room; the car sits in the porch bay, never in front of the main door.
-5. `landscape [landscape]`: lawn, paving, planters, trees (ashoka, palm), and s.landscape.street({ neighbours: true, streetlights: true }).
+5. `landscape [landscape]`: lawn, paving, planters, trees that grow where the home is (see LOCAL TOUCHES), and s.landscape.street({ neighbours: true, streetlights: true }).
 6. `lighting [lighting]`: s.lights.sun({ hour: 17.5 }) and s.lights.interior().
 
 Roof: keep it clear for solar unless the brief asks otherwise: no domes, cupolas, minarets, chhatris or pergolas; the water tank
@@ -831,6 +832,7 @@ def _build_prompt(plan: dict, brief: dict, spec: dict | None = None, style: dict
         + (f"EXAMPLE design.js for a different 10-marla plan (format and quality reference only):\n{example}\n\n" if example else "")
         + f"THE PLAN TO BUILD (BuildingPlan JSON, feet):\n{json.dumps(plan)}\n\n"
         f"FAMILY BRIEF: {json.dumps({k: brief.get(k) for k in keys if brief.get(k) not in (None, '', [], {})})}\n\n"
+        f"WHERE: {locale.place(brief)}. LOCAL TOUCHES: {locale.local_touches(brief)}\n\n"
         + (f"CONCEPT SPECIFICATION (the exterior the family chose, read from its image; build every feature):\n"
            f"{concepts.spec_text(spec)}\n\n" if spec else "")
         + (f"THE FAMILY'S TASTE (from Qloo's taste graph): build the interiors from it. Use these palettes and materials in "
