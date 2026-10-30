@@ -28,7 +28,7 @@ Naqsha measures how much of the family's taste each design shows. A vision check
 against the family's taste checklist (the materials, colours, details and decisions in their style brief, each tied to Qloo
 evidence), and every concept run also draws the same plot and brief **without** the taste, scored the same way.
 
-![Four families, four countries](docs/screens/00-four-families.jpg)
+![Four families, four countries](docs/gallery/01-four-families.jpg)
 
 | Sample family | Their style, from Qloo | Without their taste | Their concept |
 |---|---|---|---|
