@@ -24,6 +24,7 @@ import { importDrawing, useDrawing } from "./drawing";
 import { PlotCanvas } from "./PlotCanvas";
 import { rulesKnown } from "./Understood";
 import { Neighbourhood } from "@/app/taste/Neighbourhood";
+import { midLabel } from "@/app/lib/locale";
 
 const NO_MESSAGES: ChatMessage[] = [];
 
@@ -124,7 +125,7 @@ export function BriefView({ project, onProjectChange }: { project: Project; onPr
         </div>
         {brief?.plot?.width_ft ? (
           <p className="mt-3 px-1 text-[13px] text-ink-3">
-            {plotLabel(brief.plot.area_marla)} {brief.plot.corner ? "corner" : "mid-row"} plot{brief.scheme ? ` in ${brief.scheme}` : ""}.{rulesKnown(brief) ? ` The blue line is how far ${brief.rules_pack?.name || brief.authority} lets you build.` : ""}
+            {plotLabel(brief.plot.area_marla)} {brief.plot.corner ? "corner" : midLabel().toLowerCase()} plot{brief.scheme ? ` in ${brief.scheme}` : ""}.{rulesKnown(brief) ? ` The blue line is how far ${brief.rules_pack?.name || brief.authority} lets you build.` : ""}
           </p>
         ) : null}
         <div className="mt-6"><Neighbourhood project={project} /></div>
@@ -254,7 +255,7 @@ function EmptyPlot({ authority }: { authority?: string | null }) {
           <rect x="22" y="12" width="76" height="112" fill="none" stroke="#CFCFC8" strokeDasharray="4 4" />
           <path d="M6 140H114" stroke="#E4E4DF" strokeWidth="6" />
         </svg>
-        <p className="mt-3 text-body text-ink-3">Your plot appears here, to scale, with what {authority || "LDA"} lets you build.</p>
+        <p className="mt-3 text-body text-ink-3">Your plot appears here, to scale.</p>
       </div>
     </div>
   );

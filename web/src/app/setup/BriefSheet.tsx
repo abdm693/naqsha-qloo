@@ -13,6 +13,7 @@ import { LEVEL_LABEL, defaultProgram, levelsFor, roomsLine, toFloors, bedroomsIn
 import { rulesKnown } from "./Understood";
 import { FacingPicker, FloorsEditor, PlotEditor, RoofEditor, StyleEditor, solarEstimate, useCurrentReport } from "./widgets";
 import { solarLabel, tankLabel } from "@/app/lib/roof";
+import { isIntl, midLabel } from "@/app/lib/locale";
 import { sentenceCase, untitle } from "@/app/plan/model";
 
 export type SaveBrief = (patch: Partial<Brief>, decided: string[]) => void;
@@ -57,7 +58,7 @@ export function BriefSheet({ brief, envelope, save, className }: { brief: Brief 
               <span className="font-mono text-[13px] tabular-nums text-ink-2">
                 {feetInches(plot!.width_ft)} × {feetInches(plot!.depth_ft)}
               </span>
-              <span className={cn(auto.has("corner") && "text-ink-3 underline decoration-dotted decoration-ink-4 underline-offset-4")}>{plot!.corner ? "Corner" : "Mid-row"}</span>
+              <span className={cn(auto.has("corner") && "text-ink-3 underline decoration-dotted decoration-ink-4 underline-offset-4")}>{plot!.corner ? "Corner" : midLabel()}</span>
             </>
           )}
         </Row>}
@@ -126,7 +127,7 @@ export function BriefSheet({ brief, envelope, save, className }: { brief: Brief 
       {b?.rules_pack && <RulesSources pack={b.rules_pack} />}
 
       {/* Editors */}
-      <Dialog open={editing === "plot"} onClose={() => setEditing(null)} title="Plot" description="Pick a standard size or enter the exact width and depth." width={560}>
+      <Dialog open={editing === "plot"} onClose={() => setEditing(null)} title="Plot" description={isIntl() ? "Width and depth, in feet." : "Pick a standard size or enter the exact width and depth."} width={560}>
         <PlotEditor
           brief={b}
           doneLabel={() => "Save"}
@@ -267,7 +268,7 @@ function EnvelopeFacts({ envelope, corner, authority, pack }: { envelope: Envelo
     .sort((a, b) => Number(/corner|splay/i.test(b) && corner) - Number(/corner|splay/i.test(a) && corner));
   return (
     <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.32, ease: EASE_OUT }} className="mt-6">
-      <h3 className="text-[15px] font-semibold text-ink">What {authority || envelope.authority || "LDA"} lets you build</h3>
+      <h3 className="text-[15px] font-semibold text-ink">What {authority || envelope.authority || "the rules"} lets you build</h3>
       <p className="mt-1 text-body text-ink-2">
         Up to <span className="font-mono tabular-nums text-ink">{num(perFloor)}</span> sq ft a floor, {envelope.max_storeys} storeys, {feetInches(envelope.max_height_ft)} to the parapet.
       </p>
@@ -365,7 +366,7 @@ function LocationDialog({ open, brief, onClose, save }: { open: boolean; brief: 
       open={open}
       onClose={onClose}
       title="Where is the plot?"
-      description="The scheme decides whose rules apply. DHA and Bahria have their own bylaws; I design to LDA rules and flag where they differ."
+      description={isIntl() ? undefined : "The scheme decides whose rules apply. DHA and Bahria have their own bylaws; I design to LDA rules and flag where they differ."}
       actions={
         <>
           <Button variant="quiet" onClick={onClose}>
@@ -374,7 +375,7 @@ function LocationDialog({ open, brief, onClose, save }: { open: boolean; brief: 
           <Button
             variant="primary"
             onClick={() => {
-              save({ scheme: scheme.trim() || undefined, authority, city: brief?.city || "Lahore" }, ["scheme"]);
+              save(isIntl() ? { scheme: scheme.trim() || undefined } : { scheme: scheme.trim() || undefined, authority, city: brief?.city || "Lahore" }, ["scheme"]);
               onClose();
             }}
           >
@@ -387,21 +388,23 @@ function LocationDialog({ open, brief, onClose, save }: { open: boolean; brief: 
         <input
           value={scheme}
           onChange={(e) => setScheme(e.target.value)}
-          placeholder="Scheme, e.g. Johar Town"
-          aria-label="Scheme"
+          placeholder={isIntl() ? "Neighbourhood" : "Scheme, e.g. Johar Town"}
+          aria-label={isIntl() ? "Neighbourhood" : "Scheme"}
           className="h-11 w-full rounded-control bg-surface px-3.5 text-body text-ink shadow-[inset_0_0_0_1px_var(--color-line-strong)] outline-none placeholder:text-ink-4 focus:shadow-[inset_0_0_0_1px_var(--color-accent),var(--shadow-focus)]"
         />
-        <Segmented
-          label="Authority"
-          value={authority}
-          onChange={setAuthority}
-          options={[
-            { value: "LDA", label: "LDA" },
-            { value: "DHA", label: "DHA" },
-            { value: "BAHRIA", label: "Bahria" },
-            { value: "OTHER", label: "Other" },
-          ]}
-        />
+        {!isIntl() && (
+          <Segmented
+            label="Authority"
+            value={authority}
+            onChange={setAuthority}
+            options={[
+              { value: "LDA", label: "LDA" },
+              { value: "DHA", label: "DHA" },
+              { value: "BAHRIA", label: "Bahria" },
+              { value: "OTHER", label: "Other" },
+            ]}
+          />
+        )}
       </div>
     </Dialog>
   );

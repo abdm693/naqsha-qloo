@@ -11,6 +11,7 @@ import { FACING_LABEL, plotLabel } from "@/api/domain";
 import { cn, feetInches, num } from "@/app/lib/utils";
 import { solarLabel, tankLabel } from "@/app/lib/roof";
 import { sentenceCase, untitle } from "@/app/plan/model";
+import { midLabel } from "@/app/lib/locale";
 
 /**
  * The guarantees for the brief as it stands now: the authority's limits from the current envelope (so a plot edit
@@ -45,7 +46,7 @@ export function saidFacts(b: Brief | null): Fact[] {
   const out: Fact[] = [];
   if (b.plot?.width_ft && !auto.has("plot")) out.push({ key: "plot", text: `${plotLabel(b.plot.area_marla)} · ${b.plot.width_ft}′ × ${b.plot.depth_ft}′` });
   // Corner or mid-row is the family's once they say it, even on a plot size Naqsha assumed.
-  if (b.plot?.width_ft && !auto.has("corner")) out.push({ key: "corner", text: b.plot.corner ? "Corner plot" : "Mid-row" });
+  if (b.plot?.width_ft && !auto.has("corner")) out.push({ key: "corner", text: b.plot.corner ? "Corner plot" : midLabel() });
   if (b.scheme && !auto.has("scheme")) out.push({ key: "scheme", text: b.scheme });
   if (b.facing && !auto.has("facing")) out.push({ key: "facing", text: `Faces ${FACING_LABEL[b.facing]?.toLowerCase() ?? b.facing}` });
   if (b.storeys && !auto.has("storeys")) out.push({ key: "storeys", text: `${b.storeys} ${b.storeys === 1 ? "storey" : "storeys"}` });

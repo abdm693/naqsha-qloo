@@ -11,7 +11,7 @@ import { defaultProgram } from "./catalogue";
 import { UnderstoodCard } from "./Understood";
 import { ChipsWidget, FloorsWidget, MapWidget, PlotWidget, RoofWidget, StyleWidget, roofChips, type Send } from "./widgets";
 
-const THINKING = ["Reading what you said", "Checking it against the LDA rules", "Updating your brief"];
+const THINKING = ["Reading what you said", "Checking it against the rules", "Updating your brief"];
 const THINKING_FIRST = ["Opening a fresh brief"];
 
 export function NaqshaMark({ className }: { className?: string }) {

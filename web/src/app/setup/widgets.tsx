@@ -10,6 +10,7 @@ import type { Brief, Chip as ChipT, Envelope } from "@contracts/api-types";
 import type { ComplianceReport } from "@contracts/plan";
 import { api, type IntakeBody } from "@/api/client";
 import { PLOT_PRESETS, STYLE_OPTIONS, parseCoordinates, plotLabel, toMarla } from "@/api/domain";
+import { isIntl, midLabel } from "@/app/lib/locale";
 import { cn, num } from "@/app/lib/utils";
 import { Button, Chip, EASE_OUT, Meter, SPRING, Segmented } from "@/app/design/kit";
 import { StyleArt } from "./StyleArt";
@@ -118,33 +119,35 @@ export function PlotEditor({ brief, onDone, doneLabel, onSkip, disabled }: { bri
   };
   const label = () => {
     const p = PLOT_PRESETS.find((x) => x.id === preset);
-    return `${p ? p.label : plotLabel(marla)} plot, ${num(width, 1)} × ${num(depth, 1)} ft, ${corner === "corner" ? "corner" : "mid-row"}`;
+    return `${p ? p.label : plotLabel(marla)} plot, ${num(width, 1)} × ${num(depth, 1)} ft, ${corner === "corner" ? "corner" : midLabel().toLowerCase()}`;
   };
   return (
     <div>
-      <div className="grid grid-cols-3 gap-2">
-        {PLOT_PRESETS.map((p) => {
-          const active = preset === p.id;
-          return (
-            <button
-              key={p.id}
-              type="button"
-              disabled={disabled}
-              onClick={() => pick(p.id)}
-              aria-pressed={active}
-              className={cn(
-                "relative rounded-control px-3 py-2.5 text-left outline-none transition-[background-color,box-shadow] duration-(--dur-fast) focus-visible:shadow-focus",
-                active ? "bg-accent-soft shadow-[inset_0_0_0_1.5px_var(--color-accent)]" : "bg-surface shadow-[inset_0_0_0_1px_var(--color-line-strong)] hover:bg-surface-2",
-              )}
-            >
-              <span className={cn("block text-[14px] font-medium", active ? "text-accent" : "text-ink")}>{p.label}</span>
-              <span className="block font-mono text-[12px] tabular-nums text-ink-3">
-                {p.width_ft}′ × {p.depth_ft}′
-              </span>
-            </button>
-          );
-        })}
-      </div>
+      {!isIntl() && (
+        <div className="grid grid-cols-3 gap-2">
+          {PLOT_PRESETS.map((p) => {
+            const active = preset === p.id;
+            return (
+              <button
+                key={p.id}
+                type="button"
+                disabled={disabled}
+                onClick={() => pick(p.id)}
+                aria-pressed={active}
+                className={cn(
+                  "relative rounded-control px-3 py-2.5 text-left outline-none transition-[background-color,box-shadow] duration-(--dur-fast) focus-visible:shadow-focus",
+                  active ? "bg-accent-soft shadow-[inset_0_0_0_1.5px_var(--color-accent)]" : "bg-surface shadow-[inset_0_0_0_1px_var(--color-line-strong)] hover:bg-surface-2",
+                )}
+              >
+                <span className={cn("block text-[14px] font-medium", active ? "text-accent" : "text-ink")}>{p.label}</span>
+                <span className="block font-mono text-[12px] tabular-nums text-ink-3">
+                  {p.width_ft}′ × {p.depth_ft}′
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <label className="flex items-center gap-1.5 text-[13px] text-ink-3">
           <span className="sr-only">Width in feet</span>
@@ -180,7 +183,7 @@ export function PlotEditor({ brief, onDone, doneLabel, onSkip, disabled }: { bri
           value={corner}
           onChange={setCorner}
           options={[
-            { value: "mid", label: "Mid-row" },
+            { value: "mid", label: midLabel() },
             { value: "corner", label: "Corner" },
           ]}
         />

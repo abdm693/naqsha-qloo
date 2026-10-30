@@ -23,6 +23,11 @@ export function isIntl(): boolean {
   return intl;
 }
 
+/** "Mid-row" where plots sit in rows, "Inside lot" elsewhere. */
+export function midLabel(): string {
+  return intl ? "Inside lot" : "Mid-row";
+}
+
 /** "LDA" in Pakistan, "local rules" elsewhere. */
 export function rulesLabel(): string {
   return intl ? "local rules" : "LDA";
