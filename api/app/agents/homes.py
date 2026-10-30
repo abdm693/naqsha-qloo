@@ -22,7 +22,8 @@ from . import research
 
 log = logging.getLogger("naqsha.homes")
 PROFILE_TTL_S = 90 * 24 * 3600
-PROFILE_TIMEOUT_S = 60.0  # research plus the model; a run never waits longer for it
+PROFILE_TIMEOUT_S = 180.0  # research plus the model, which can be slow under load; a run never waits longer for it
+WRITE_TIMEOUT_S = 80.0  # one attempt at the model: a slow call is dropped and tried again
 SEARCH_TIMEOUT_S = 15.0
 LOT_FALLBACK = {"width_ft": 40.0, "depth_ft": 80.0}  # only when research failed and the family named no plot
 
@@ -188,7 +189,7 @@ async def _write(place: str, pages: list[dict], answer: str) -> dict | None:
               + "Write the profile now.")
     for attempt in (1, 2):  # the JSON can come back cut short; one more try before giving up
         try:
-            out = await llm.generate_text(config.MODEL_INTAKE, prompt, system=SYSTEM, max_tokens=3500, json_mode=True, thinking=False)
+            out = await asyncio.wait_for(llm.generate_text(config.MODEL_INTAKE, prompt, system=SYSTEM, max_tokens=3500, json_mode=True, thinking=False), WRITE_TIMEOUT_S)
             prof = clean(llm.parse_json(out), place)
             if prof:
                 return prof
@@ -236,9 +237,9 @@ _running: dict[tuple[str, str], asyncio.Task] = {}
 
 
 def current(project: dict, brief: dict) -> dict | None:
-    """The project's profile, if it is for the brief's place."""
+    """The project's profile, if it is for the brief's place. The bare fallback doesn't count: the next run reads the place again."""
     got = project.get("homes")
-    return got if got and got.get("key") == key_of(brief) else None
+    return got if got and got.get("key") == key_of(brief) and got.get("summary") else None
 
 
 async def _run(project: dict, brief: dict) -> dict | None:
