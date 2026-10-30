@@ -12,6 +12,7 @@ import logging
 import math
 import os
 import re
+import secrets
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
@@ -20,8 +21,8 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from starlette.middleware.gzip import GZipMiddleware
 
-from . import auth, busy, config, runs, sse
-from .agents import architect, concepts, importer, intake, jsfix, locality, research, reviser, reviser_adk, taste, views
+from . import auth, busy, config, qloo, runs, sse
+from .agents import architect, concepts, heart, importer, intake, jsfix, locality, research, reviser, reviser_adk, taste, views
 from .auth import Identity
 from .compliance import lda
 from .store import blobs, db
@@ -35,9 +36,9 @@ app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=6)
 
 PUBLIC_FIELDS = ("id", "name", "created_at", "updated_at", "stage", "brief", "envelope", "concepts", "selected_concept_id",
                  "versions", "current_version_id", "thumbnail_url", "brief_changed", "cloned_from", "imported", "taste",
-                 "house_taste_fit", "locality")
+                 "house_taste_fit", "locality", "family", "heart")
 CLIENT_FIELDS = ("id", "name", "created_at", "updated_at", "stage", "concepts", "selected_concept_id", "versions",
-                 "current_version_id", "thumbnail_url", "taste", "locality")
+                 "current_version_id", "thumbnail_url", "taste", "locality", "heart")
 RANK = {"client": 1, "team": 2, "owner": 3}
 NEED = {"view": 1, "comment": 1, "edit": 2, "owner": 3}
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -68,6 +69,8 @@ def public(p: dict, role: str | None = None) -> dict:
     out["members_count"] = len([m for m in p.get("members") or []])
     out["brief_changed"] = bool(p.get("brief_changed")) if role != "client" else False
     out["thumbnail_url"] = thumb_url(p.get("thumbnail_url"))
+    if "family" in out:
+        out["family"] = _family_out(p.get("id", ""), p.get("family"), role in ("owner", "team", None))
     return out
 
 
@@ -565,6 +568,123 @@ async def intake_turn(pid: str, body: IntakeBody, me: Identity = Depends(auth.id
     return sse.stream(intake.run_turn(p, body.message, body.action, body.chips))
 
 
+# --- the family: everyone answers on their own link; what they share becomes the heart of the home --------------------
+class FamilyMember(BaseModel):
+    id: str | None = None
+    name: str
+
+
+class FamilyBody(BaseModel):
+    people: list[FamilyMember]
+
+
+class AnswerBody(BaseModel):
+    favourites: list[Favourite]
+
+
+def _family_out(pid: str, family: dict | None, owner: bool) -> dict | None:
+    """Who has answered. The owner also gets each person's private link; nobody sees anyone else's answers from here."""
+    if not family:
+        return None
+    people = []
+    for m in family.get("people") or []:
+        x = {"id": m["id"], "name": m["name"], "answered": bool(m.get("answered_at"))}
+        if owner:
+            x["token"] = f"{pid}.{m['id']}.{m['secret']}"
+        people.append(x)
+    return {"people": people}
+
+
+async def _member(token: str) -> tuple[dict, dict]:
+    try:
+        pid, mid, secret = token.split(".", 2)
+    except ValueError:
+        raise HTTPException(404, "This link isn't right.")
+    p = await db.get_project(pid)
+    m = next((x for x in ((p or {}).get("family") or {}).get("people") or [] if x["id"] == mid), None)
+    if not m or not hmac.compare_digest(m.get("secret") or "", secret):
+        raise HTTPException(404, "This link isn't right.")
+    return p, m
+
+
+def _link_out(p: dict, m: dict) -> dict:
+    return {"you": {"name": m["name"], "favourites": m.get("favourites") or []}, "where": _where(p.get("brief") or {}) or None,
+            "family": [{"name": x["name"], "you": x["id"] == m["id"], "answered": bool(x.get("answered_at"))}
+                       for x in p["family"]["people"]], "heart": bool(p.get("heart"))}
+
+
+@app.get("/api/suggest")
+async def suggest(q: str = ""):
+    """What someone may mean as they type, with pictures."""
+    try:
+        return {"results": await qloo.suggest(q[:80])}
+    except qloo.QlooError:
+        return {"results": []}
+
+
+@app.put("/api/projects/{pid}/family")
+async def set_family(pid: str, body: FamilyBody, me: Identity = Depends(auth.identity)):
+    """Who lives here. Everyone keeps their link and answers; a new name gets a new link."""
+    p, role = await access(pid, me, "edit")
+    have = {m["id"]: m for m in (p.get("family") or {}).get("people") or []}
+    people = []
+    for x in body.people[:8]:
+        name = x.name.strip()[:40]
+        if not name:
+            continue
+        people.append({**have[x.id], "name": name} if x.id in have else
+                      {"id": db.new_id("m_"), "name": name, "secret": secrets.token_urlsafe(12), "favourites": [], "answered_at": None})
+    return public(await db.update_project(pid, family={"people": people}), role)
+
+
+@app.post("/api/projects/{pid}/family/{mid}/answer")
+async def answer_here(pid: str, mid: str, body: AnswerBody, me: Identity = Depends(auth.identity)):
+    """Someone answers on the owner's device."""
+    p, role = await access(pid, me, "edit")
+    fam = copy.deepcopy(p.get("family") or {})
+    m = next((x for x in fam.get("people") or [] if x["id"] == mid), None)
+    if not m:
+        raise HTTPException(404, "no such person")
+    m.update(favourites=[f.model_dump() for f in body.favourites][:12], answered_at=db.now())
+    return public(await db.update_project(pid, family=fam), role)
+
+
+@app.get("/api/link/{token}")
+async def link_open(token: str):
+    p, m = await _member(token)
+    return _link_out(p, m)
+
+
+@app.post("/api/link/{token}")
+async def link_answer(token: str, body: AnswerBody):
+    """One person's answers, from their own link. Only their own."""
+    p, m = await _member(token)
+    fresh = copy.deepcopy(await db.get_project(p["id"]) or p)
+    mine = next(x for x in fresh["family"]["people"] if x["id"] == m["id"])
+    mine.update(favourites=[f.model_dump() for f in body.favourites][:12], answered_at=db.now())
+    saved = await db.update_project(p["id"], family=fresh["family"])
+    return _link_out(saved, mine)
+
+
+@app.post("/api/projects/{pid}/heart")
+async def read_heart(pid: str, me: Identity = Depends(auth.identity)):
+    """Find what the family shares. Everyone who has answered counts; the room the words become goes into the brief."""
+    p, role = await access(pid, me, "edit")
+    people = [m for m in (p.get("family") or {}).get("people") or [] if m.get("favourites")]
+    if not people:
+        raise HTTPException(400, "Nobody has answered yet.")
+    brief = p.get("brief") or {}
+    home = {k: brief.get(k) for k in ("city", "scheme", "storeys", "bedrooms", "style") if brief.get(k)}
+    found = await heart.read(people, home)
+    found["near"] = await heart.near_home(people, _where(brief))
+    prefs = [x for x in brief.get("preferences") or [] if not str(x).startswith(("The heart of the home", "A room for "))]
+    if found.get("room"):
+        prefs.append(f"The heart of the home is {found['room']}, at the centre of the plan, with the other rooms opening towards it")
+    prefs += [f"A room for {x['name']}: {x['room']}" for x in found.get("people") or [] if x.get("room")]
+    new_brief = {**brief, "preferences": prefs}
+    return public(await db.update_project(pid, heart=found, brief=new_brief, brief_changed=bool(p.get("versions"))), role)
+
+
 # --- the neighbourhood ------------------------------------------------------------------------------------------------
 class LocalityBody(BaseModel):
     location: str | None = None
@@ -593,6 +713,9 @@ async def read_locality(pid: str, body: LocalityBody, me: Identity = Depends(aut
 class Favourite(BaseModel):
     kind: str | None = None
     name: str
+    id: str | None = None        # the real thing they picked (their favourite may be Selena, not Selena Gomez)
+    image: str | None = None
+    heart: bool = False          # where their heart lives
 
 
 class TastePerson(BaseModel):
@@ -612,14 +735,19 @@ async def taste_run(pid: str, body: TasteBody, me: Identity = Depends(auth.ident
     """The family's favourites and neighbourhood -> Qloo -> their style brief (streamed: step, favourites, profile, brief)."""
     p, _ = await access(pid, me, "edit")
     data = body.model_dump()
-    data["people"] = [{**x, "favourites": [f for f in x["favourites"] if f["name"].strip()][:12]} for x in data["people"]][:6]
+    data["people"] = [{**x, "favourites": [f for f in x["favourites"] if f["name"].strip()][:12]} for x in data["people"]][:6] or _family_people(p)
 
     return sse.stream(_taste_events(pid, p, data))
+
+
+def _family_people(p: dict) -> list[dict]:
+    return [{"label": m["name"], "role": None, "favourites": m["favourites"]} for m in (p.get("family") or {}).get("people") or [] if m.get("favourites")]
 
 
 async def _taste_events(pid: str, p: dict, data: dict):
     """Run the taste agent and save its result on the project (the brief's style follows the family's taste)."""
     brief = p.get("brief") or {}
+    data = {**data, "heart": p.get("heart")}
     async for ev in taste.run(brief, data):
         if ev[0] == "brief":
             style = ev[1]["style"]
@@ -713,7 +841,7 @@ async def make_concepts(pid: str, body: ConceptBody, me: Identity = Depends(auth
                 logging.getLogger("naqsha").warning("locality before concepts failed: %r", e)
         if not proj.get("taste") and where and not body.base_concept_id:
             # no favourites shared: the design still follows its locality, read from Qloo before anything is drawn
-            async for ev in _taste_events(pid, proj, {"people": [], "location": where, "notes": None}):
+            async for ev in _taste_events(pid, proj, {"people": _family_people(proj), "location": where, "notes": None}):
                 if ev[0] == "step":
                     yield "stage", {"stage": "wait", "message": ev[1]["message"]}
                 elif ev[0] == "taste":

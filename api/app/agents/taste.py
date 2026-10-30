@@ -357,13 +357,24 @@ def _clean(sb: dict, ev: Evidence) -> dict:
     return sb
 
 
+def heart_text(heart: dict | None) -> str:
+    """What the family shares leads the design: the heart room first, each person's own room around it."""
+    if not heart or not heart.get("words"):
+        return ""
+    people = "; ".join(f"{x['name']}: {x['room']}" for x in heart.get("people") or [] if x.get("room"))
+    between = "; ".join(f"{' and '.join(b['names'])}: {b['space']}" for b in heart.get("between") or [])
+    return (f"THE HEART OF THIS HOME: the family answered separately and share {', '.join(heart['words'])}. {heart.get('room') or 'One room'} is the "
+            f"heart of the house: design everything around it, make it the headline of the story, the first room in `rooms`, for everyone. "
+            f"Each person's own room: {people or '-'}. Shared between them: {between or '-'}.\n")
+
+
 async def write(brief: dict, taste: dict, ev: Evidence) -> dict:
     people = [{"label": p.get("label"), "role": p.get("role"), "favourites": [f.get("name") for f in p.get("favourites") or []]}
               for p in _people(taste)]
     home = {k: brief.get(k) for k in ("city", "scheme", "authority", "plot", "storeys", "bedrooms", "floors", "spaces",
                                       "preferences", "style", "style_notes") if brief.get(k) not in (None, "", [], {})}
     prompt = (f"THE HOME: {json.dumps(home)}\nTHE FAMILY: {json.dumps(people)}\nLOCALITY: {_location(brief, taste) or 'unknown'}\n"
-              f"EXTRA WORDS FROM THE FAMILY: {taste.get('notes') or '-'}\n\nEVIDENCE (Qloo):\n{ev.compact()}\n\nWrite the style brief.")
+              f"EXTRA WORDS FROM THE FAMILY: {taste.get('notes') or '-'}\n{heart_text(taste.get('heart'))}\nEVIDENCE (Qloo):\n{ev.compact()}\n\nWrite the style brief.")
     out = None
     for model, limit in ((config.MODEL_TASTE, 150), (config.MODEL_INTAKE, 120)):  # Argon, then Flash if Argon is slow or busy
         try:

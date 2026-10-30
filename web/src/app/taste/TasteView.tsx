@@ -171,6 +171,7 @@ function Impact({ taste, project }: { taste: Taste; project: Project }) {
   const chosen = project.concepts.find((c) => c.id === project.selected_concept_id && typeof c.taste_fit?.score === "number");
   const best = chosen ?? [...fitted].sort((a, b) => (b.taste_fit!.score ?? 0) - (a.taste_fit!.score ?? 0))[0];
   const base = taste.baseline;
+  if (!base || !best) return null;
   return (
     <section aria-labelledby="impact-title">
       <SectionTitle title="How much of you is in it" sub="The same plot, drawn with you and without you." />

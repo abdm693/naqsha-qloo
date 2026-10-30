@@ -94,16 +94,24 @@ async def read(people: list[dict], home: dict) -> dict:
             "shared": heart_words[:12], "at": db.now()}
 
 
+SKIP_NEAR = {"convention center", "meeting planning service", "hotel", "resort hotel", "tourist attraction", "lake", "park", "shopping mall",
+             "state government office", "coffee store", "fast food restaurant"}
+
+
 async def near_home(family: list[dict], location: str) -> list[dict]:
-    """A little of where their hearts live, close to the new house: real places near it, ranked by what each person said their
-    heart misses. Only places whose kind says something about belonging (no malls, no landmarks anyone would visit anyway)."""
+    """A little of where their hearts live, close to the new house. Shown only when it is real: a place counts if the heart
+    pulled it up and it isn't simply what's popular there anyway, and with fewer than three there is nothing to say."""
     ids = [f["id"] for p in family for f in p.get("favourites") or [] if f.get("heart") and f.get("id")]
     if not ids or not location:
         return []
     try:
         center = await qloo.locate(location)
-        places = await qloo.places_near(location, ids, take=8, center=center, radius=8000)
+        places, usual = await asyncio.gather(qloo.places_near(location, ids, take=12, center=center, radius=8000),
+                                             qloo.places_near(location, None, take=30, center=center, radius=8000))
     except qloo.QlooError as e:
         log.warning("near home failed: %s", e)
         return []
-    return [{"name": x["name"], "image": x.get("image"), "category": x.get("category")} for x in places if x.get("category")][:4]
+    popular = {x["name"] for x in usual}
+    found = [{"name": x["name"], "image": x.get("image"), "category": x.get("category")} for x in places
+             if x.get("category") and x["name"] not in popular and x["category"].lower() not in SKIP_NEAR]
+    return found[:4] if len(found) >= 3 else []

@@ -126,14 +126,7 @@ export function BriefView({ project, onProjectChange }: { project: Project; onPr
             {plotLabel(brief.plot.area_marla)} {brief.plot.corner ? "corner" : "mid-row"} plot{brief.scheme ? ` in ${brief.scheme}` : ""}. The blue line is how far {brief.rules_pack?.authority || brief.authority || project.envelope?.authority || "LDA"} lets you build.
           </p>
         ) : null}
-        <div className="mt-6">
-          <Neighbourhood
-            project={project}
-            compact
-            title="Your neighbourhood"
-            action={{ label: project.taste ? "See your family's taste" : "Make it yours: add what you love", onClick: () => goTo("taste") }}
-          />
-        </div>
+        <div className="mt-6"><Neighbourhood project={project} /></div>
         <DrawingCard
           imported={project.imported}
           reading={reading}

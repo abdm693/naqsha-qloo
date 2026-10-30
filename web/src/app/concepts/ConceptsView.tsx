@@ -188,9 +188,8 @@ export function ConceptsView({ project, onProjectChange }: { project: Project; o
         }
       : {
           placeholder: phone ? "Ask for four more" : "Ask for four more, like more brick and deeper shade",
-          // Remixing one concept happens in its lightbox; here Ask draws four new ones, offered from the family's taste
-          // (or, before they've shared it, their neighbourhood).
-          suggestions: run?.running ? [] : (project.taste?.style?.suggestions?.concepts?.map((x) => x.text) ?? project.locality?.suggestions ?? []).slice(0, 3),
+          // Remixing one concept happens in its lightbox; here Ask draws four new ones, offered from the family's taste.
+          suggestions: run?.running ? [] : (project.taste?.style?.suggestions?.concepts?.map((x) => x.text) ?? []).slice(0, 3),
           busy: !!run?.running,
           onSubmit: (text) => void flow.concepts(project.id, { count: 4, instruction: text }),
         },
