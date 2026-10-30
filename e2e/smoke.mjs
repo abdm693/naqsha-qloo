@@ -1,10 +1,10 @@
 // End-to-end checks of the deployed app as a guest, with Playwright (Chromium). Each check prints PASS/FAIL and leaves a
 // screenshot in e2e/out/. Usage: node smoke.mjs [base_url] [check ...]
-// checks: landing sample taste match photos drawing rules family link
+// checks: landing sample taste match photos drawing rules family link judges phone
 import { chromium } from "playwright";
 import fs from "node:fs";
 
-const BASE = process.argv[2] || "https://naqsha-963839790554.us-central1.run.app";
+const BASE = process.argv[2] || "https://naqsha-qloo-242926648187.us-central1.run.app";
 const only = new Set(process.argv.slice(3));
 const OUT = new URL("./out/", import.meta.url).pathname;
 fs.mkdirSync(OUT, { recursive: true });
@@ -30,6 +30,85 @@ const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
 const page = await ctx.newPage();
 const errors = [];
 page.on("pageerror", (e) => errors.push(e.message));
+
+// What a judge does: open a family from the landing page, watch the reveal, follow it to the house. Words must stay local.
+const FAMILIES = [["The Maliks", "Lahore"], ["The Garcias", "Austin"], ["The Al Mansouris", "Dubai"], ["The Parks", "Toronto"]];
+
+async function clean(p, city) {
+  const t = await p.locator("body").innerText();
+  if (/qloo/i.test(t)) throw new Error(`${city}: the app names Qloo`);
+  if (city !== "Lahore" && /\b(marla|kanal|LDA|DHA|Bahria|mumty)\b/i.test(t)) throw new Error(`${city}: Lahore words: ${t.match(/\b(marla|kanal|LDA|DHA|Bahria|mumty)\b/i)[0]}`);
+}
+
+async function imagesLoaded(p, min) {
+  await p.waitForFunction((n) => [...document.images].filter((i) => i.complete && i.naturalWidth > 0).length >= n, min, { timeout: 45000 });
+}
+
+async function walk(p, family, city) {
+  await p.goto(BASE + "/");
+  await p.getByRole("heading", { name: "Four families, four homes." }).waitFor({ timeout: 20000 });
+  const card = p.getByRole("button", { name: new RegExp(`${family}, ${city}`) });
+  await card.waitFor({ timeout: 20000 });
+  await p.waitForFunction((n) => [...document.querySelectorAll("button")].some((b) => b.textContent.includes(n) && !b.disabled), `${family}, ${city}`, { timeout: 20000 });
+  await card.click();
+  await p.waitForURL(/\/taste/, { timeout: 60000 });
+  await p.getByText(/answered alone\./).waitFor({ timeout: 20000 });
+  const see = p.getByRole("button", { name: "See the home" }).first();
+  await see.waitFor({ timeout: 30000 });
+  await p.getByText(/What (you all|most of you) share|Together, you are/).first().waitFor({ timeout: 5000 });
+  if (!(await p.locator("main img, section img").count())) throw new Error(`${city}: no favourite behind the word`);
+  await clean(p, city);
+  await see.click();
+  await p.getByRole("heading", { name: /Everything opens onto/ }).waitFor({ timeout: 10000 });
+  await p.getByText(/How much of you is in it/).first().waitFor({ timeout: 10000 });
+  await clean(p, city);
+  await p.getByRole("button", { name: /See the home/ }).first().click();
+  await p.waitForURL(/\/concepts/, { timeout: 20000 });
+  await imagesLoaded(p, 3);
+  await clean(p, city);
+  await p.getByRole("radio", { name: "Plan" }).first().click();
+  await p.waitForURL(/\/plan/, { timeout: 20000 });
+  await p.waitForTimeout(2500);
+  await clean(p, city);
+  await p.getByRole("radio", { name: "Brief" }).first().click();
+  await p.waitForURL(/\/brief/, { timeout: 20000 });
+  await p.waitForTimeout(2000);
+  await clean(p, city);
+  await p.getByRole("radio", { name: "House" }).first().click();
+  await p.waitForURL(/\/house/, { timeout: 20000 });
+  await p.waitForTimeout(4000);
+  await p.waitForFunction(() => !/Assembling your home|Opening the house/.test(document.body.innerText), null, { timeout: 240000 });
+  await clean(p, city);
+}
+
+for (const [family, city] of FAMILIES) {
+  await check("judges", async (p) => {
+    const c = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const q = await c.newPage();
+    const bad = [];
+    q.on("pageerror", (e) => bad.push(e.message));
+    try {
+      await walk(q, family, city);
+      await q.screenshot({ path: `${OUT}judges-${city}.png` });
+      if (bad.length) throw new Error(`${city}: ${bad[0]}`);
+    } finally { await c.close(); }
+  }, page);
+}
+
+await check("phone", async () => {
+  const c = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  const q = await c.newPage();
+  try {
+    await q.goto(BASE + "/");
+    await q.getByRole("button", { name: /The Garcias, Austin/ }).scrollIntoViewIfNeeded({ timeout: 20000 });
+    await q.getByRole("button", { name: /The Garcias, Austin/ }).click();
+    await q.waitForURL(/\/taste/, { timeout: 60000 });
+    await q.getByRole("button", { name: "See the home" }).first().waitFor({ timeout: 30000 });
+    const over = await q.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    if (over > 1) throw new Error(`the page scrolls sideways by ${over}px`);
+    await q.screenshot({ path: `${OUT}phone.png` });
+  } finally { await c.close(); }
+}, page);
 
 await check("landing", async (p) => {
   await p.goto(BASE + "/");
