@@ -22,6 +22,7 @@ import { ConceptsView } from "@/app/concepts/ConceptsView";
 import { PlanView } from "@/app/plan/PlanView";
 import { RevisionsView } from "@/app/revisions/RevisionsView";
 import { TasteView } from "@/app/taste/TasteView";
+import { useLocality } from "@/app/taste/Neighbourhood";
 import { setLocaleFrom } from "@/app/lib/locale";
 import { useAsk, useAskStore } from "./ask";
 import { buildCommands } from "./commands";
@@ -120,6 +121,8 @@ function Shell({ project, view }: { project: Project; view: ViewId }) {
   const current = project.current_version_id;
   const version = current ? versions[current] ?? null : null;
   const editor = canEdit(project);
+  // The neighbourhood is read as soon as the brief knows the place, so recommendations start before any favourites.
+  useLocality(project);
 
   // Data every view shares: the current version (status line, commands), its comments, the people.
   useEffect(() => {
@@ -198,8 +201,10 @@ function Shell({ project, view }: { project: Project; view: ViewId }) {
       case "brief":
         return lastLine ?? "Tell me about the plot and who will live there. One message is enough.";
       case "taste":
-        if (!project.taste) return "Tell me what each of you loves. I'll design the house around it.";
-        return "This is your taste, read with Qloo. Your concepts, rooms and garden come from it.";
+        if (!project.taste) return project.locality?.ideas?.length
+          ? "I've walked your neighbourhood. Now tell me what each of you loves, and I'll make the house yours."
+          : "Tell me what each of you loves. I'll design the house around it.";
+        return "This is your family's taste. Your concepts, rooms and garden come from it.";
       case "concepts":
         if (conceptsRunning) return null;
         if (!project.concepts.length) return "Your brief is ready. Shall I sketch four exteriors?";
@@ -221,17 +226,20 @@ function Shell({ project, view }: { project: Project; view: ViewId }) {
     }
   }, [view, project, versions, asBuilt, lastLine, conceptsRunning, current, editor, openCount, params, touch]);
 
-  // Suggestions come from the family's taste (Qloo), so every one-tap request is theirs; the generic ones are a fallback.
+  // Suggestions come from the family's taste, so every one-tap request is theirs; before they share it, from the
+  // neighbourhood; the generic ones are a last fallback.
   const tasteSuggestions = project.taste?.style?.suggestions;
+  const localSuggestions = project.locality?.suggestions;
   const defaultSuggestions = useMemo(() => {
     if (!editor) return [];
     if (view === "brief") return lastSuggestions;
-    const fromTaste = (k: "concepts" | "plan" | "house") => (tasteSuggestions?.[k] ?? []).map((x) => x.text).slice(0, 3);
+    const fromTaste = (k: "concepts" | "plan" | "house") =>
+      (tasteSuggestions?.[k]?.length ? tasteSuggestions[k]!.map((x) => x.text) : localSuggestions ?? []).slice(0, 3);
     if (view === "concepts" && project.selected_concept_id) return fromTaste("concepts").length ? fromTaste("concepts") : ["Darker glass", "More greenery", "Add solar panels"];
     if (view === "plan" && current) return fromTaste("plan").length ? fromTaste("plan") : ["Make the kitchen open", "Bigger master bedroom", "Add a skylight over the stair"];
     if (view === "house" && current) return fromTaste("house");
     return [];
-  }, [editor, view, lastSuggestions, project.selected_concept_id, current, tasteSuggestions]);
+  }, [editor, view, lastSuggestions, project.selected_concept_id, current, tasteSuggestions, localSuggestions]);
 
   const defaultPlaceholder =
     !editor ? "Leave a note for the owner"

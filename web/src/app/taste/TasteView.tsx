@@ -1,7 +1,9 @@
 /**
- * Taste: the family tells Naqsha what they love (places, films, music, food, brands), the taste agent reads it with Qloo's
- * taste graph, and the house is designed from what it finds. Three states: the composer, the live reading (every Qloo call
- * shows as it happens), and the profile with the style brief, where each decision cites the Qloo evidence behind it.
+ * Naqsha Taste: the family tells Naqsha what they love (places, films, music, food, brands), the taste agent reads the
+ * taste behind it (Qloo's taste graph, on the server), and the house is designed from what it finds. Three states: the
+ * composer (which opens on the neighbourhood, read as soon as the place is known), the live reading (every step shows as
+ * it happens), and the profile with the style brief, where each decision shows the evidence behind it. The product never
+ * names its data sources: to the family this is simply Naqsha reading their taste.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
@@ -13,6 +15,7 @@ import { canEdit } from "@/app/lib/views";
 import { useViewNav } from "@/app/design/nav";
 import { useProject } from "@/app/store/project";
 import { Button } from "@/app/ui/Button";
+import { Neighbourhood } from "./Neighbourhood";
 
 const KINDS: { kind: string; label: string; hint: string }[] = [
   { kind: "destination", label: "Places you loved", hint: "Istanbul, Kyoto, Hunza…" },
@@ -41,6 +44,13 @@ function initialPeople(project: Project): Person[] {
   }
   return [blankPerson("Parents", "parents"), blankPerson("Children", "kids")];
 }
+
+/** Tags that say nothing useful about a home, or that a family would not want said about them (older readings kept some). */
+const UNHELPFUL = new Set(["seductive", "sexy", "marriage", "motivated", "professional", "ethnicity", "elite", "authoritative", "beauty oriented",
+  "romantically inclined", "athletic", "weddings", "dynamic", "ethnic", "ethnic diversity", "culturally aware", "affluent", "wealthy",
+  "world traveler", "global perspective", "business travelers", "seasonal residents", "remote", "volcanoes", "coral reefs", "canyons",
+  "scuba diving", "hot springs", "camping"]);
+const shown = <T extends { name: string }>(tags: T[] | undefined): T[] => (tags || []).filter((t) => !UNHELPFUL.has(t.name.trim().toLowerCase()));
 
 const gradient = "linear-gradient(120deg, var(--color-taste-1, #E8A33D), var(--color-taste-2, #D9486B) 55%, var(--color-taste-3, #6B3FA0))";
 
@@ -91,7 +101,7 @@ export function TasteView({ project, onProjectChange }: { project: Project; onPr
         {editing && editor && !running ? (
           <Composer project={project} onCancel={project.taste ? () => setEditing(false) : undefined} onRead={read} />
         ) : running || (!project.taste && (steps.length || error)) ? (
-          <Reading steps={steps} found={found} missing={missing} profile={profile} error={error} onRetry={() => setEditing(true)} />
+          <Reading project={project} steps={steps} found={found} missing={missing} profile={profile} error={error} onRetry={() => setEditing(true)} />
         ) : project.taste ? (
           <Profile taste={project.taste} project={project} editor={editor} onEdit={() => setEditing(true)} onProjectChange={onProjectChange} />
         ) : (
@@ -129,14 +139,22 @@ function Composer({ project, onRead, onCancel }: { project: Project; onRead(i: T
             A home should feel like the people in it.
           </h1>
           <p className="mt-4 text-body-lg text-ink-2">
-            Tell us what each of you loves: places you've been, what you watch and listen to, where you like to eat. Qloo's taste
-            graph reads the taste behind it, and Naqsha designs the house, the rooms and the garden from that.
+            A home is where you live and who you live with. Tell us what each of you loves: places you've been, what you watch
+            and listen to, where you like to eat. Naqsha reads the taste behind it and designs the house, the rooms and the
+            garden from that.
           </p>
         </div>
         <ReadButton total={total} onClick={submit} onCancel={onCancel} />
       </header>
 
-      <div className="mt-8 grid gap-4 lg:grid-cols-2">
+      <div className="mt-8">
+        <Neighbourhood project={project} title="Where you'll live" sub="Read from your neighbourhood" />
+      </div>
+
+      <div className="mt-10">
+        <SectionTitle title="Who will live there" sub="A few favourites each is enough. No style quiz, no mood boards." />
+      </div>
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
         {people.map((p, i) => (
           <PersonCard
             key={i}
@@ -166,7 +184,7 @@ function Composer({ project, onRead, onCancel }: { project: Project; onRead(i: T
             placeholder="DHA Phase 6, Lahore"
             className="mt-2 w-full bg-transparent text-body-lg text-ink outline-none placeholder:text-ink-4"
           />
-          <span className="mt-1 block text-small text-ink-3">Qloo reads how the area feels and what's around it.</span>
+          <span className="mt-1 block text-small text-ink-3">We read how the area feels from the places people love there.</span>
         </label>
         <label className="rounded-card bg-surface p-5 shadow-e1">
           <span className="text-small font-medium text-ink-2">Anything else about how you live</span>
@@ -184,7 +202,7 @@ function Composer({ project, onRead, onCancel }: { project: Project; onRead(i: T
         {location.trim() && (
           <button type="button" onClick={() => onRead({ people: [], location: location.trim(), notes: notes.trim() || null })}
             className="text-small font-medium text-ink-2 underline decoration-line-strong underline-offset-4 hover:text-ink">
-            No favourites yet? Start from the taste of {location.trim()}
+            No favourites yet? Design from the taste of {location.trim().split(",")[0]} for now
           </button>
         )}
       </div>
@@ -202,7 +220,7 @@ function ReadButton({ total, onClick, onCancel }: { total: number; onClick(): vo
         className="taste-glow inline-flex h-12 items-center gap-2 rounded-full px-6 text-body font-semibold text-white shadow-e2 transition hover:brightness-110 disabled:cursor-not-allowed disabled:shadow-none disabled:saturate-50"
         style={{ backgroundImage: gradient }}
       >
-        <Sparkles className="size-4" /> Read our taste with Qloo
+        <Sparkles className="size-4" /> Read our taste
       </button>
       {onCancel && <Button variant="quiet" onClick={onCancel}>Cancel</Button>}
       <span className="text-small text-ink-3">{total < 2 ? "Add at least two favourites" : `${total} favourites`}</span>
@@ -289,11 +307,11 @@ function ChipField({ label, hint, values, onChange }: { label: string; hint: str
 }
 
 // ---- the live reading ------------------------------------------------------------------------------------------------
-function Reading({ steps, found, missing, profile, error, onRetry }: {
-  steps: { id: string; message: string; tool?: string; done?: boolean }[]; found: FoundFavourite[]; missing: { who: string; asked: string }[];
+function Reading({ project, steps, found, missing, profile, error, onRetry }: {
+  project: Project; steps: { id: string; message: string; tool?: string; done?: boolean }[]; found: FoundFavourite[]; missing: { who: string; asked: string }[];
   profile: TasteProfile | null; error: string | null; onRetry(): void;
 }) {
-  const tags = profile?.family ?? [];
+  const tags = shown(profile?.family);
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,420px)_1fr]">
       <section>
@@ -308,7 +326,6 @@ function Reading({ steps, found, missing, profile, error, onRetry }: {
                 </span>
                 <span className={cn("text-body", s.done ? "text-ink-3" : "text-ink")}>
                   {s.message}
-                  {s.tool && <span className="ml-2 rounded-full bg-surface-2 px-2 py-0.5 font-mono text-[11px] text-ink-3">{s.tool}</span>}
                 </span>
               </motion.li>
             ))}
@@ -324,7 +341,7 @@ function Reading({ steps, found, missing, profile, error, onRetry }: {
       <section className="space-y-6">
         {found.length > 0 && (
           <div>
-            <h2 className="text-small font-medium uppercase tracking-[.12em] text-ink-3">Found in Qloo</h2>
+            <h2 className="text-small font-medium uppercase tracking-[.12em] text-ink-3">Your favourites</h2>
             <div className="mt-3 flex flex-wrap gap-2">
               {found.map((f, i) => (
                 <motion.span key={f.eid + i} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.04 }}
@@ -336,7 +353,7 @@ function Reading({ steps, found, missing, profile, error, onRetry }: {
               ))}
               {missing.map((m) => (
                 <span key={m.who + m.asked} className="inline-flex items-center rounded-full border border-dashed border-line-strong px-3 py-1 text-small text-ink-3">
-                  {m.asked} · not in Qloo yet
+                  {m.asked} · couldn't find this one
                 </span>
               ))}
             </div>
@@ -348,6 +365,7 @@ function Reading({ steps, found, missing, profile, error, onRetry }: {
             <TagCloud tags={tags.map((t) => ({ name: t.name, weight: t.affinity ?? 0.5 }))} />
           </div>
         )}
+        {!!project.locality?.places.length && <Neighbourhood project={project} compact title="Where you'll live" />}
       </section>
     </div>
   );
@@ -388,7 +406,7 @@ function Profile({ taste, project, editor, onEdit, onProjectChange }: { taste: T
           <p className="mt-3 max-w-[620px] text-small text-white/85">Read from {p.area?.location || "your area"}: add your favourites to make it yours.</p>
         )}
         <div className="mt-6 flex flex-wrap gap-2">
-          {(p.family || []).slice(0, 10).map((t) => (
+          {shown(p.family).slice(0, 10).map((t) => (
             <span key={t.eid} className="rounded-full bg-white/15 px-3 py-1 text-small backdrop-blur">{t.name}</span>
           ))}
         </div>
@@ -424,10 +442,10 @@ function Profile({ taste, project, editor, onEdit, onProjectChange }: { taste: T
       {/* Each person */}
       {!!s.people?.length && (
         <section>
-          <SectionTitle title="Who this home is for" sub="Each person's favourites, read by Qloo" />
+          <SectionTitle title="Who this home is for" sub="What each of you brings to it" />
           <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {s.people.map((x, i) => {
-              const tags = p.people.find((pp) => pp.label === x.label)?.tags || [];
+              const tags = shown(p.people.find((pp) => pp.label === x.label)?.tags);
               return (
                 <article key={x.label} className="rounded-card bg-surface p-5 shadow-e1">
                   <div className="flex items-center gap-3">
@@ -452,7 +470,7 @@ function Profile({ taste, project, editor, onEdit, onProjectChange }: { taste: T
       {/* The decisions */}
       {!!s.decisions?.length && (
         <section>
-          <SectionTitle title="What your taste decided" sub="Every choice cites the Qloo signal behind it" />
+          <SectionTitle title="What your taste decided" sub="Every choice shows what it came from. Hover one to see." />
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             {s.decisions.map((d) => (
               <article key={d.decision} className="rounded-card bg-surface p-5 shadow-e1">
@@ -479,7 +497,7 @@ function Profile({ taste, project, editor, onEdit, onProjectChange }: { taste: T
       {/* Wider taste: destinations and brands */}
       {(p.destinations.length > 0 || p.brands.length > 0) && (
         <section>
-          <SectionTitle title="People with your taste also love" sub="Qloo's cross-domain affinities, used as references" />
+          <SectionTitle title="People with your taste also love" sub="Places and labels the design borrows from" />
           <div className="mt-4 flex flex-wrap gap-2">
             {[...p.destinations, ...p.brands].map((x) => (
               <span key={x.eid} className="inline-flex items-center gap-2 rounded-full bg-surface py-1 pl-1 pr-3 text-body text-ink shadow-e1">
@@ -491,7 +509,10 @@ function Profile({ taste, project, editor, onEdit, onProjectChange }: { taste: T
         </section>
       )}
 
-      {/* Neighbourhood and landscape */}
+      {/* Where they'll live: the neighbourhood on its map, then what the family's taste makes of it, and the garden */}
+      {!!project.locality?.places.length && (
+        <Neighbourhood project={project} title="Where you'll live" sub={`Around ${project.locality.location.split(",")[0]}`} />
+      )}
       <section className="grid gap-4 lg:grid-cols-2">
         {(s.neighbourhood || p.area) && (
           <article className="rounded-card bg-surface p-6 shadow-e1">
@@ -499,7 +520,7 @@ function Profile({ taste, project, editor, onEdit, onProjectChange }: { taste: T
             {s.neighbourhood?.reading && <p className="mt-2 text-body-lg text-ink">{s.neighbourhood.reading}</p>}
             {s.neighbourhood?.response && <p className="mt-2 text-body text-ink-2">{s.neighbourhood.response}</p>}
             <div className="mt-3 flex flex-wrap gap-1.5">
-              {(p.area?.tags || []).slice(0, 8).map((t) => <span key={t.eid} className="rounded-full bg-surface-2 px-2.5 py-0.5 text-small text-ink-2">{t.name}</span>)}
+              {shown(p.area?.tags).slice(0, 8).map((t) => <span key={t.eid} className="rounded-full bg-surface-2 px-2.5 py-0.5 text-small text-ink-2">{t.name}</span>)}
             </div>
             <Because ids={s.neighbourhood?.because} ev={ev} />
           </article>
@@ -517,7 +538,7 @@ function Profile({ taste, project, editor, onEdit, onProjectChange }: { taste: T
       {/* Shop */}
       {!!s.shop?.length && (
         <section>
-          <SectionTitle title="Where to find the pieces" sub={`Places near ${p.area?.location || "you"} that suit your taste, from Qloo`} />
+          <SectionTitle title="Where to find the pieces" sub={`Places near ${p.area?.location || "you"} that suit your taste`} />
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {s.shop.map((x) => {
               const e = ev[x.id];
@@ -535,8 +556,8 @@ function Profile({ taste, project, editor, onEdit, onProjectChange }: { taste: T
       )}
 
       <p className="text-small text-ink-3">
-        Taste signals come from Qloo's taste graph and describe what people with similar taste love; Naqsha's architect turned
-        them into design choices. {project.taste?.at ? `Read ${new Date(project.taste.at).toLocaleDateString()}.` : ""}
+        Taste signals describe what people with a taste like yours love; Naqsha's architect turned them into design choices.{" "}
+        {project.taste?.at ? `Read ${new Date(project.taste.at).toLocaleDateString()}.` : ""}
       </p>
     </div>
   );
@@ -551,14 +572,14 @@ function Impact({ taste, project }: { taste: Taste; project: Project }) {
   const best = chosen ?? [...fitted].sort((a, b) => (b.taste_fit!.score ?? 0) - (a.taste_fit!.score ?? 0))[0];
   const base = taste.baseline;
   const stats = [
-    { n: p.locality_only ? (p.area?.places.length ?? 0) : (p.favourites?.length ?? 0), label: p.locality_only ? "local places read" : "favourites found in Qloo" },
-    { n: Object.keys(s.evidence || {}).length, label: "Qloo signals cited" },
+    { n: p.locality_only ? (p.area?.places.length ?? 0) : (p.favourites?.length ?? 0), label: p.locality_only ? "local places read" : "favourites read" },
+    { n: Object.keys(s.evidence || {}).length, label: "taste signals behind the design" },
     { n: s.decisions?.length ?? 0, label: "design decisions from your taste" },
     { n: s.rooms?.length ?? 0, label: "rooms styled for someone" },
   ];
   return (
     <section aria-labelledby="impact-title">
-      <SectionTitle title="What Qloo changed" sub="Measured: a vision check counts how many of your taste choices each design actually shows" />
+      <SectionTitle title="How much of you is in it" sub="The same plot, drawn twice: once as a typical new house, once from your taste. Then we check each picture for your choices." />
       <dl className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {stats.map((x) => (
           <div key={x.label} className="rounded-card bg-surface p-5 shadow-e1">
@@ -693,7 +714,7 @@ export function TasteBadge({ live, onDark }: { live?: boolean; onDark?: boolean 
   return (
     <span className={cn("inline-flex items-center gap-2 rounded-full px-3 py-1 text-small font-medium", onDark ? "bg-white/15 text-white backdrop-blur" : "bg-surface text-ink shadow-e1")}>
       <span className={cn("size-2 rounded-full", live && "animate-breathe", onDark ? "bg-white" : "taste-gradient")} />
-      Taste by Qloo
+      Naqsha Taste
     </span>
   );
 }
@@ -733,9 +754,9 @@ function StyleCard({ title, kicker, palette, lines, because, ev }: {
   );
 }
 
-/** "Because" chips: the Qloo evidence behind a choice. Hover or focus shows where it came from. */
+/** "Because" chips: the evidence behind a choice. Hover or focus shows where it came from. */
 export function Because({ ids, ev }: { ids?: string[]; ev: Record<string, Evidence> }) {
-  const items = useMemo(() => (ids || []).map((i) => ev[i]).filter(Boolean), [ids, ev]);
+  const items = useMemo(() => shown((ids || []).map((i) => ev[i]).filter(Boolean)), [ids, ev]);
   if (!items.length) return null;
   return (
     <div className="mt-4 flex flex-wrap items-center gap-1.5">
@@ -770,32 +791,45 @@ function EvidenceChip({ e, ev }: { e: Evidence; ev: Record<string, Evidence> }) 
       </button>
       {open && (
         <span role="tooltip" className="absolute bottom-full left-0 z-20 mb-2 w-64 rounded-control bg-hud p-3 text-small text-hud-ink shadow-e3">
-          <span className="block font-medium">{e.name} <span className="text-hud-ink-2">· Qloo {kind}</span></span>
+          <span className="block font-medium">{e.name} <span className="text-hud-ink-2">· {kind}</span></span>
           {e.via?.length ? <span className="mt-1 block text-hud-ink-2">From {e.via.join("; ")}</span> : null}
           {from.length ? <span className="mt-1 block text-hud-ink-2">Pointed to by {from.join(", ")}</span> : null}
-          {typeof e.affinity === "number" ? <span className="mt-1 block text-hud-ink-2">Affinity {e.affinity.toFixed(2)}</span> : null}
         </span>
       )}
     </span>
   );
 }
 
+/** The taste behind the favourites, strongest first: the top three lead, the rest carry a small strength bar. */
 function TagCloud({ tags }: { tags: { name: string; weight: number }[] }) {
+  const shown = tags.slice(0, 18);
+  const max = Math.max(0.01, ...shown.map((t) => t.weight));
   return (
-    <div className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-2">
-      {tags.slice(0, 18).map((t, i) => (
-        <motion.span
-          key={t.name}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: i * 0.05 }}
-          className="font-display text-ink"
-          style={{ fontSize: `${1 + Math.max(0, Math.min(1, t.weight)) * 1.4}rem`, opacity: 0.55 + Math.min(1, t.weight) * 0.45 }}
-        >
-          {t.name}
-        </motion.span>
-      ))}
-    </div>
+    <ul className="mt-4 flex flex-wrap items-center gap-2">
+      {shown.map((t, i) => {
+        const w = Math.max(0.15, Math.min(1, t.weight / max));
+        const lead = i < 3;
+        return (
+          <motion.li
+            key={t.name}
+            initial={{ opacity: 0, y: 8, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ delay: i * 0.05, type: "spring", stiffness: 380, damping: 34 }}
+            className={cn(
+              "inline-flex items-center gap-2.5 rounded-full",
+              lead ? "taste-gradient px-4 py-2 text-body-lg font-semibold text-white shadow-e2" : "bg-surface px-3.5 py-1.5 text-body text-ink shadow-e1",
+            )}
+          >
+            {t.name}
+            {!lead && (
+              <span aria-hidden className="h-1 w-7 overflow-hidden rounded-full bg-surface-2">
+                <span className="taste-gradient block h-full rounded-full" style={{ width: `${w * 100}%` }} />
+              </span>
+            )}
+          </motion.li>
+        );
+      })}
+    </ul>
   );
 }
 

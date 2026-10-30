@@ -21,7 +21,7 @@ from pydantic import BaseModel
 from starlette.middleware.gzip import GZipMiddleware
 
 from . import auth, busy, config, runs, sse
-from .agents import architect, concepts, importer, intake, jsfix, research, reviser, reviser_adk, taste, views
+from .agents import architect, concepts, importer, intake, jsfix, locality, research, reviser, reviser_adk, taste, views
 from .auth import Identity
 from .compliance import lda
 from .store import blobs, db
@@ -35,9 +35,9 @@ app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=6)
 
 PUBLIC_FIELDS = ("id", "name", "created_at", "updated_at", "stage", "brief", "envelope", "concepts", "selected_concept_id",
                  "versions", "current_version_id", "thumbnail_url", "brief_changed", "cloned_from", "imported", "taste",
-                 "house_taste_fit")
+                 "house_taste_fit", "locality")
 CLIENT_FIELDS = ("id", "name", "created_at", "updated_at", "stage", "concepts", "selected_concept_id", "versions",
-                 "current_version_id", "thumbnail_url", "taste")
+                 "current_version_id", "thumbnail_url", "taste", "locality")
 RANK = {"client": 1, "team": 2, "owner": 3}
 NEED = {"view": 1, "comment": 1, "edit": 2, "owner": 3}
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -565,6 +565,30 @@ async def intake_turn(pid: str, body: IntakeBody, me: Identity = Depends(auth.id
     return sse.stream(intake.run_turn(p, body.message, body.action, body.chips))
 
 
+# --- the neighbourhood ------------------------------------------------------------------------------------------------
+class LocalityBody(BaseModel):
+    location: str | None = None
+
+
+def _where(brief: dict) -> str:
+    return ", ".join(x for x in (brief.get("scheme"), brief.get("city")) if x)
+
+
+@app.post("/api/projects/{pid}/locality")
+async def read_locality(pid: str, body: LocalityBody, me: Identity = Depends(auth.identity)):
+    """Read the neighbourhood as soon as the place is known: the map, how it feels, and what a house there could take from
+    it. Kept on the project until the place changes."""
+    p, role = await access(pid, me, "edit")
+    where = (body.location or "").strip()[:120] or _where(p.get("brief") or {})
+    if not where:
+        raise HTTPException(400, "Tell me where the house will be first.")
+    cur = p.get("locality") or {}
+    if cur.get("location") == where and cur.get("ideas"):
+        return public(p, role)
+    got = await locality.read(where, p.get("brief") or {})
+    return public(await db.update_project(pid, locality=got), role)
+
+
 # --- taste (Qloo) ------------------------------------------------------------------------------------------------------
 class Favourite(BaseModel):
     kind: str | None = None
@@ -679,10 +703,17 @@ async def make_concepts(pid: str, body: ConceptBody, me: Identity = Depends(auth
     async def gen():
         proj = p
         brief = p.get("brief") or {}
-        where = ", ".join(x for x in (brief.get("scheme"), brief.get("city")) if x)
-        if not p.get("taste") and where and not body.base_concept_id:
+        where = _where(brief)
+        if where and not body.base_concept_id and (proj.get("locality") or {}).get("location") != where:
+            # the street comes first: the concepts take their facade and garden from the neighbourhood
+            yield "stage", {"stage": "wait", "message": f"Walking around {where.split(',')[0]}…"}
+            try:
+                proj = await db.update_project(pid, locality=await locality.read(where, brief))
+            except Exception as e:
+                logging.getLogger("naqsha").warning("locality before concepts failed: %r", e)
+        if not proj.get("taste") and where and not body.base_concept_id:
             # no favourites shared: the design still follows its locality, read from Qloo before anything is drawn
-            async for ev in _taste_events(pid, p, {"people": [], "location": where, "notes": None}):
+            async for ev in _taste_events(pid, proj, {"people": [], "location": where, "notes": None}):
                 if ev[0] == "step":
                     yield "stage", {"stage": "wait", "message": ev[1]["message"]}
                 elif ev[0] == "taste":

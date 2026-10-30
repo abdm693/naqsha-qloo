@@ -207,6 +207,8 @@ export interface Project {
   taste?: Taste | null;
   /** Measured on the built house (its photograph against the taste checklist). */
   house_taste_fit?: (TasteFit & { version_id: string }) | null;
+  /** The neighbourhood, read as soon as the place is known. */
+  locality?: Locality | null;
 }
 
 // ---- taste (Qloo) ----------------------------------------------------------------------------------------------------
@@ -225,12 +227,24 @@ export interface TasteProfile {
   people: { label: string; role?: string | null; tags: TasteTag[] }[];
   destinations: { eid: string; name: string; image?: string; affinity?: number }[];
   brands: { eid: string; name: string; image?: string; adjectives?: unknown }[];
-  area?: { location: string; tags: TasteTag[]; places: TastePlace[]; makers?: TastePlace[] };
+  area?: { location: string; center?: GeoPoint | null; tags: TasteTag[]; places: TastePlace[]; makers?: TastePlace[] };
   favourites?: FoundFavourite[];
   /** No favourites were shared: the taste was read from the locality's places. */
   locality_only?: boolean;
 }
-export interface TastePlace { eid: string; name: string; address?: string; image?: string; tags: string[] }
+export interface TastePlace { eid: string; name: string; address?: string; image?: string; tags: string[]; lat?: number | null; lon?: number | null; category?: string | null }
+export interface GeoPoint { name?: string; lat: number; lon: number; label?: string }
+export interface LocalPlace { id: string; name: string; lat: number; lon: number; image?: string | null; address?: string | null; category?: string | null; feel: string[] }
+export interface Locality {
+  location: string;
+  center?: GeoPoint | null;
+  feel: { name: string; share?: number | null }[];
+  places: LocalPlace[];
+  reading?: string | null;
+  ideas: { title: string; line: string; where?: string; from?: string[] }[];
+  suggestions: string[];
+  at: string;
+}
 export interface Swatch { name: string; hex: string }
 export interface StyleBrief {
   headline: string;

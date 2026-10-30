@@ -101,6 +101,8 @@ export interface Api {
   readTaste(pid: string, body: TasteInput, handlers: SSEHandlers, opts?: StreamOptions): Promise<void>;
   /** Style one room: re-read it for one person's taste (or everyone's) and/or picture it. Returns the project. */
   styleRoom(pid: string, index: number, body: { follows?: string; image?: boolean }): Promise<Project>;
+  /** Read the neighbourhood (map, feel, ideas) for the brief's place, or the one given. Returns the project. */
+  readLocality(pid: string, body?: { location?: string }): Promise<Project>;
   /** Night versions of concepts (same camera), streamed as `concept` events with night_url filled in. */
   conceptsNight(pid: string, body: { ids?: string[] }, handlers: SSEHandlers, opts?: StreamOptions): Promise<void>;
   selectConcept(pid: string, cid: string): Promise<Project>;
@@ -261,6 +263,7 @@ const realApi: Api = {
   generateConcepts: (pid, body, handlers, opts) => stream(`${p(pid)}/concepts`, body, handlers, opts),
   readTaste: (pid, body, handlers, opts) => stream(`${p(pid)}/taste`, body, handlers, { idleTimeoutMs: 120_000, ...opts }),
   styleRoom: (pid, index, body) => http("POST", `${p(pid)}/taste/rooms/${index}`, body),
+  readLocality: (pid, body) => http("POST", `${p(pid)}/locality`, body ?? {}),
   conceptsNight: (pid, body, handlers, opts) => stream(`${p(pid)}/concepts/night`, body, handlers, { idleTimeoutMs: 120_000, ...opts }),
   selectConcept: (pid, cid) => http("POST", `${p(pid)}/concepts/${e(cid)}/select`),
 

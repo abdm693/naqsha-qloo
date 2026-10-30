@@ -98,7 +98,7 @@ const style: StyleBrief = {
 };
 
 export async function* tasteScript(input: TasteInput): AsyncGenerator<Step> {
-  yield ev("step", { id: "resolve", message: "Finding your favourites in Qloo's taste graph" });
+  yield ev("step", { id: "resolve", message: "Finding each of your favourites" });
   yield 700;
   const found = input.people.flatMap((p, i) =>
     p.favourites.map((f, j) => ({ eid: `E${i * 10 + j + 1}`, who: p.label, asked: f.name, name: f.name, type: f.kind })),
@@ -111,7 +111,7 @@ export async function* tasteScript(input: TasteInput): AsyncGenerator<Step> {
   yield ev("profile", profile);
   yield ev("step", { id: "explore", message: "Following the threads that matter for your home" });
   yield 700;
-  yield ev("step", { id: "x1", message: "Asking Qloo which destinations people with this taste love", tool: "qloo_similar" });
+  yield ev("step", { id: "x1", message: "Finding destinations people with this taste love", tool: "qloo_similar" });
   yield 800;
   yield ev("step", { id: "x2", message: "Looking for furniture stores in DHA Phase 6 that suit the family", tool: "qloo_places" });
   yield 800;

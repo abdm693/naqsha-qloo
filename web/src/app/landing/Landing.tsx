@@ -1,6 +1,6 @@
 /**
  * The landing page (/): what Naqsha does for a family or a builder, in plain language, with the
- * house-under-construction animation, the taste section (Qloo), and a separate Portal button into the app (/app).
+ * house-under-construction animation, the taste section, and a separate Portal button into the app (/app).
  */
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -18,7 +18,7 @@ import { Construction } from "./Construction";
 
 // Hyphenated compounds use U+2011 (a non-breaking hyphen) so "approval‑ready" never splits across lines.
 const benefits = (counts: SampleCounts | null): { title: string; line: string }[] => [
-  { title: "Designed around your family's taste", line: "Share the films, music and places you love. Qloo's taste graph turns them into colours, materials and rooms that feel like yours." },
+  { title: "Designed around your family's taste", line: "Share the films, music and places you love. Naqsha reads the taste behind them, and your street's, and turns it into colours, materials and rooms that feel like yours." },
   { title: "Plot to a checked floor plan the same afternoon", line: "Tell Naqsha the plot and the family, and get dimensioned floor plans before the chai goes cold." },
   {
     title: "Checked against the bylaws, every time",
@@ -34,7 +34,7 @@ const benefits = (counts: SampleCounts | null): { title: string; line: string }[
   { title: "Drawings your contractor can use", line: "Print every floor to scale with a title block, area schedule and compliance sheet, on A3 or A4, or save it as a PDF." },
 ];
 
-/** The taste section: four real families from the samples, in four countries. What they share, what Qloo finds, what changes. */
+/** The taste section: four real families from the samples, in four countries. What they share, what Naqsha finds, what changes. */
 const FAMILIES = [
   {
     place: "Lahore, Pakistan",
@@ -127,7 +127,6 @@ function countryOf(city: string): string {
 
 /** What this edition runs on. */
 const STACK: { name: string; line: string }[] = [
-  { name: "Qloo taste graph", line: "Finds what a family's favourite films, music and places say about the home they want." },
   { name: "Google Gemini on Vertex AI", line: "Talks with the family, designs the plan and the 3D house, and revises it from their notes." },
   { name: "Tavily", line: "Looks up the local building rules wherever the plot is, with every source linked." },
 ];
@@ -239,7 +238,7 @@ export function Landing() {
               transition={{ duration: 0.6, ease: ease.out, delay: 0.08 }}
               className="mt-6 max-w-[33rem] text-body-lg text-ink-2 sm:mt-8 sm:text-[19px] sm:leading-[30px]"
             >
-              Tell Naqsha about your plot and the people who will live there. It learns your family's taste with Qloo, then designs a bylaw‑checked floor plan and a 3D home you can walk through, built around it.
+              Tell Naqsha about your plot and the people who will live there. It learns your family's taste and reads your neighbourhood, then designs a bylaw‑checked floor plan and a 3D home you can walk through, built around it.
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -260,7 +259,7 @@ export function Landing() {
               transition={{ duration: 0.6, ease: ease.out, delay: 0.24 }}
               className="mt-8 flex flex-wrap gap-x-5 gap-y-2 text-[14px] text-ink-3 sm:mt-10"
             >
-              {["Learns your taste with Qloo", "Bylaw‑checked", "Walk every room"].map((t) => (
+              {["Learns your taste", "Bylaw‑checked", "Walk every room"].map((t) => (
                 <li key={t} className="flex items-center gap-2">
                   <span className="size-1.5 rounded-full bg-accent" aria-hidden />
                   {t}
@@ -281,7 +280,7 @@ export function Landing() {
           </motion.div>
         </section>
 
-        {/* Taste (Qloo): the one place on the landing that uses the taste gradient. */}
+        {/* Taste: the one place on the landing that uses the taste gradient. */}
         <section id="taste" className="mx-auto max-w-[1280px] scroll-mt-24 px-4 pt-24 sm:px-8 sm:pt-32" aria-labelledby="taste-title">
           <div className="taste-wash relative overflow-hidden rounded-media px-5 py-14 shadow-e1 sm:px-12 sm:py-20">
             <Reveal className="max-w-[46rem]">
@@ -293,7 +292,7 @@ export function Landing() {
                 A house that knows <span className="taste-text pr-1">what you love.</span>
               </h2>
               <p className="mt-4 text-body-lg text-ink-2">
-                Two families on the same plot should not get the same house. Tell Naqsha the films you rewatch, the music in the car and the places you keep going back to. Qloo's taste graph finds what those choices have in common, and the design follows it.
+                Two families on the same plot should not get the same house. Tell Naqsha the films you rewatch, the music in the car and the places you keep going back to. Naqsha finds what those choices have in common, reads the street the house will stand on, and the design follows both.
               </p>
             </Reveal>
             <div role="tablist" aria-label="Four families" className="mt-10 flex flex-wrap gap-2">
@@ -315,7 +314,7 @@ export function Landing() {
                   ))}
                 </ul>
               </TasteStep>
-              <TasteStep n={2} title="What Qloo finds" featured>
+              <TasteStep n={2} title="What Naqsha finds" featured>
                 <ul className="flex flex-col gap-3">
                   {FAMILIES[family].finds.map((t) => (
                     <li key={t} className="flex items-start gap-3 text-[15px] leading-[22px] text-ink">
@@ -337,7 +336,7 @@ export function Landing() {
               </TasteStep>
             </ol>
             <p className="mt-6 max-w-[40rem] text-[13px] leading-5 text-ink-3">
-              Four families from the sample homes, read with Qloo. Your own answers shape your own house, and every change is still checked against the local rules.
+              Four families from the sample homes. Your own answers shape your own house, and every change is still checked against the local rules.
             </p>
           </div>
         </section>
@@ -498,7 +497,7 @@ export function Landing() {
             <Link to="/app/signin" className="inline-flex min-h-11 items-center text-ink-2 hover:text-ink sm:min-h-8">Sign in</Link>
           </nav>
         </div>
-        <p className="mt-10 text-[13px] text-ink-3">© 2026 Naqsha · Made in Lahore · Taste from Qloo · Designed with Google Gemini on Vertex AI · Local rules found with Tavily · Open source (AGPL‑3.0)</p>
+        <p className="mt-10 text-[13px] text-ink-3">© 2026 Naqsha · Made in Lahore · Designed with Google Gemini on Vertex AI · Local rules found with Tavily · Open source (AGPL‑3.0)</p>
       </footer>
     </div>
   );
@@ -574,7 +573,7 @@ function HeroMedia({ counts }: { counts: SampleCounts | null }) {
   );
 }
 
-/** One step of the taste section: a numbered card. The middle one ("What Qloo finds") wears the taste ring. */
+/** One step of the taste section: a numbered card. The middle one ("What Naqsha finds") wears the taste ring. */
 function TasteStep({ n, title, featured, children }: { n: number; title: string; featured?: boolean; children: ReactNode }) {
   return (
     <Reveal as="li" delay={(n - 1) * 0.08} className="relative">

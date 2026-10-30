@@ -1,0 +1,355 @@
+{
+ "location": "DHA Phase 6, Lahore",
+ "center": {
+  "name": "DHA Phase 6",
+  "lat": 31.4716319,
+  "lon": 74.451084,
+  "label": "DHA Phase 6, تحصیل لاہور کنٹونمنٹ, لاہور ڈویژن, پنجاب, پاکستان"
+ },
+ "feel": [
+  {
+   "name": "Commercial",
+   "share": 0.38
+  },
+  {
+   "name": "Casual",
+   "share": 0.38
+  },
+  {
+   "name": "Urban",
+   "share": 0.33
+  },
+  {
+   "name": "Modern",
+   "share": 0.33
+  },
+  {
+   "name": "Central",
+   "share": 0.3
+  },
+  {
+   "name": "Lively",
+   "share": 0.25
+  },
+  {
+   "name": "Convenient",
+   "share": 0.23
+  },
+  {
+   "name": "Stylish",
+   "share": 0.2
+  },
+  {
+   "name": "Street view",
+   "share": 0.2
+  },
+  {
+   "name": "Elegant",
+   "share": 0.15
+  },
+  {
+   "name": "Welcoming",
+   "share": 0.12
+  },
+  {
+   "name": "Clean",
+   "share": 0.12
+  }
+ ],
+ "places": [
+  {
+   "id": "F0CB8ECA-02E3-4D6B-B371-2A929A74E3F1",
+   "name": "Gloria Jean's Coffees DHA Phase VI",
+   "lat": 31.4786708,
+   "lon": 74.45001599999999,
+   "image": "https://images.qloo.com/i/F0CB8ECA-02E3-4D6B-B371-2A929A74E3F1-420x-auto.jpg",
+   "address": "FCHX+9W6 Shabbir Sharif Rd Sector H DHA Phase 6, Lahore Pakistan",
+   "category": "Coffee shop",
+   "feel": [
+    "Social",
+    "Modern",
+    "Commercial",
+    "Central",
+    "Trendy"
+   ]
+  },
+  {
+   "id": "583726B7-9066-41F5-91EC-734AAF29CB7F",
+   "name": "Broadway Pizza - Phase 6 Lhr",
+   "lat": 31.4729699,
+   "lon": 74.44237799999999,
+   "image": "https://images.qloo.com/i/583726B7-9066-41F5-91EC-734AAF29CB7F-420x-auto.jpg",
+   "address": "Plot # 15 MB Main Blvd near DHA Office Sector B DHA Phase 6, Lahore, 54792 Pakistan",
+   "category": "Pizza restaurant",
+   "feel": [
+    "Lively",
+    "Informal"
+   ]
+  },
+  {
+   "id": "2C584579-3571-4262-8F7B-1E3362C602A0",
+   "name": "Spice Bazaar",
+   "lat": 31.4759216,
+   "lon": 74.4465117,
+   "image": "https://images.qloo.com/i/2C584579-3571-4262-8F7B-1E3362C602A0-420x-auto.jpg",
+   "address": "58 MB Main Blvd Sector H DHA Phase 6, Lahore Pakistan",
+   "category": "Pakistani restaurant",
+   "feel": [
+    "Rooftop",
+    "Stylish",
+    "Urban"
+   ]
+  },
+  {
+   "id": "664079D5-EA6A-4717-9051-D41B7A5178E0",
+   "name": "Sector H Park, DHA Phase 6 Lahore",
+   "lat": 31.475067099999997,
+   "lon": 74.4536,
+   "image": "https://images.qloo.com/i/664079D5-EA6A-4717-9051-D41B7A5178E0-420x-auto.jpg",
+   "address": "Avenue 6 Sector H DHA Phase 6, Lahore Pakistan",
+   "category": "Park",
+   "feel": []
+  },
+  {
+   "id": "CA3C3E91-F474-4303-A741-EA8BE846ECC0",
+   "name": "KFC - DHA Phase 6",
+   "lat": 31.482857,
+   "lon": 74.4557239,
+   "image": "https://images.qloo.com/i/CA3C3E91-F474-4303-A741-EA8BE846ECC0-420x-auto.jpg",
+   "address": "FFJ3+GFQ Sector J DHA Phase 6, Lahore, 54000 Pakistan",
+   "category": "Restaurant",
+   "feel": []
+  },
+  {
+   "id": "A30127F7-38E9-4219-8468-4E03B4CC8ECB",
+   "name": "Risen - Askari 11",
+   "lat": 31.4624243,
+   "lon": 74.4361756,
+   "image": "https://images.qloo.com/i/A30127F7-38E9-4219-8468-4E03B4CC8ECB-420x-auto.jpg",
+   "address": "Bedian Rd Sector A DHA Phase 6, Lahore, 54000 Pakistan",
+   "category": "Department store",
+   "feel": [
+    "Lively",
+    "Urban",
+    "Casual",
+    "Convenient",
+    "Warehouse style"
+   ]
+  },
+  {
+   "id": "8D7A2CD6-B6F5-4A60-972D-B653120EC671",
+   "name": "5th Generation Sports Complex",
+   "lat": 31.4732505,
+   "lon": 74.4335242,
+   "image": "https://images.qloo.com/i/8D7A2CD6-B6F5-4A60-972D-B653120EC671-420x-auto.jpg",
+   "address": "5th Generation Sports Complex Sector Y DHA Phase 8, Lahore, 54810 Pakistan",
+   "category": "Swimming pool",
+   "feel": []
+  },
+  {
+   "id": "F84FBF08-B0FE-46CB-B70E-AEEC77268A15",
+   "name": "Gourmet Foods - Bedian Road",
+   "lat": 31.4584044,
+   "lon": 74.440468,
+   "image": "https://images.qloo.com/i/F84FBF08-B0FE-46CB-B70E-AEEC77268A15-420x-auto.jpg",
+   "address": "5a Bedian Rd Babu Mehar Town Lidher Pakistan",
+   "category": "Bakery",
+   "feel": [
+    "High traffic",
+    "Developing",
+    "Casual",
+    "Suburban",
+    "Street view"
+   ]
+  },
+  {
+   "id": "2B02D979-E3FA-49D1-822C-4E49195C949D",
+   "name": "LA.LA.BE",
+   "lat": 31.4638305,
+   "lon": 74.4333812,
+   "image": "https://images.qloo.com/i/2B02D979-E3FA-49D1-822C-4E49195C949D-420x-auto.jpg",
+   "address": "ServiceLane Bedian Rd Askari XI, Lahore, 54000 Pakistan",
+   "category": "Fast food restaurant",
+   "feel": [
+    "Street view",
+    "Modern",
+    "Bustling",
+    "Urban",
+    "Casual"
+   ]
+  },
+  {
+   "id": "0EE68A5A-BC85-4300-90B7-BA15416DEE26",
+   "name": "Al Rehman Events",
+   "lat": 31.4694111,
+   "lon": 74.4304573,
+   "image": "https://images.qloo.com/i/0EE68A5A-BC85-4300-90B7-BA15416DEE26-420x-auto.jpg",
+   "address": "Service Rd Jamun, Lahore Pakistan",
+   "category": "Banquet hall",
+   "feel": [
+    "Grand",
+    "Marquee",
+    "Festive",
+    "Spacious",
+    "Uplifting"
+   ]
+  },
+  {
+   "id": "04C1E71E-9ABF-418D-BD2D-00C576B274C7",
+   "name": "Nando's - DHA Phase 6",
+   "lat": 31.483652199999998,
+   "lon": 74.45681119999999,
+   "image": "https://images.qloo.com/i/04C1E71E-9ABF-418D-BD2D-00C576B274C7-420x-auto.jpg",
+   "address": "Dha Phase 6, J Block Mosque Lahore 157 MB Shabbir Sharif Rd Sector J DHA Phase 6, Lahore, 54792 Pakistan",
+   "category": "Restaurant",
+   "feel": [
+    "Vibrant",
+    "Afro portuguese inspired",
+    "Cozy",
+    "Street level retail",
+    "Colorful"
+   ]
+  },
+  {
+   "id": "F21ECDEC-40CA-4534-B1ED-60DEC148EA8D",
+   "name": "Butt Karahi Bedian",
+   "lat": 31.463532999999998,
+   "lon": 74.4364185,
+   "image": "https://images.qloo.com/i/F21ECDEC-40CA-4534-B1ED-60DEC148EA8D-420x-auto.jpg",
+   "address": "FC7P+5C6 UET Bus Stop Bedian Rd, Sector A DHA Phase 6, Lahore, 54000 Pakistan",
+   "category": "Restaurant",
+   "feel": [
+    "Convenient",
+    "Clean",
+    "Street view",
+    "Urban",
+    "Roadside"
+   ]
+  },
+  {
+   "id": "BB0FA215-8E75-4B84-BC89-B9670A3E7B75",
+   "name": "Jalal Sons -DHA Phase 6 H Block",
+   "lat": 31.4780552,
+   "lon": 74.4492379,
+   "image": "https://images.qloo.com/i/BB0FA215-8E75-4B84-BC89-B9670A3E7B75-420x-auto.jpg",
+   "address": "25 Street 11 Sector H DHA Phase 6, Lahore Pakistan",
+   "category": "Bakery",
+   "feel": [
+    "Central",
+    "Sophisticated",
+    "Clean",
+    "Deli",
+    "Commercial"
+   ]
+  },
+  {
+   "id": "CAF9CFED-7306-41DF-999D-82B53A5539F9",
+   "name": "Al Fatah - Defence Raya",
+   "lat": 31.475147999999997,
+   "lon": 74.46918,
+   "image": "https://images.qloo.com/i/CAF9CFED-7306-41DF-999D-82B53A5539F9-420x-auto.jpg",
+   "address": "FFG9+3M3 CP 7 Defence Raya Golf Resort Sector M DHA Phase 6, Lahore, Punjab 54792 Pakistan",
+   "category": "Shopping mall",
+   "feel": []
+  },
+  {
+   "id": "3159CC3E-DF4F-4874-8869-0BD94D443109",
+   "name": "Kickstart Cafe",
+   "lat": 31.468508999999997,
+   "lon": 74.4510119,
+   "image": "https://images.qloo.com/i/3159CC3E-DF4F-4874-8869-0BD94D443109-420x-auto.jpg",
+   "address": "80 CCA PH 6 Sector C DHA, Lahore, 54000 Pakistan",
+   "category": "Cafe",
+   "feel": [
+    "Convenient",
+    "Welcoming",
+    "City center"
+   ]
+  },
+  {
+   "id": "756342A9-1988-4522-AA3A-D0AC1932EA49",
+   "name": "Pearl Castle (Previously Faletti's Banquet)",
+   "lat": 31.468781699999997,
+   "lon": 74.4317406,
+   "image": "https://images.qloo.com/i/756342A9-1988-4522-AA3A-D0AC1932EA49-420x-auto.jpg",
+   "address": "Pearl castle banquet hall (previously Falettis Banquet main Bedian Rd opposite phase 5, near nawaz shareef interchange, Cantt, Lahore Pakistan",
+   "category": "Banquet hall",
+   "feel": [
+    "Business",
+    "Commercial",
+    "Lush",
+    "Elegant",
+    "Urban"
+   ]
+  },
+  {
+   "id": "F7B84F6B-A29B-4135-8454-13DD77D0BE7E",
+   "name": "K Block Park DHA",
+   "lat": 31.470599099999998,
+   "lon": 74.46528169999999,
+   "image": "https://images.qloo.com/i/F7B84F6B-A29B-4135-8454-13DD77D0BE7E-420x-auto.jpg",
+   "address": "FFC8+64M Sector K DHA Phase 6, Lahore Pakistan",
+   "category": "Park",
+   "feel": []
+  },
+  {
+   "id": "112A54E4-863C-4925-B51A-E004B0EA16D8",
+   "name": "Boxpark Pico",
+   "lat": 31.4751081,
+   "lon": 74.4501403,
+   "image": "https://images.qloo.com/i/112A54E4-863C-4925-B51A-E004B0EA16D8-420x-auto.jpg",
+   "address": "St 5 Sector H DHA Phase 6, Lahore, 54792 Pakistan",
+   "category": "Takeout restaurant",
+   "feel": [
+    "Minimalist",
+    "Casual",
+    "Unassuming",
+    "Street view",
+    "Modern"
+   ]
+  }
+ ],
+ "reading": "Phase 6 moves quickly with wide boulevards, busy cafes, and sharp modern commercial plazas, but softens into quiet residential lanes just off the main roads. It feels polished, convenient, and built for easy, connected suburban living.",
+ "ideas": [
+  {
+   "title": "Clean plaster and textured stone",
+   "line": "Clad the front elevation with clean white render paired with warm fluted stone tiles to give it a sharp, contemporary street presence.",
+   "where": "facade",
+   "from": [
+    "Gloria Jean's Coffees DHA Phase VI",
+    "LA.LA.BE"
+   ]
+  },
+  {
+   "title": "Double-height central living lounge",
+   "line": "Build a tall, open-plan family lounge with high clerestory windows and polished terrazzo floors that naturally stays cool in Lahore's summers.",
+   "where": "inside",
+   "from": [
+    "Pearl Castle (Previously Faletti's Banquet)",
+    "Al Rehman Events"
+   ]
+  },
+  {
+   "title": "Walled lawn with shade trees",
+   "line": "Enclose the back garden with a clean boundary wall, lush lawn grass, and flowering amaltas trees that mirror the neighborhood's open green spaces.",
+   "where": "garden",
+   "from": [
+    "Sector H Park, DHA Phase 6 Lahore"
+   ]
+  },
+  {
+   "title": "Breezy rooftop dining terrace",
+   "line": "Create a covered brick-and-timber pergola on the second-floor roof for family tea and evening dinners overlooking the skyline.",
+   "where": "living",
+   "from": [
+    "Spice Bazaar"
+   ]
+  }
+ ],
+ "suggestions": [
+  "Plan a rooftop barbecue pergola",
+  "Keep ground floor open-plan and airy",
+  "Add secure perimeter courtyard parking"
+ ],
+ "at": "2026-10-30T15:28:07+00:00"
+}

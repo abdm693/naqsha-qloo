@@ -92,7 +92,8 @@ Write JSON only:
 Suggestions are what Naqsha offers the family as one-tap requests, so they must come from the evidence: imperative, 3-7
 words, concrete (e.g. "Add a brass jaali to the stair", "A reading nook for Abbu", "Kyoto timber on the balcony").
 If THE FAMILY is empty, nobody shared favourites yet: design from the locality's taste and say so in the story.
-Plain, warm, specific English. No emoji. No "not X but Y"."""
+Plain, warm, specific English. No emoji. No "not X but Y".
+The family reads every word you write: never name Qloo, a "taste graph", tags, evidence ids or any data source in the text."""
 
 
 class Evidence:
@@ -156,8 +157,14 @@ def _location(brief: dict, taste: dict) -> str | None:
 async def gather(brief: dict, taste: dict, ev: Evidence) -> AsyncIterator[tuple[str, dict]]:
     people = _people(taste)
     loc = _location(brief, taste)
+    center = None
+    if loc:
+        try:
+            center = await qloo.locate(loc)
+        except qloo.QlooError as e:
+            log.warning("locate %r failed: %s", loc, e)
     if people:
-        yield "step", {"id": "resolve", "message": "Finding your favourites in Qloo's taste graph"}
+        yield "step", {"id": "resolve", "message": "Finding each of your favourites"}
     resolved = await asyncio.gather(*[qloo.resolve([{**f, "who": p.get("label") or "You"} for f in p.get("favourites") or []])
                                       for p in people])
     found, missing = [], []
@@ -180,7 +187,7 @@ async def gather(brief: dict, taste: dict, ev: Evidence) -> AsyncIterator[tuple[
             return
         yield "step", {"id": "locality", "message": f"Reading the taste of {loc} from the places people love there"}
         try:
-            ar0 = await qloo.area(loc)
+            ar0 = await qloo.area(loc, center=center, keep=12)
         except qloo.QlooError as e:
             log.warning("locality taste failed: %s", e)
             return
@@ -199,9 +206,9 @@ async def gather(brief: dict, taste: dict, ev: Evidence) -> AsyncIterator[tuple[
         if p["_ids"]:
             jobs[f"person{i}"] = qloo.taste_tags(p["_ids"], take=16, per_type=3)
     if loc:
-        jobs["area"] = qloo.area(loc)
-        jobs["places"] = qloo.places_near(loc, family_ids, take=8)
-        jobs["makers"] = qloo.places_near(loc, family_ids, qloo.MAKER_TAGS, take=6)
+        jobs["area"] = qloo.area(loc, center=center)
+        jobs["places"] = qloo.places_near(loc, family_ids, take=8, center=center)
+        jobs["makers"] = qloo.places_near(loc, family_ids, qloo.MAKER_TAGS, take=6, center=center, radius=12000)
     keys = list(jobs)
     out = dict(zip(keys, await asyncio.gather(*jobs.values(), return_exceptions=True)))
     for k, v in out.items():
@@ -233,8 +240,9 @@ async def gather(brief: dict, taste: dict, ev: Evidence) -> AsyncIterator[tuple[
         for x in ar.get("places") or []:
             ev.add("P", x, f"popular in {loc}")
         place = lambda x, via: {"eid": ev.add("P", x, via), "name": x["name"], "address": x.get("address"), "image": x.get("image"),
+                                "lat": x.get("lat"), "lon": x.get("lon"), "category": x.get("category"),
                                 "tags": [t["name"] for t in x.get("tags") or [] if t.get("type") in qloo.FEEL_TAGS][:5]}
-        profile["area"] = {"location": loc, "tags": cite_tags(ar.get("tags") or [], f"how {loc} feels (from its places)"),
+        profile["area"] = {"location": loc, "center": center, "tags": cite_tags(ar.get("tags") or [], f"how {loc} feels (from its places)"),
                            "places": [place(x, f"places in {loc} that suit the family") for x in out.get("places") or []],
                            "makers": [place(x, f"galleries and makers in {loc} that suit the family") for x in out.get("makers") or []]}
     yield "profile", profile
@@ -259,8 +267,9 @@ async def explore(brief: dict, taste: dict, ev: Evidence, max_steps: int = 5) ->
             break
         m = resp.choices[0].message
         tc = m.tool_calls or []
+        # The call goes back as Gemini sent it: each tool call carries a thought signature the next turn must echo.
         msgs.append({"role": "assistant", "content": m.content or "",
-                     "tool_calls": [{"id": c.id, "type": "function", "function": {"name": c.function.name, "arguments": c.function.arguments}} for c in tc]})
+                     "tool_calls": [c.model_dump(exclude_none=True) for c in tc]})
         if not tc:
             break
         stop = False
@@ -280,13 +289,13 @@ async def explore(brief: dict, taste: dict, ev: Evidence, max_steps: int = 5) ->
                                    if isinstance(i, str)]
                 try:
                     if name == "qloo_taste":
-                        yield "step", {"id": f"x{calls}", "message": "Asking Qloo for more of the taste behind them", "tool": name}
+                        yield "step", {"id": f"x{calls}", "message": "Looking deeper into the taste behind them", "tool": name}
                         tags = await qloo.taste_tags([i for i in a.get("entity_ids") or [] if isinstance(i, str)][:12],
                                                      a.get("tag_types") or None, take=12, per_type=3)
                         result = [{"eid": ev.add("T", t, "a closer look at the family's taste"), "name": t["name"], "type": t.get("type")} for t in tags]
                     elif name == "qloo_similar":
                         typ = str(a.get("type") or "destination").replace("urn:entity:", "")
-                        yield "step", {"id": f"x{calls}", "message": f"Asking Qloo which {typ.replace('_', ' ')}s people with this taste love", "tool": name}
+                        yield "step", {"id": f"x{calls}", "message": f"Finding {typ.replace('_', ' ')}s people with this taste love", "tool": name}
                         ents = await qloo.affinities(f"urn:entity:{typ}", [i for i in a.get("entity_ids") or [] if isinstance(i, str)][:12], take=6)
                         result = [{"eid": ev.add("E", e, f"{typ}s people with this taste love"), "name": e["name"],
                                    "tags": [t["name"] for t in e.get("tags") or []][:8]} for e in ents]
@@ -300,7 +309,7 @@ async def explore(brief: dict, taste: dict, ev: Evidence, max_steps: int = 5) ->
                         result = [{"eid": ev.add("P", x, f"{kw or 'places'} in {where}"), "name": x["name"], "address": x.get("address"),
                                    "tags": [t["name"] for t in x.get("tags") or []][:6]} for x in ps]
                     elif name == "qloo_search":
-                        yield "step", {"id": f"x{calls}", "message": f"Looking up {a.get('name')} in Qloo", "tool": name}
+                        yield "step", {"id": f"x{calls}", "message": f"Looking up {a.get('name')}", "tool": name}
                         hits = await qloo.search(a.get("name") or "", a.get("kind"), take=2)
                         result = [{"eid": ev.add("E", h, "looked up by the agent"), "id": h["id"], "name": h["name"],
                                    "tags": [t["name"] for t in h.get("tags") or []][:8]} for h in hits]
@@ -377,9 +386,9 @@ async def run(brief: dict, taste: dict) -> AsyncIterator[tuple[str, dict]]:
             profile = e[1]
         yield e
     if not profile:
-        yield "error", {"message": "Qloo didn't recognise any of these favourites yet. Try a few more well-known ones: a film, "
+        yield "error", {"message": "We couldn't find any of these favourites yet. Try a few more well-known ones: a film, "
                                    "an artist, a city you loved." if _people(taste) else
-                                   "Tell me where the house will be, so Qloo can read the area's taste."}
+                                   "Tell me where the house will be, so I can read the area's taste."}
         return
     yield "step", {"id": "explore", "message": "Following the threads that matter for your home"}
     async for e in explore(brief, taste, ev):

@@ -117,7 +117,15 @@ def taste_language(style: dict | None) -> str:
     return "; ".join(b for b in bits if b)
 
 
-def concept_prompt(brief: dict, take: dict | None = None, instruction: str | None = None, taste: dict | None = None) -> str:
+def street_language(loc: dict | None) -> str:
+    """What the neighbourhood suggests for the outside of the house (its facade and garden ideas), read from the places
+    people love around the plot: so even a first concept, before any favourites, belongs to its street."""
+    ideas = [i for i in (loc or {}).get("ideas") or [] if i.get("where") in ("facade", "garden") and i.get("line")]
+    return " ".join(f"From the neighbourhood: {i['line'].rstrip('.')}." for i in ideas[:2])
+
+
+def concept_prompt(brief: dict, take: dict | None = None, instruction: str | None = None, taste: dict | None = None,
+                   street: str = "") -> str:
     p = brief.get("plot") or {}
     style = brief.get("style") or "Modern Contemporary"
     hints = taste_language(taste) or STYLE_HINTS.get(style, brief.get("style_notes") or "")
@@ -132,7 +140,7 @@ def concept_prompt(brief: dict, take: dict | None = None, instruction: str | Non
     row = "" if p.get("corner") else ", one house in a continuous row of houses (a mid-row plot),"
     return (
         f"Photorealistic architectural photograph of a {style} {storeys} family house{row} on a {width:g} ft wide plot in {where}. "
-        f"Style language: {hints}.{direction} {locale.street_context(brief, cars)} {_roof_sentence(brief)} {_site_sentence(brief)} "
+        f"Style language: {hints}.{direction} {street + ' ' if street else ''}{locale.street_context(brief, cars)} {_roof_sentence(brief)} {_site_sentence(brief)} "
         f"{camera} High-end real-estate photography, realistic materials and proportions. No people. Absolutely no text, "
         f"numbers, signs, house plaques or watermarks anywhere in the image.{extra}"
     )
@@ -310,8 +318,9 @@ async def generate(project: dict, count: int = 4, instruction: str | None = None
         takes = [plain_take(t) | {k: t.get(k) for k in ("why", "because")} for t in (style or {}).get("takes") or []]
         if instruction or len(takes) < count:  # a typed direction, or no taste pass yet: the generic takes
             takes = await design_takes(brief, count, instruction)
+        street = street_language(project.get("locality"))
         for take in takes[:count]:
-            jobs.append((concept_prompt(brief, take, instruction, style), take))
+            jobs.append((concept_prompt(brief, take, instruction, style, street), take))
         if style and not instruction:  # the measured comparison: the same brief drawn without the family's taste
             neutral = {**brief, "style": "Modern Contemporary", "style_notes": ""}  # the brief as it was before the taste pass
             jobs.append((concept_prompt(neutral, {"title": "Without your taste", "direction": "a typical new house for this plot"}),

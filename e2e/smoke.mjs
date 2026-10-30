@@ -34,7 +34,7 @@ page.on("pageerror", (e) => errors.push(e.message));
 await check("landing", async (p) => {
   await p.goto(BASE + "/");
   await p.getByRole("heading", { level: 1 }).waitFor();
-  for (const t of ["Start from your own drawing", "Rules for your city", "Qloo"]) {
+  for (const t of ["Start from your own drawing", "Rules for your city", "your family"]) {
     await p.getByText(t, { exact: false }).first().waitFor({ timeout: 10000 });
   }
 }, page);
@@ -43,7 +43,7 @@ await check("sample", async (p) => {
   await p.goto(BASE + "/");
   await p.getByRole("button", { name: "Explore a sample home" }).click();
   await p.waitForURL(/\/taste/, { timeout: 60000 });
-  await p.getByText("Taste by Qloo").first().waitFor({ timeout: 60000 });
+  await p.getByText("Naqsha Taste").first().waitFor({ timeout: 60000 });
   await p.getByRole("radio", { name: "House" }).first().click();
   await p.waitForURL(/\/house/, { timeout: 30000 });
   await p.getByText(/LDA|CDA|local rules/).first().waitFor({ timeout: 60000 });
@@ -52,8 +52,13 @@ await check("sample", async (p) => {
 
 await check("taste", async (p) => {
   await p.getByRole("radio", { name: "Taste" }).or(p.getByRole("tab", { name: "Taste" })).first().click();
-  await p.getByText("Taste by Qloo").first().waitFor({ timeout: 30000 });
+  await p.getByText("Naqsha Taste").first().waitFor({ timeout: 30000 });
   await p.getByText(/Inside: a room for each of you/).first().waitFor({ timeout: 30000 });
+  await p.getByText(/How much of you is in it/).first().waitFor({ timeout: 30000 });
+  // the neighbourhood: the plot pinned on its map among the places around it
+  await p.getByText("Where you'll live").first().waitFor({ timeout: 30000 });
+  await p.locator(".nbh-pin").first().waitFor({ timeout: 60000 });
+  if (await p.getByText(/Qloo/).count()) throw new Error("the app names Qloo");
   await p.getByText("Because").first().waitFor({ timeout: 30000 });
   await p.goBack();
   await p.waitForURL(/\/house/, { timeout: 30000 });
@@ -99,8 +104,9 @@ await check("family", async (p) => {
   const box = p.getByRole("textbox").first();
   await box.fill("10 marla mid-row plot in DHA Phase 6 Lahore, facing north. Two storeys, four bedrooms, parents downstairs.");
   await box.press("Enter");
-  // once the brief has a place, go straight to Taste (it can run before the brief is finished)
+  // once the brief has a place, the neighbourhood is read on its own; then straight to Taste
   await p.getByText("DHA Phase 6").first().waitFor({ timeout: 120000 });
+  await p.getByText("Your neighbourhood").first().waitFor({ timeout: 120000 });
   await p.getByRole("radio", { name: "Taste" }).first().click();
   const cards = p.locator("section").filter({ has: p.locator('input[aria-label="Who"]') });
   const add = async (card, field, value) => {
@@ -109,8 +115,8 @@ await check("family", async (p) => {
   };
   await add(0, "Places you loved", "Istanbul"); await add(0, "Music", "Abida Parveen"); await add(0, "Films and shows", "Coke Studio");
   await add(1, "Places you loved", "Kyoto"); await add(1, "Films and shows", "Spirited Away");
-  await p.getByRole("button", { name: /Read our taste with Qloo/ }).first().click();
-  await p.getByText(/Found in Qloo/i).first().waitFor({ timeout: 60000 });
+  await p.getByRole("button", { name: /Read our taste/ }).first().click();
+  await p.getByText(/Your favourites/i).first().waitFor({ timeout: 60000 });
   await p.getByText(/What your taste decided/).first().waitFor({ timeout: 300000 });
 }, page);
 

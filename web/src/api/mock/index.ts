@@ -3,7 +3,7 @@
  * Accounts, members, client links and threaded comments are simulated too: the caller is whoever is signed in
  * through api/auth.ts (mock identity), otherwise the browser's guest.
  */
-import type { Author, Comment, Member, Project, Role } from "@contracts/api-types";
+import type { Author, Comment, Locality, Member, Project, Role } from "@contracts/api-types";
 import type { Api, Reply } from "../client";
 import { currentUser } from "../auth";
 import { mockUserName } from "./auth";
@@ -16,6 +16,7 @@ import { nightOf } from "./night";
 import { conceptsScript, designScript } from "./scripts";
 import { reviseScript } from "./revise";
 import { tasteScript } from "./taste";
+import dha6 from "./data/locality-dha6.json";
 import { ensureSamples, seedIfEmpty } from "./seed";
 import { ev, play, type Step } from "./stream";
 
@@ -300,6 +301,15 @@ export const mockApi: Api = {
       touch(p);
       save();
     }
+    return clone(p);
+  },
+
+  async readLocality(pid, body) {
+    await latency(1400);
+    const p = editable(pid);
+    p.locality = { ...(dha6 as Locality), location: body?.location || [p.brief?.scheme, p.brief?.city].filter(Boolean).join(", ") || dha6.location, at: new Date().toISOString() };
+    touch(p);
+    save();
     return clone(p);
   },
 

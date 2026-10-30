@@ -6,16 +6,16 @@
 import { useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-export type ViewId = "brief" | "concepts" | "plan" | "house" | "revisions";
+export type ViewId = "brief" | "taste" | "concepts" | "plan" | "house" | "revisions";
 
-const LEGACY: Record<ViewId, string> = { brief: "setup", concepts: "concepts", plan: "design", house: "explore", revisions: "revisions" };
+const LEGACY: Record<ViewId, string> = { brief: "setup", taste: "taste", concepts: "concepts", plan: "design", house: "explore", revisions: "revisions" };
 const LEGACY_ONLY = new Set(["setup", "design", "explore"]);
 
 export function viewPath(pathname: string, view: ViewId): string {
   const m = pathname.match(/^(.*?\/p\/[^/]+)(?:\/([^/?#]+))?/);
   const base = m?.[1] ?? pathname.replace(/\/$/, "");
   const seg = m?.[2] ?? "";
-  const legacy = LEGACY_ONLY.has(seg) || (!pathname.startsWith("/app/") && !["brief", "plan", "house"].includes(seg));
+  const legacy = LEGACY_ONLY.has(seg) || (!pathname.startsWith("/app/") && !["brief", "taste", "plan", "house"].includes(seg));
   return `${base}/${legacy ? LEGACY[view] : view}`;
 }
 

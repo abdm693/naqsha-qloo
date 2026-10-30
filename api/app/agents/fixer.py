@@ -120,7 +120,7 @@ async def fix(plan: dict, brief: dict, prepare, budget_s: float | None = None, m
         m = resp.choices[0].message
         calls = m.tool_calls or []
         msgs.append({"role": "assistant", "content": m.content or "",
-                     "tool_calls": [{"id": c.id, "type": "function", "function": {"name": c.function.name, "arguments": c.function.arguments}} for c in calls]})
+                     "tool_calls": [c.model_dump(exclude_none=True) for c in calls]})  # as sent: Gemini's thought signatures ride along
         if not calls:
             msgs.append({"role": "user", "content": "Use the tools: check_edits, then apply_edits, or finish."})
             continue

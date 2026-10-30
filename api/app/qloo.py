@@ -39,12 +39,17 @@ KINDS = {  # what the family calls a favourite -> Qloo entity type
 DESIGN_TAGS = ["urn:tag:aesthetic_property:qloo", "urn:tag:personal_style:qloo", "urn:tag:cultural_relevance:qloo",
                "urn:tag:lifestyle:qloo", "urn:tag:emotional_tone:qloo", "urn:tag:adjective:qloo"]
 # Tag types on places that describe how a place feels: the area's character is read from the places in it.
+# What destinations carry instead (they have no aesthetic tags): their character, culture and scenery still say a lot
+# about a home (Traditional, Laid Back, Traditional Crafts, Gardens).
+PLACE_TAGS = ["urn:tag:characteristic:qloo", "urn:tag:culture:qloo", "urn:tag:scenery:qloo"]
 FEEL_TAGS = ["urn:tag:ambience:qloo", "urn:tag:decor:qloo", "urn:tag:setting:qloo", "urn:tag:neighborhood_characteristic:qloo",
              "urn:tag:good_for:qloo", "urn:tag:view:qloo"]
 # Tags that say nothing about a home, or read badly in one ("Seductive", "Marriage"): dropped from Taste Analysis results.
 UNHELPFUL = {"seductive", "sexy", "marriage", "motivated", "professional", "ethnicity", "elite", "authoritative", "vengeance",
              "industry professionals", "the justice seeker", "insightful", "beauty oriented", "romantically inclined",
-             "athletic", "athletes", "sporty", "weddings", "freedom", "dynamic", "ethnic"}
+             "athletic", "athletes", "sporty", "weddings", "freedom", "dynamic", "ethnic", "ethnic diversity", "culturally aware",
+             "affluent", "wealthy", "world traveler", "global perspective", "business travelers", "seasonal residents", "remote",
+             "volcanoes", "coral reefs", "canyons", "scuba diving", "hot springs", "camping"}
 BRAND_GENRES = ["urn:tag:genre:brand:fashion", "urn:tag:genre:brand:retail"]   # textiles and objects, not cars
 MAKER_TAGS = ["urn:tag:category:place:art_gallery", "urn:tag:category:place:furniture_store", "urn:tag:genre:place:furniture_store",
               "urn:tag:category:place:interior_designer", "urn:tag:category:place:home_goods_store", "urn:tag:category:place:handicraft"]
@@ -119,6 +124,8 @@ def _entity(e: dict) -> dict:
             "description": (props.get("short_description") or props.get("description") or "")[:240],
             "feel": " ".join(str(props.get(k) or "") for k in ("ambience_description", "physical_setting_description"))[:400],
             "address": props.get("address"), "popularity": e.get("popularity"),
+            "lat": (e.get("location") or {}).get("lat"), "lon": (e.get("location") or {}).get("lon"),
+            "category": next((t.get("name") for t in e.get("tags") or [] if t.get("type") == "urn:tag:category:place"), None),
             "affinity": (e.get("query") or {}).get("affinity"),
             "tags": [{"id": t.get("id") or t.get("tag_id"), "name": t.get("name"), "type": t.get("type")}
                      for t in (e.get("tags") or [])[:30]],
@@ -186,8 +193,13 @@ async def taste_tags(entity_ids: list[str], tag_types: list[str] | None = None, 
         return []
     data = await insights("urn:tag", take=take, signal__interests__entities=entity_ids, filter__tag__types=tag_types or DESIGN_TAGS,
                           diversify__by="subtype", diversify__take=per_type, feature__explainability="true")
+    found = _tags(data)
+    if not tag_types and len(found) < 6:  # mostly places: read them by their character, culture and scenery
+        more = await insights("urn:tag", take=min(take, 16), signal__interests__entities=entity_ids, filter__tag__types=PLACE_TAGS,
+                              diversify__by="subtype", diversify__take=max(per_type, 5), feature__explainability="true")
+        found += _tags(more)
     seen, out = set(), []
-    for t in _tags(data):
+    for t in found:
         k = (t["name"] or "").strip().lower()
         if k and k not in seen and k not in UNHELPFUL:
             seen.add(k)
@@ -195,9 +207,26 @@ async def taste_tags(entity_ids: list[str], tag_types: list[str] | None = None, 
     return out
 
 
-async def area(location: str, take: int = 20) -> dict:
+async def locate(location: str) -> dict | None:
+    """Where a neighbourhood is: Qloo's locality entity for it ({name, lat, lon, label}), or None."""
+    data = await get("/search", {"query": location, "types": "urn:entity:locality", "take": 3})
+    for r in data.get("results") or []:
+        loc = r.get("location") or {}
+        if loc.get("lat") is not None and loc.get("lon") is not None:
+            return {"name": r.get("name"), "lat": loc["lat"], "lon": loc["lon"], "label": r.get("disambiguation") or r.get("name")}
+    return None
+
+
+def _near(location: str, center: dict | None, radius: int) -> dict:
+    """Places around the neighbourhood's own point when it is known (a name alone returns the whole city's favourites)."""
+    if center:
+        return {"filter__location": f"POINT({center['lon']} {center['lat']})", "filter__location__radius": radius}
+    return {"filter__location__query": location}
+
+
+async def area(location: str, take: int = 20, center: dict | None = None, radius: int = 2500, keep: int = 8) -> dict:
     """How an area feels, read from its places: the ambience, decor and setting tags that recur, and their own words."""
-    data = await insights("urn:entity:place", take=take, filter__location__query=location)
+    data = await insights("urn:entity:place", take=take, **_near(location, center, radius))
     ents = [_entity(e) for e in (data.get("results") or {}).get("entities") or []]
     counts: dict[str, int] = {}
     for e in ents:
@@ -207,7 +236,7 @@ async def area(location: str, take: int = 20) -> dict:
     top = sorted(counts.items(), key=lambda kv: -kv[1])[:12]
     n = max(1, len(ents))
     return {"tags": [{"id": f"area:{location}:{k}", "name": k, "type": "area", "affinity": round(v / n, 2)} for k, v in top],
-            "places": ents[:8]}
+            "places": ents[:keep]}
 
 
 async def affinities(ftype: str, entity_ids: list[str], take: int = 8, **extra) -> list[dict]:
@@ -222,9 +251,9 @@ async def affinities(ftype: str, entity_ids: list[str], take: int = 8, **extra) 
 
 
 async def places_near(location: str, entity_ids: list[str] | None = None, tag_ids: list[str] | None = None,
-                      take: int = 10) -> list[dict]:
+                      take: int = 10, center: dict | None = None, radius: int = 5000) -> list[dict]:
     """Places in the area, ranked for the family's taste (and narrowed to some tags, e.g. furniture or decor shops)."""
-    data = await insights("urn:entity:place", take=take, filter__location__query=location, filter__tags=tag_ids or None,
+    data = await insights("urn:entity:place", take=take, **_near(location, center, radius), filter__tags=tag_ids or None,
                           signal__interests__entities=entity_ids or None, feature__explainability="true" if entity_ids else None)
     return [_entity(e) for e in (data.get("results") or {}).get("entities") or []]
 
