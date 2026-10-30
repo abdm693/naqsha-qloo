@@ -34,9 +34,16 @@ KINDS = {  # what the family calls a favourite -> Qloo entity type
     "cafe": "urn:entity:place", "venue": "urn:entity:place", "brand": "urn:entity:brand", "game": "urn:entity:video_game",
     "video_game": "urn:entity:video_game", "person": "urn:entity:person",
 }
-# Tag types that describe how a place feels: the closest thing Qloo has to an aesthetic vocabulary.
-FEEL_TAGS = ["urn:tag:ambience:qloo", "urn:tag:decor:qloo", "urn:tag:setting:qloo", "urn:tag:style:qloo",
-             "urn:tag:neighborhood_characteristic:qloo", "urn:tag:good_for:qloo", "urn:tag:view:qloo"]
+# Taste Analysis tag types that describe a person's aesthetic (read from live results: "Modern Silhouettes", "Rich Textiles",
+# "Traditional Craftsmanship", "Refined Elegance"…). Other types (payments, inclusivity, plot keywords) say nothing about a home.
+DESIGN_TAGS = ["urn:tag:aesthetic_property:qloo", "urn:tag:personal_style:qloo", "urn:tag:cultural_relevance:qloo",
+               "urn:tag:lifestyle:qloo", "urn:tag:emotional_tone:qloo", "urn:tag:adjective:qloo", "urn:tag:customer_identity:qloo"]
+# Tag types on places that describe how a place feels: the area's character is read from the places in it.
+FEEL_TAGS = ["urn:tag:ambience:qloo", "urn:tag:decor:qloo", "urn:tag:setting:qloo", "urn:tag:neighborhood_characteristic:qloo",
+             "urn:tag:good_for:qloo", "urn:tag:view:qloo"]
+BRAND_GENRES = ["urn:tag:genre:brand:fashion", "urn:tag:genre:brand:retail"]   # textiles and objects, not cars
+MAKER_TAGS = ["urn:tag:category:place:art_gallery", "urn:tag:category:place:furniture_store", "urn:tag:genre:place:furniture_store",
+              "urn:tag:category:place:interior_designer", "urn:tag:category:place:home_goods_store", "urn:tag:category:place:handicraft"]
 
 
 class QlooError(RuntimeError):
@@ -90,15 +97,27 @@ async def get(path: str, params: dict) -> dict:
     raise QlooError(f"Qloo unavailable: {last}")
 
 
+def _image(props: dict) -> str | None:
+    if isinstance(props.get("image"), dict):
+        return props["image"].get("url")
+    imgs = props.get("images")
+    if isinstance(imgs, list) and imgs:
+        x = imgs[0]
+        return x.get("url") if isinstance(x, dict) else x if isinstance(x, str) else None
+    return None
+
+
 def _entity(e: dict) -> dict:
     props = e.get("properties") or {}
-    img = (props.get("image") or {}).get("url") if isinstance(props.get("image"), dict) else None
-    return {"id": e.get("entity_id") or e.get("id"), "name": e.get("name"), "type": e.get("type") or e.get("subtype"),
-            "image": img, "description": (props.get("short_description") or props.get("description") or "")[:240],
+    types = e.get("types") or []
+    return {"id": e.get("entity_id") or e.get("id"), "name": e.get("name"),
+            "type": e.get("type") or e.get("subtype") or (types[0] if types else None), "image": _image(props),
+            "description": (props.get("short_description") or props.get("description") or "")[:240],
+            "feel": " ".join(str(props.get(k) or "") for k in ("ambience_description", "physical_setting_description"))[:400],
             "address": props.get("address"), "popularity": e.get("popularity"),
             "affinity": (e.get("query") or {}).get("affinity"),
             "tags": [{"id": t.get("id") or t.get("tag_id"), "name": t.get("name"), "type": t.get("type")}
-                     for t in (e.get("tags") or [])[:24]],
+                     for t in (e.get("tags") or [])[:30]],
             "keywords": [x for x in (props.get("keywords") or [])][:12] if isinstance(props.get("keywords"), list) else [],
             "brand_adjectives": props.get("brand_adjectives"), "price_tier": props.get("price_tier"),
             "explain": _explain(e)}
@@ -149,23 +168,42 @@ def _tags(data: dict) -> list[dict]:
     return out
 
 
-async def taste_tags(entity_ids: list[str], tag_types: list[str] | None = None, take: int = 24) -> list[dict]:
-    """Taste Analysis: the tags these favourites point to, strongest first."""
+async def taste_tags(entity_ids: list[str], tag_types: list[str] | None = None, take: int = 24, per_type: int = 4) -> list[dict]:
+    """Taste Analysis: the tags these favourites point to, strongest first (a few per tag type, so one type can't crowd
+    out the rest). Same-named tags from different types are merged."""
     if not entity_ids:
         return []
-    data = await insights("urn:tag", take=take, signal__interests__entities=entity_ids, filter__tag__types=tag_types,
-                          feature__explainability="true")
-    return _tags(data)
+    data = await insights("urn:tag", take=take, signal__interests__entities=entity_ids, filter__tag__types=tag_types or DESIGN_TAGS,
+                          diversify__by="subtype", diversify__take=per_type, feature__explainability="true")
+    seen, out = set(), []
+    for t in _tags(data):
+        k = (t["name"] or "").strip().lower()
+        if k and k not in seen:
+            seen.add(k)
+            out.append(t)
+    return out
 
 
-async def area_tags(location: str, entity_ids: list[str] | None = None, take: int = 20) -> list[dict]:
-    """How the area feels: the place tags that describe it, optionally biased toward the family's taste."""
-    data = await insights("urn:tag", take=take, signal__location__query=location, filter__tag__types=FEEL_TAGS,
-                          signal__interests__entities=entity_ids or None)
-    return _tags(data)
+async def area(location: str, take: int = 20) -> dict:
+    """How an area feels, read from its places: the ambience, decor and setting tags that recur, and their own words."""
+    data = await insights("urn:entity:place", take=take, filter__location__query=location)
+    ents = [_entity(e) for e in (data.get("results") or {}).get("entities") or []]
+    counts: dict[str, int] = {}
+    for e in ents:
+        for t in e["tags"]:
+            if t.get("type") in FEEL_TAGS and t.get("name"):
+                counts[t["name"]] = counts.get(t["name"], 0) + 1
+    top = sorted(counts.items(), key=lambda kv: -kv[1])[:12]
+    n = max(1, len(ents))
+    return {"tags": [{"id": f"area:{location}:{k}", "name": k, "type": "area", "affinity": round(v / n, 2)} for k, v in top],
+            "places": ents[:8]}
 
 
 async def affinities(ftype: str, entity_ids: list[str], take: int = 8, **extra) -> list[dict]:
+    if ftype == "urn:entity:brand" and "filter__tags" not in extra:
+        extra["filter__tags"] = BRAND_GENRES
+    if ftype == "urn:entity:destination" and "filter__popularity__min" not in extra:
+        extra["filter__popularity__min"] = 0.6
     if not entity_ids:
         return []
     data = await insights(ftype, take=take, signal__interests__entities=entity_ids, feature__explainability="true", **extra)

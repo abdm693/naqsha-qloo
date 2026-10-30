@@ -26,7 +26,8 @@ log = logging.getLogger("naqsha.taste")
 TOOLS = [
     {"type": "function", "function": {"name": "qloo_taste", "description": "Qloo Taste Analysis: the tags a set of Qloo "
      "entities points to. Optionally restrict to tag types (e.g. urn:tag:ambience:qloo, urn:tag:decor:qloo, "
-     "urn:tag:setting:qloo, urn:tag:genre:media, urn:tag:keyword:media, urn:tag:style:qloo).",
+     "urn:tag:aesthetic_property:qloo, urn:tag:personal_style:qloo, urn:tag:cultural_relevance:qloo, urn:tag:lifestyle:qloo, "
+     "urn:tag:style:qloo, urn:tag:genre:media). Default: the design-relevant types.",
      "parameters": {"type": "object", "properties": {"entity_ids": {"type": "array", "items": {"type": "string"}},
                                                     "tag_types": {"type": "array", "items": {"type": "string"}}},
                     "required": ["entity_ids"]}}},
@@ -35,8 +36,8 @@ TOOLS = [
      "parameters": {"type": "object", "properties": {"type": {"type": "string"}, "entity_ids": {"type": "array", "items": {"type": "string"}}},
                     "required": ["type", "entity_ids"]}}},
     {"type": "function", "function": {"name": "qloo_places", "description": "Places in a locality ranked for the family's "
-     "taste, optionally narrowed by a keyword that is first matched to Qloo tags (e.g. 'furniture store', 'home decor', "
-     "'art gallery', 'garden centre', 'cafe').",
+     "taste, optionally narrowed by a keyword that is first matched to Qloo place tags (e.g. 'art gallery', 'furniture', "
+     "'handicraft', 'interior designer', 'garden centre', 'cafe').",
      "parameters": {"type": "object", "properties": {"location": {"type": "string"}, "keyword": {"type": "string"}},
                     "required": ["location"]}}},
     {"type": "function", "function": {"name": "qloo_search", "description": "Find a Qloo entity by name (and kind: film, "
@@ -119,7 +120,9 @@ class Evidence:
             if it.get("affinity") is not None:
                 bits.append(f"affinity {round(float(it['affinity']), 2)}")
             if it.get("tags"):
-                bits.append("tags: " + ", ".join(t["name"] for t in it["tags"][:10] if t.get("name")))
+                bits.append("tags: " + ", ".join(t["name"] for t in it["tags"][:14] if t.get("name")))
+            if it.get("feel"):
+                bits.append("feels: " + it["feel"][:200])
             if it.get("keywords"):
                 bits.append("keywords: " + ", ".join(map(str, it["keywords"][:8])))
             if it.get("brand_adjectives"):
@@ -168,22 +171,22 @@ async def gather(brief: dict, taste: dict, ev: Evidence) -> AsyncIterator[tuple[
         return
 
     yield "step", {"id": "taste", "message": "Reading the taste behind them"}
-    jobs = {"family": qloo.taste_tags(family_ids, take=30),
-            "family_feel": qloo.taste_tags(family_ids, qloo.FEEL_TAGS, take=20),
+    jobs = {"family": qloo.taste_tags(family_ids, take=28),
             "destinations": qloo.affinities("urn:entity:destination", family_ids, take=8),
-            "brands": qloo.affinities("urn:entity:brand", family_ids, take=10)}
+            "brands": qloo.affinities("urn:entity:brand", family_ids, take=8)}
     for i, p in enumerate(people):
         if p["_ids"]:
-            jobs[f"person{i}"] = qloo.taste_tags(p["_ids"], take=16)
+            jobs[f"person{i}"] = qloo.taste_tags(p["_ids"], take=16, per_type=3)
     if loc:
-        jobs["area"] = qloo.area_tags(loc, family_ids, take=16)
+        jobs["area"] = qloo.area(loc)
         jobs["places"] = qloo.places_near(loc, family_ids, take=8)
+        jobs["makers"] = qloo.places_near(loc, family_ids, qloo.MAKER_TAGS, take=6)
     keys = list(jobs)
     out = dict(zip(keys, await asyncio.gather(*jobs.values(), return_exceptions=True)))
     for k, v in out.items():
         if isinstance(v, Exception):
             log.warning("qloo %s failed: %s", k, v)
-            out[k] = []
+            out[k] = {} if k == "area" else []
 
     def cite_tags(tags, via):
         res = []
@@ -194,8 +197,7 @@ async def gather(brief: dict, taste: dict, ev: Evidence) -> AsyncIterator[tuple[
                         "from": [f for f in frm if f]})
         return res
 
-    profile: dict = {"family": cite_tags(out["family"], "the family's taste"),
-                     "feel": cite_tags(out["family_feel"], "how the family likes a place to feel"), "people": []}
+    profile: dict = {"family": cite_tags(out["family"], "the family's taste"), "feel": [], "people": [], "favourites": found}
     for i, p in enumerate(people):
         tags = out.get(f"person{i}") or []
         profile["people"].append({"label": p.get("label") or "You", "role": p.get("role"),
@@ -205,10 +207,14 @@ async def gather(brief: dict, taste: dict, ev: Evidence) -> AsyncIterator[tuple[
     profile["brands"] = [{"eid": ev.add("E", b, "brands people with this taste love"), "name": b["name"], "image": b.get("image"),
                           "adjectives": b.get("brand_adjectives")} for b in out["brands"]]
     if loc:
-        profile["area"] = {"location": loc, "tags": cite_tags(out.get("area") or [], f"how {loc} feels"),
-                           "places": [{"eid": ev.add("P", x, f"places in {loc} that suit the family"), "name": x["name"],
-                                       "address": x.get("address"), "image": x.get("image"),
-                                       "tags": [t["name"] for t in x.get("tags") or []][:5]} for x in out.get("places") or []]}
+        ar = out.get("area") or {}
+        for x in ar.get("places") or []:
+            ev.add("P", x, f"popular in {loc}")
+        place = lambda x, via: {"eid": ev.add("P", x, via), "name": x["name"], "address": x.get("address"), "image": x.get("image"),
+                                "tags": [t["name"] for t in x.get("tags") or [] if t.get("type") in qloo.FEEL_TAGS][:5]}
+        profile["area"] = {"location": loc, "tags": cite_tags(ar.get("tags") or [], f"how {loc} feels (from its places)"),
+                           "places": [place(x, f"places in {loc} that suit the family") for x in out.get("places") or []],
+                           "makers": [place(x, f"galleries and makers in {loc} that suit the family") for x in out.get("makers") or []]}
     yield "profile", profile
 
 
@@ -251,7 +257,7 @@ async def explore(brief: dict, taste: dict, ev: Evidence, max_steps: int = 5) ->
                     if name == "qloo_taste":
                         yield "step", {"id": f"x{calls}", "message": "Asking Qloo for more of the taste behind them", "tool": name}
                         tags = await qloo.taste_tags([i for i in a.get("entity_ids") or [] if isinstance(i, str)][:12],
-                                                     a.get("tag_types") or None, take=12)
+                                                     a.get("tag_types") or None, take=12, per_type=3)
                         result = [{"eid": ev.add("T", t, "a closer look at the family's taste"), "name": t["name"], "type": t.get("type")} for t in tags]
                     elif name == "qloo_similar":
                         typ = str(a.get("type") or "destination").replace("urn:entity:", "")
@@ -263,7 +269,7 @@ async def explore(brief: dict, taste: dict, ev: Evidence, max_steps: int = 5) ->
                         where = a.get("location") or loc
                         kw = (a.get("keyword") or "").strip()
                         yield "step", {"id": f"x{calls}", "message": f"Looking for {kw or 'places'} in {where} that suit the family", "tool": name}
-                        tag_ids = [t["id"] for t in await qloo.find_tags(kw, take=3)] if kw else None
+                        tag_ids = [t["id"] for t in await qloo.find_tags(kw, take=6) if "place" in (t.get("type") or "")][:3] if kw else None
                         fam = [v["id"] for v in ev.items.values() if v["eid"].startswith("E") and any("favourite" in x for x in v["via"])]
                         ps = await qloo.places_near(where, fam[:12], tag_ids, take=6)
                         result = [{"eid": ev.add("P", x, f"{kw or 'places'} in {where}"), "name": x["name"], "address": x.get("address"),
@@ -346,3 +352,44 @@ async def run(brief: dict, taste: dict) -> AsyncIterator[tuple[str, dict]]:
     yield "step", {"id": "write", "message": "Turning your taste into architecture"}
     sb = await write(brief, taste, ev)
     yield "brief", {"profile": profile, "style": sb}
+
+
+RESTYLE_SYSTEM = """You restyle one room of a family's home so it follows one person's taste (or everyone's), from Qloo taste
+tags. Keep the family's overall interiors in mind so the house still reads as one home. JSON only:
+{"room": "…", "for": "…", "mood": "one line", "palette": ["#…", "#…", "#…"], "ideas": ["3-5 concrete ideas: materials,
+furniture, lighting, objects"], "because": ["evidence ids that drove it"]}. Cite only ids you are given."""
+
+
+def room_prompt(style: dict, room: dict, brief: dict) -> str:
+    inter = style.get("interiors") or {}
+    where = ", ".join(x for x in (brief.get("scheme"), brief.get("city")) if x) or "the family's city"
+    name = str(room.get("room") or "room").replace("_", " ")
+    return (f"Photorealistic interior photograph of the {name} in a family home in {where}. Mood: {room.get('mood') or inter.get('mood')}. "
+            f"Colour palette: {', '.join(room.get('palette') or [c.get('hex', '') for c in inter.get('palette') or []])}. "
+            f"Ideas: {'; '.join(room.get('ideas') or [])}. Materials: {', '.join(inter.get('materials') or [])}. "
+            f"Lighting: {inter.get('lighting') or 'warm, natural daylight'}. Furniture: {inter.get('furniture') or ''}. "
+            "Eye-level architectural interior photography, wide lens, realistic proportions and materials, lived-in but tidy. "
+            "No people. No text, letters, numbers, logos or watermarks anywhere.")
+
+
+async def restyle_room(taste: dict, room: dict, follows: str) -> dict:
+    """The room re-read for one person's taste (their Qloo tags) or everyone's."""
+    style, profile = taste.get("style") or {}, taste.get("profile") or {}
+    ev = style.get("evidence") or {}
+    tags = profile.get("family") or []
+    if follows != "everyone":
+        tags = next((p.get("tags") or [] for p in profile.get("people") or [] if p.get("label") == follows), tags)
+    evidence = [{"id": t.get("eid"), "name": t.get("name")} for t in tags[:14]] + \
+               [{"id": k, "name": v.get("name")} for k, v in ev.items() if k.startswith("E")][:16]
+    prompt = (f"ROOM: {json.dumps({k: room.get(k) for k in ('room', 'mood', 'palette', 'ideas')})}\nFOLLOWS: {follows}\n"
+              f"HOUSE INTERIORS: {json.dumps({k: (style.get('interiors') or {}).get(k) for k in ('mood', 'palette', 'materials', 'lighting')})}\n"
+              f"QLOO EVIDENCE: {json.dumps(evidence)}")
+    out = None
+    async for kind, val in llm.stream_json(config.MODEL_INTAKE, prompt, RESTYLE_SYSTEM, max_tokens=1500, attempts=2, thinking="LOW"):
+        if kind == "result":
+            out = val[0]
+    out = out or {}
+    ids = set(ev) | {t.get("eid") for t in tags}
+    return {**room, "for": follows, "mood": out.get("mood") or room.get("mood"), "palette": out.get("palette") or room.get("palette"),
+            "ideas": out.get("ideas") or room.get("ideas"), "because": [i for i in out.get("because") or [] if i in ids][:4] or room.get("because"),
+            "image": None}

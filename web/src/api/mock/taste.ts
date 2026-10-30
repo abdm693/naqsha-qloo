@@ -107,6 +107,7 @@ export async function* tasteScript(input: TasteInput): AsyncGenerator<Step> {
   yield 600;
   yield ev("step", { id: "taste", message: "Reading the taste behind them" });
   yield 900;
+  profile.favourites = found;
   yield ev("profile", profile);
   yield ev("step", { id: "explore", message: "Following the threads that matter for your home" });
   yield 700;

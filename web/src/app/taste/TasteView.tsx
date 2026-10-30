@@ -7,7 +7,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowRight, Check, MapPin, Plus, RefreshCw, Sparkles, X } from "lucide-react";
 import type { Evidence, FoundFavourite, Project, StyleBrief, Taste, TasteInput, TasteProfile } from "@contracts/api-types";
-import { api, errorMessage } from "@/api/client";
+import { api, assetUrl, errorMessage } from "@/api/client";
 import { cn } from "@/app/lib/utils";
 import { canEdit } from "@/app/lib/views";
 import { useViewNav } from "@/app/design/nav";
@@ -93,7 +93,7 @@ export function TasteView({ project, onProjectChange }: { project: Project; onPr
         ) : running || (!project.taste && (steps.length || error)) ? (
           <Reading steps={steps} found={found} missing={missing} profile={profile} error={error} onRetry={() => setEditing(true)} />
         ) : project.taste ? (
-          <Profile taste={project.taste} project={project} editor={editor} onEdit={() => setEditing(true)} />
+          <Profile taste={project.taste} project={project} editor={editor} onEdit={() => setEditing(true)} onProjectChange={onProjectChange} />
         ) : (
           <p className="text-body text-ink-3">The family hasn't shared their taste yet.</p>
         )}
@@ -348,7 +348,7 @@ function Reading({ steps, found, missing, profile, error, onRetry }: {
 }
 
 // ---- the profile -----------------------------------------------------------------------------------------------------
-function Profile({ taste, project, editor, onEdit }: { taste: Taste; project: Project; editor: boolean; onEdit(): void }) {
+function Profile({ taste, project, editor, onEdit, onProjectChange }: { taste: Taste; project: Project; editor: boolean; onEdit(): void; onProjectChange(p: Project): void }) {
   const goTo = useViewNav();
   const st = useProject();
   const s = taste.style;
@@ -364,9 +364,20 @@ function Profile({ taste, project, editor, onEdit }: { taste: Taste; project: Pr
       {/* Hero */}
       <section className="relative overflow-hidden rounded-panel p-7 text-white shadow-e3 sm:p-10" style={{ backgroundImage: gradient }}>
         <div className="pointer-events-none absolute -right-24 -top-24 size-80 rounded-full bg-white/10 blur-2xl" />
+        {!!p.favourites?.length && (
+          <ul aria-label="Your favourites" className="absolute right-8 top-10 hidden w-[300px] flex-wrap justify-end gap-2 xl:flex">
+            {p.favourites.slice(0, 12).map((f, i) => (
+              <motion.li key={f.eid + i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 + i * 0.04 }}
+                className="inline-flex items-center gap-2 rounded-full bg-white/15 py-1 pl-1 pr-3 text-small text-white backdrop-blur">
+                {f.image ? <img src={f.image} alt="" className="size-6 rounded-full object-cover" /> : <span className="grid size-6 place-items-center rounded-full bg-white/25 text-[11px]">{f.name[0]}</span>}
+                {f.name}
+              </motion.li>
+            ))}
+          </ul>
+        )}
         <TasteBadge onDark />
-        <h1 className="mt-4 max-w-[820px] font-display text-[clamp(2.2rem,5vw,4rem)] leading-[1] tracking-[-0.03em]">{s.headline}</h1>
-        <p className="mt-4 max-w-[720px] text-body-lg text-white/90">{s.story}</p>
+        <h1 className="mt-4 max-w-[820px] xl:max-w-[640px] font-display text-[clamp(2.2rem,5vw,4rem)] leading-[1] tracking-[-0.03em]">{s.headline}</h1>
+        <p className="mt-4 max-w-[720px] xl:max-w-[620px] text-body-lg text-white/90">{s.story}</p>
         <div className="mt-6 flex flex-wrap gap-2">
           {(p.family || []).slice(0, 10).map((t) => (
             <span key={t.eid} className="rounded-full bg-white/15 px-3 py-1 text-small backdrop-blur">{t.name}</span>
@@ -444,18 +455,10 @@ function Profile({ taste, project, editor, onEdit }: { taste: Taste; project: Pr
       {/* Rooms */}
       {!!s.rooms?.length && (
         <section>
-          <SectionTitle title="A room for each of you" />
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {s.rooms.map((r) => (
-              <article key={r.room + r.for} className="overflow-hidden rounded-card bg-surface shadow-e1">
-                <div className="flex h-14">{(r.palette || []).map((h) => <span key={h} className="flex-1" style={{ background: h }} />)}</div>
-                <div className="p-4">
-                  <div className="text-small text-ink-3">{r.for === "everyone" ? "Everyone" : r.for}</div>
-                  <h3 className="text-heading capitalize text-ink">{r.room.replace(/_/g, " ")}</h3>
-                  <p className="mt-1 text-body text-ink-2">{r.mood}</p>
-                  <Because ids={r.because} ev={ev} />
-                </div>
-              </article>
+          <SectionTitle title="A room for each of you" sub="Choose whose taste each room follows, then picture it" />
+          <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {s.rooms.map((r, i) => (
+              <RoomCard key={i} index={i} room={r} people={(s.people || []).map((x) => x.label)} ev={ev} project={project} editor={editor} onProjectChange={onProjectChange} />
             ))}
           </div>
         </section>
@@ -524,6 +527,97 @@ function Profile({ taste, project, editor, onEdit }: { taste: Taste; project: Pr
         them into design choices. {project.taste?.at ? `Read ${new Date(project.taste.at).toLocaleDateString()}.` : ""}
       </p>
     </div>
+  );
+}
+
+// ---- rooms -----------------------------------------------------------------------------------------------------------
+type Room = NonNullable<StyleBrief["rooms"]>[number];
+
+function RoomCard({ index, room, people, ev, project, editor, onProjectChange }: {
+  index: number; room: Room; people: string[]; ev: Record<string, Evidence>; project: Project; editor: boolean; onProjectChange(p: Project): void;
+}) {
+  const [busy, setBusy] = useState<"follows" | "image" | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const options = ["everyone", ...people];
+  const label = String(room.room || "room").replace(/_/g, " ");
+
+  async function run(kind: "follows" | "image", body: { follows?: string; image?: boolean }) {
+    setBusy(kind);
+    setError(null);
+    try {
+      const p = await api.styleRoom(project.id, index, body);
+      onProjectChange(p);
+      useProject.setState({ project: p });
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <article className="flex flex-col overflow-hidden rounded-card bg-surface shadow-e1" aria-busy={!!busy || undefined}>
+      <div className="relative aspect-[4/3] w-full overflow-hidden bg-surface-2">
+        {room.image ? (
+          <img src={assetUrl(room.image, { w: 960 })} alt={`The ${label}, styled for ${room.for === "everyone" ? "everyone" : room.for}`} className="size-full object-cover" />
+        ) : (
+          <div className="flex size-full">{(room.palette || []).map((h) => <span key={h} className="flex-1" style={{ background: h }} />)}</div>
+        )}
+        {busy && (
+          <div className="absolute inset-0 grid place-items-center bg-ink/35 backdrop-blur-[2px]">
+            <span className="inline-flex items-center gap-2 rounded-full bg-surface px-3 py-1.5 text-small text-ink shadow-e2">
+              <span className="taste-gradient size-2 animate-breathe rounded-full" />
+              {busy === "image" ? "Picturing the room…" : "Restyling for their taste…"}
+            </span>
+          </div>
+        )}
+        {editor && !busy && (
+          <button
+            type="button"
+            onClick={() => run("image", { image: true })}
+            className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-surface/95 px-3 py-1.5 text-small font-medium text-ink shadow-e2 backdrop-blur transition hover:bg-surface"
+          >
+            <Sparkles className="size-3.5" /> {room.image ? "Picture again" : "Picture this room"}
+          </button>
+        )}
+      </div>
+      <div className="flex flex-1 flex-col p-5">
+        <h3 className="text-heading capitalize text-ink">{label}</h3>
+        {editor && people.length > 0 ? (
+          <div role="radiogroup" aria-label={`Whose taste the ${label} follows`} className="mt-2 flex flex-wrap gap-1.5">
+            {options.map((o) => {
+              const on = (room.for || "everyone") === o;
+              return (
+                <button
+                  key={o}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  disabled={!!busy}
+                  onClick={() => !on && run("follows", { follows: o, image: !!room.image })}
+                  className={cn(
+                    "rounded-full border px-2.5 py-1 text-small transition",
+                    on ? "border-transparent bg-ink text-white" : "border-line bg-canvas text-ink-2 hover:border-ink-4 hover:text-ink",
+                  )}
+                >
+                  {o === "everyone" ? "Everyone" : o}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-small text-ink-3">For {room.for === "everyone" ? "everyone" : room.for}</div>
+        )}
+        {room.mood && <p className="mt-3 text-body text-ink-2">{room.mood}</p>}
+        {!!room.ideas?.length && (
+          <ul className="mt-2 space-y-1">
+            {room.ideas.slice(0, 4).map((x) => <li key={x} className="text-small text-ink-3">· {x}</li>)}
+          </ul>
+        )}
+        {error && <p className="mt-2 text-small text-fail">{error}</p>}
+        <div className="mt-auto"><Because ids={room.because} ev={ev} /></div>
+      </div>
+    </article>
   );
 }
 

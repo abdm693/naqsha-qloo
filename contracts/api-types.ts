@@ -217,8 +217,10 @@ export interface TasteProfile {
   people: { label: string; role?: string | null; tags: TasteTag[] }[];
   destinations: { eid: string; name: string; image?: string; affinity?: number }[];
   brands: { eid: string; name: string; image?: string; adjectives?: unknown }[];
-  area?: { location: string; tags: TasteTag[]; places: { eid: string; name: string; address?: string; image?: string; tags: string[] }[] };
+  area?: { location: string; tags: TasteTag[]; places: TastePlace[]; makers?: TastePlace[] };
+  favourites?: FoundFavourite[];
 }
+export interface TastePlace { eid: string; name: string; address?: string; image?: string; tags: string[] }
 export interface Swatch { name: string; hex: string }
 export interface StyleBrief {
   headline: string;
@@ -227,7 +229,7 @@ export interface StyleBrief {
   people?: { label: string; signature: string; tags?: string[]; room?: string; because?: string[] }[];
   exterior?: { style: string; massing?: string; materials?: string[]; palette?: Swatch[]; details?: string[]; because?: string[] };
   interiors?: { mood?: string; palette?: Swatch[]; materials?: string[]; lighting?: string; furniture?: string; objects?: string; because?: string[] };
-  rooms?: { room: string; for?: string; mood?: string; palette?: string[]; ideas?: string[]; because?: string[] }[];
+  rooms?: { room: string; for?: string; mood?: string; palette?: string[]; ideas?: string[]; because?: string[]; image?: string | null }[];
   landscape?: { idea?: string; plants?: string[]; because?: string[] };
   neighbourhood?: { reading?: string; response?: string; because?: string[] };
   takes?: { title: string; direction: string; why?: string; because?: string[] }[];

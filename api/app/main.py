@@ -607,6 +607,32 @@ async def taste_run(pid: str, body: TasteBody, me: Identity = Depends(auth.ident
     return sse.stream(gen())
 
 
+class RoomBody(BaseModel):
+    follows: str | None = None   # a person's label, or "everyone"
+    image: bool = True
+
+
+@app.post("/api/projects/{pid}/taste/rooms/{index}")
+async def taste_room(pid: str, index: int, body: RoomBody, me: Identity = Depends(auth.identity)):
+    """Style one room: optionally re-read it for one person's taste, then picture it (a photoreal interior)."""
+    p, role = await access(pid, me, "edit")
+    t = copy.deepcopy(p.get("taste") or {})
+    rooms = (t.get("style") or {}).get("rooms") or []
+    if not 0 <= index < len(rooms):
+        raise HTTPException(404, "no such room")
+    room = rooms[index]
+    if body.follows and body.follows != room.get("for"):
+        room = await taste.restyle_room(t, room, body.follows)
+    if body.image:
+        resp = await concepts._image_call([taste.room_prompt(t["style"], room, p.get("brief") or {})], aspect="4:3")
+        got = concepts._image_bytes(resp)
+        if not got:
+            raise HTTPException(502, "The image model returned no image. Try again.")
+        room["image"] = await blobs.put(f"projects/{pid}/rooms/{db.new_id('r_')}.png", got[0], got[1])
+    rooms[index] = room
+    return public(await db.update_project(pid, taste=t), role)
+
+
 # --- LDA --------------------------------------------------------------------------------------------------------------
 @app.get("/api/lda/envelope")
 def lda_envelope(width_ft: float, depth_ft: float, authority: str = "LDA", corner: bool = False):

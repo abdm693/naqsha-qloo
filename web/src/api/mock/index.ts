@@ -290,6 +290,19 @@ export const mockApi: Api = {
     return play(conceptsScript(pid, body), handlers, opts?.signal);
   },
 
+  async styleRoom(pid, index, body) {
+    await latency(1800);
+    const p = editable(pid);
+    const room = p.taste?.style.rooms?.[index];
+    if (room) {
+      if (body.follows) room.for = body.follows;
+      if (body.image !== false) room.image = RENDER_IMAGE;
+      touch(p);
+      save();
+    }
+    return clone(p);
+  },
+
   readTaste(pid, body, handlers, opts) {
     async function* script(): AsyncGenerator<Step> {
       const p = editable(pid);
