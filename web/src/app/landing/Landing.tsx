@@ -15,10 +15,10 @@ import { Dusk, LampButton } from "@/app/heart/kit";
 
 /** The sample families as the hero plays them; the words are the real overlap of their tastes. */
 const STORIES = [
-  { city: "lahore", place: "Lahore", family: "The Maliks", people: ["Ammi & Abbu", "Sara & Ali"], words: "Exquisite and traditional" },
-  { city: "austin", place: "Austin", family: "The Garcias", people: ["Mom & Dad", "Sofia & Mateo"], words: "Playful" },
-  { city: "dubai", place: "Dubai", family: "The Al Mansouris", people: ["Baba & Mama", "Noura & Saeed"], words: "Elegant and inspiring" },
-  { city: "toronto", place: "Toronto", family: "The Parks", people: ["Umma & Appa", "Jiwoo"], words: "Heartwarming and serene" },
+  { city: "lahore", place: "Lahore", family: "The Maliks", people: ["Ammi", "Abbu", "Sara", "Ali"], words: "Contemporary and traditional" },
+  { city: "austin", place: "Austin", family: "The Garcias", people: ["Elena", "Marco", "Sofia", "Mateo"], words: "Nature inspired and fun" },
+  { city: "dubai", place: "Dubai", family: "The Al Mansouris", people: ["Baba", "Mama", "Noura", "Saeed"], words: "Elegant and inspiring" },
+  { city: "toronto", place: "Toronto", family: "The Parks", people: ["Umma", "Appa", "Jiwoo"], words: "Heartwarming" },
 ];
 
 function wordsOf(p: Project | undefined, fallback: string): string {
@@ -41,7 +41,7 @@ export function Landing() {
   const [samples, setSamples] = useState<Project[]>([]);
   const [opening, setOpening] = useState<string | null>(null);
   const [story, setStory] = useState(0);
-  const [step, setStep] = useState(still ? 3 : 0);
+  const [step, setStep] = useState(0);
 
   useEffect(() => {
     api.listSamples().then(setSamples).catch(() => {});
@@ -50,10 +50,11 @@ export function Landing() {
   // One family at a time: their lights come on, the heart lights last, their words appear. Then the next house.
   useEffect(() => {
     if (still) return;
+    const heartAt = STORIES[story].people.length + 1;
     const t = setTimeout(() => {
-      if (step < 4) setStep(step + 1);
+      if (step <= heartAt) setStep(step + 1);
       else { setStory((story + 1) % STORIES.length); setStep(0); }
-    }, step === 0 ? 900 : step === 3 ? 4200 : step === 4 ? 500 : 1100);
+    }, step === heartAt ? 4200 : step > heartAt ? 500 : 900);
     return () => clearTimeout(t);
   }, [step, story, still]);
 
@@ -63,7 +64,8 @@ export function Landing() {
     setOpening(id ?? "any");
     if (!(await openSampleHome(navigate, id))) setOpening(null);
   };
-  const showing = step >= 3 && step < 4;
+  const heartAt = s.people.length + 1;
+  const showing = still || step === heartAt;
 
   return (
     <Dusk>
@@ -86,7 +88,7 @@ export function Landing() {
           </div>
         </div>
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[58dvh]">
-          <HouseScene key={story} windows={s.people.map((name, i) => ({ id: String(i), name, lit: step > i }))} heart={step >= 3}
+          <HouseScene key={story} windows={s.people.map((name, i) => ({ id: String(i), name, lit: !!still || step > i }))} heart={!!still || step >= heartAt}
             className="size-full" title="A house at dusk, its lights coming on" />
         </div>
         <div className="absolute inset-x-0 bottom-3 z-20 mx-auto flex w-full max-w-[1200px] items-baseline justify-between gap-4 px-5 sm:bottom-5 sm:px-8">
