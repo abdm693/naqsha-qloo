@@ -63,26 +63,26 @@ In the app the feature is simply **Naqsha Taste**: families never see a data sou
 
 ## Screens
 
-Captured from the live app with Playwright.
+Captured from the live app with Playwright. In the app the feature is called Naqsha Taste.
 
 | | |
 |---|---|
-| ![Landing: four families](docs/screens/01-landing.jpg) | ![What each family shares, what Qloo finds, how the house changes](docs/screens/02-four-families.jpg) |
-| **Start.** Four real families, each house drawn from their taste. | **Four countries.** What they share, what Qloo finds, how the house changes. |
-| ![The Malik family's taste](docs/screens/03-lahore-1-taste.jpg) | ![Measured impact](docs/screens/04-lahore-2-impact.jpg) |
-| **Lahore.** The family's taste, read with Qloo, and the favourites behind it. | **What Qloo changed.** The same brief without their taste: 23%. Theirs: 96%. |
-| ![Interiors, a room for each person](docs/screens/05-lahore-4-rooms.jpg) | ![Decisions with their Qloo evidence](docs/screens/06-lahore-3-decisions.jpg) |
-| **Inside.** Each room follows one person's taste, grounded in the house and the places they love. | **Decisions.** Every choice cites the Qloo signals behind it. |
-| ![The Garcia family's taste](docs/screens/07-austin-1-taste.jpg) | ![Austin interiors](docs/screens/08-austin-4-rooms.jpg) |
-| **Austin.** Oaxacan Earth & Marfa Modern. | **Inside, Austin.** |
-| ![Austin photos](docs/screens/09-austin-8-photos.jpg) | ![The Al Mansouri family's taste](docs/screens/10-dubai-1-taste.jpg) |
-| **Photos.** Four angles of one house, with an Austin street around it. | **Dubai.** Andalusian Craft Meets Desert Modernism. |
-| ![Dubai interiors](docs/screens/11-dubai-4-rooms.jpg) | ![The Park family's taste](docs/screens/12-toronto-1-taste.jpg) |
-| **Inside, Dubai.** A majlis, a family lounge, a closed kitchen. | **Toronto.** Seoul-Copenhagen Minimalist Sanctuary. |
-| ![Toronto interiors](docs/screens/13-toronto-4-rooms.jpg) | ![Toronto photos](docs/screens/14-toronto-8-photos.jpg) |
-| **Inside, Toronto.** | **Photos, Toronto.** |
-| ![Concepts with taste fit](docs/screens/15-lahore-5-concepts.jpg) | ![The plan](docs/screens/16-lahore-6-plan.jpg) |
+| ![Four families, four countries](docs/gallery/01-four-families.jpg) | ![Landing](docs/gallery/02-landing.jpg) |
+| **Four families.** Each house drawn from their taste and their street, with its measured taste fit. | **Start.** Four real families on the first screen; one click opens a home. |
+| ![The brief and the neighbourhood](docs/gallery/03-brief-neighbourhood.jpg) | ![Naqsha Taste starts on the street](docs/gallery/04-taste-starts-on-the-street.jpg) |
+| **From the first message.** The plot, and its neighbourhood pinned on a map with ideas for the house. | **Where you'll live, then who will live there.** |
+| ![Reading the taste](docs/gallery/05-reading.jpg) | ![The Malik family's taste](docs/gallery/06-lahore-taste.jpg) |
+| **Reading.** Each favourite found, and the taste behind them, strongest first. | **Lahore.** The family's style, beside the favourites behind it. |
+| ![How much of you is in it](docs/gallery/07-lahore-how-much-of-you.jpg) | ![A room for each person](docs/gallery/08-lahore-rooms.jpg) |
+| **How much of you is in it.** The same brief without their taste: 23%. Theirs: 96%. | **Inside.** Each room follows one person's taste, grounded in the house and the places they love. |
+| ![Where you'll live](docs/gallery/09-lahore-neighbourhood.jpg) | ![Decisions and their evidence](docs/gallery/10-lahore-decisions.jpg) |
+| **Where you'll live.** Hover an idea and the places behind it light up. | **Decisions.** Every choice shows what it came from. |
+| ![Concepts with taste fit](docs/gallery/11-lahore-concepts.jpg) | ![The plan](docs/screens/16-lahore-6-plan.jpg) |
 | **Concepts.** One per taste direction, each with its measured fit. | **Plan.** Every bylaw check passes. |
+| ![The 3D house](docs/gallery/12-lahore-house.jpg) | ![Austin photos](docs/gallery/13-austin-photos.jpg) |
+| **The house.** Built in 3D in the family's materials. | **Photos.** Four angles of one house, on an Austin street. |
+| ![Dubai interiors](docs/gallery/14-dubai-rooms.jpg) | ![Toronto neighbourhood](docs/gallery/15-toronto-neighbourhood.jpg) |
+| **Inside, Dubai.** A majlis, a family lounge, a closed kitchen. | **Toronto.** Leslieville's brick and front porches, around the Parks' plot. |
 
 ## Models
 
