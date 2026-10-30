@@ -5,7 +5,7 @@
 **Live app:** https://naqsha-qloo-242926648187.us-central1.run.app — open the sample home, or start your own. No account needed.
 **License:** AGPL-3.0 (open source)
 
-*Naqsha* (نقشہ) is what families in Pakistan call a house plan. A family builds a house once in a lifetime, and in most places it still starts from a contractor's sketch and a handful of stock styles. Two families with nothing in common end up with the same house. Naqsha starts from the people instead.
+*Naqsha* (نقشہ) is what families in Pakistan call a house plan; that's where it started. Anywhere in the world, a family builds a house once in a lifetime, and it usually starts from a stock plan and a handful of styles. Two families with nothing in common end up with the same house. Naqsha starts from the people instead, and works wherever the plot is: the samples are in Lahore, Austin, Dubai and Toronto.
 
 ## Why Qloo
 
@@ -26,17 +26,18 @@ Naqsha measures how much of the family's taste each design shows. A vision check
 against the family's taste checklist (the materials, colours, details and decisions in their style brief, each tied to Qloo
 evidence), and every concept run also draws the same plot and brief **without** the taste, scored the same way.
 
-| The Malik family, DHA Phase 6, Lahore (the sample home) | Taste fit |
-|---|---|
-| The same brief without their taste | 23% |
-| Their concept, "Lahore Craft & Calm" | **96%** (+73 points) |
-| The photograph of the built 3D house | 77% (8 of 13 choices judged from the front) |
+| Sample family | Their style, from Qloo | Without their taste | Their concept |
+|---|---|---|---|
+| The Maliks, DHA Phase 6, **Lahore** (Istanbul, Abida Parveen, Coke Studio; Kyoto, Spirited Away) | Crafted Heritage Meets Serene Modernism | 23% | **96%** |
+| The Garcias, Travis Heights, **Austin** (Oaxaca, Selena, Coco; Bad Bunny, Marfa) | Oaxacan Earth & Marfa Modern | 29% | **96%** |
+| The Al Mansouris, Al Barsha, **Dubai** (Fairuz, Umm Kulthum, Granada; Tokyo, Dune) | Andalusian Craft Meets Desert Modernism | 27% | **86%** |
+| The Parks, Leslieville, **Toronto** (Seoul, IU, Parasite; Drake, Copenhagen) | Seoul-Copenhagen Minimalist Sanctuary | | |
 
-Two families, two different houses: the Malik family (Istanbul, Fez, Abida Parveen, Coke Studio; Kyoto, Spirited Away,
-Coldplay) got "Crafted Heritage Meets Serene Modernism"; the Siddiqui family in Karachi (Marrakech, Nusrat Fateh Ali Khan;
-Santorini, Copenhagen, IKEA; Taylor Swift, Friends) got "Aegean Light Meets Moroccan Craft". A family who shares no
-favourites still gets a personal house: in F-11 Islamabad the agent read the area's taste from the places people love there
-and designed "Margalla Stone and Modern Craft".
+The built 3D house of the Lahore sample keeps 77% of the family's choices in its photograph. Each city's rules come from
+its own authority (LDA for Lahore; the City of Austin, Dubai Municipality and the City of Toronto researched with Tavily and
+cited), and the house follows local conventions: a majlis and a maid's room in Dubai, a mudroom and a laneway garage in
+Toronto, a covered back porch in Austin. A family who shares no favourites still gets a personal house, read from the taste
+of the places people love in their area.
 
 Even Naqsha's one-tap suggestions come from Qloo ("Add Marrakech brass screens for privacy", "Try Santorini white arches on
 balconies"), each with its evidence.

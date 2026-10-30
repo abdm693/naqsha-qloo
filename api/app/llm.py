@@ -148,7 +148,11 @@ def parse_json(text: str):
     except json.JSONDecodeError:
         s, e = t.find("{"), t.rfind("}")
         if s >= 0 and e > s:
-            return json.loads(t[s:e + 1])
+            body = t[s:e + 1]
+            try:
+                return json.loads(body)
+            except json.JSONDecodeError:
+                return json.loads(re.sub(r",\s*([\]}])", r"\1", body))  # a trailing comma before ] or }
         raise
 
 
