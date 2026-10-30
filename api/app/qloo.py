@@ -41,6 +41,9 @@ DESIGN_TAGS = ["urn:tag:aesthetic_property:qloo", "urn:tag:personal_style:qloo",
 # Tag types on places that describe how a place feels: the area's character is read from the places in it.
 FEEL_TAGS = ["urn:tag:ambience:qloo", "urn:tag:decor:qloo", "urn:tag:setting:qloo", "urn:tag:neighborhood_characteristic:qloo",
              "urn:tag:good_for:qloo", "urn:tag:view:qloo"]
+# Tags that say nothing about a home, or read badly in one ("Seductive", "Marriage"): dropped from Taste Analysis results.
+UNHELPFUL = {"seductive", "sexy", "marriage", "motivated", "professional", "ethnicity", "elite", "authoritative", "vengeance",
+             "industry professionals", "the justice seeker", "insightful", "beauty oriented", "romantically inclined"}
 BRAND_GENRES = ["urn:tag:genre:brand:fashion", "urn:tag:genre:brand:retail"]   # textiles and objects, not cars
 MAKER_TAGS = ["urn:tag:category:place:art_gallery", "urn:tag:category:place:furniture_store", "urn:tag:genre:place:furniture_store",
               "urn:tag:category:place:interior_designer", "urn:tag:category:place:home_goods_store", "urn:tag:category:place:handicraft"]
@@ -178,7 +181,7 @@ async def taste_tags(entity_ids: list[str], tag_types: list[str] | None = None, 
     seen, out = set(), []
     for t in _tags(data):
         k = (t["name"] or "").strip().lower()
-        if k and k not in seen:
+        if k and k not in seen and k not in UNHELPFUL:
             seen.add(k)
             out.append(t)
     return out

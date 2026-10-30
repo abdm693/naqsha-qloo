@@ -424,7 +424,7 @@ function Profile({ taste, project, editor, onEdit, onProjectChange }: { taste: T
                     <h3 className="text-heading text-ink">{x.label}</h3>
                   </div>
                   <p className="mt-3 text-body text-ink-2">{x.signature}</p>
-                  {x.room && <p className="mt-3 text-small text-ink-3">Their room: <span className="text-ink">{x.room}</span></p>}
+                  {x.room && <p className="mt-3 text-small text-ink-3">Their room: <span className="text-ink">{x.room.replace(/_/g, " ")}</span></p>}
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     {tags.slice(0, 6).map((t) => <span key={t.eid} className="rounded-full bg-surface-2 px-2.5 py-0.5 text-small text-ink-2">{t.name}</span>)}
                   </div>
