@@ -65,16 +65,22 @@ Captured from the live app with Playwright.
 
 | | |
 |---|---|
-| ![Each person's favourites](docs/screens/11-composer.jpg) | ![The family's taste, read with Qloo](docs/screens/02-taste-hero.jpg) |
-| **Taste.** Each person adds a few favourites as chips. | **Their style.** Qloo's reading of the family, and the favourites behind it. |
-| ![Measured impact](docs/screens/03-impact.jpg) | ![Decisions with their Qloo evidence](docs/screens/05-decisions.jpg) |
-| **What Qloo changed.** The same brief without their taste scores 23%; theirs, 96%. | **Decisions.** Every choice cites the Qloo signals behind it. |
-| ![A room for each person](docs/screens/06-rooms.jpg) | ![Concepts with their taste fit](docs/screens/07-concepts.jpg) |
-| **Rooms.** Each follows one person's taste; switch it and picture it. | **Concepts.** One per taste direction, each with its measured fit. |
-| ![The plan](docs/screens/08-plan.jpg) | ![The house in 3D](docs/screens/09-house.jpg) |
-| **Plan.** Every bylaw check passes. | **House.** Built in 3D from the concept and the family's palettes. |
-| ![Photos from four angles](docs/screens/10-photos.jpg) | ![Landing](docs/screens/01-landing.jpg) |
-| **Photos.** Made from the 3D model, from four angles. | **Start.** Open the sample home, or start your own. |
+| ![Landing: four families](docs/screens/01-landing.jpg) | ![What each family shares, what Qloo finds, how the house changes](docs/screens/02-four-families.jpg) |
+| **Start.** Four real families, each house drawn from their taste. | **Four countries.** What they share, what Qloo finds, how the house changes. |
+| ![The Malik family's taste](docs/screens/03-lahore-1-taste.jpg) | ![Measured impact](docs/screens/04-lahore-2-impact.jpg) |
+| **Lahore.** The family's taste, read with Qloo, and the favourites behind it. | **What Qloo changed.** The same brief without their taste: 23%. Theirs: 96%. |
+| ![Interiors, a room for each person](docs/screens/05-lahore-4-rooms.jpg) | ![Decisions with their Qloo evidence](docs/screens/06-lahore-3-decisions.jpg) |
+| **Inside.** Each room follows one person's taste, grounded in the house and the places they love. | **Decisions.** Every choice cites the Qloo signals behind it. |
+| ![The Garcia family's taste](docs/screens/07-austin-1-taste.jpg) | ![Austin interiors](docs/screens/08-austin-4-rooms.jpg) |
+| **Austin.** Oaxacan Earth & Marfa Modern. | **Inside, Austin.** |
+| ![Austin photos](docs/screens/09-austin-8-photos.jpg) | ![The Al Mansouri family's taste](docs/screens/10-dubai-1-taste.jpg) |
+| **Photos.** Four angles of one house, with an Austin street around it. | **Dubai.** Andalusian Craft Meets Desert Modernism. |
+| ![Dubai interiors](docs/screens/11-dubai-4-rooms.jpg) | ![The Park family's taste](docs/screens/12-toronto-1-taste.jpg) |
+| **Inside, Dubai.** A majlis, a family lounge, a closed kitchen. | **Toronto.** Seoul-Copenhagen Minimalist Sanctuary. |
+| ![Toronto interiors](docs/screens/13-toronto-4-rooms.jpg) | ![Toronto photos](docs/screens/14-toronto-8-photos.jpg) |
+| **Inside, Toronto.** | **Photos, Toronto.** |
+| ![Concepts with taste fit](docs/screens/15-lahore-5-concepts.jpg) | ![The plan](docs/screens/16-lahore-6-plan.jpg) |
+| **Concepts.** One per taste direction, each with its measured fit. | **Plan.** Every bylaw check passes. |
 
 ## Models
 
