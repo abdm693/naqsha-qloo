@@ -815,8 +815,10 @@ def taste_text(style: dict | None) -> str:
     """The interiors and rooms from the family's Qloo style brief, for the 3D build (palette hexes, materials, moods)."""
     if not style:
         return ""
-    keep = {"interiors": style.get("interiors"), "rooms": style.get("rooms"), "landscape": style.get("landscape"),
-            "exterior_palette": (style.get("exterior") or {}).get("palette")}
+    ext = style.get("exterior") or {}
+    keep = {"exterior": {k: ext.get(k) for k in ("style", "materials", "palette", "details") if ext.get(k)},
+            "decisions": [d.get("decision") for d in style.get("decisions") or [] if isinstance(d, dict)],
+            "interiors": style.get("interiors"), "rooms": style.get("rooms"), "landscape": style.get("landscape")}
     strip = lambda x: ({k: strip(v) for k, v in x.items() if k != "because"} if isinstance(x, dict)
                        else [strip(v) for v in x] if isinstance(x, list) else x)
     return json.dumps(strip({k: v for k, v in keep.items() if v}))
@@ -835,7 +837,10 @@ def _build_prompt(plan: dict, brief: dict, spec: dict | None = None, style: dict
         f"WHERE: {locale.place(brief)}. LOCAL TOUCHES: {locale.local_touches(brief)}\n\n"
         + (f"CONCEPT SPECIFICATION (the exterior the family chose, read from its image; build every feature):\n"
            f"{concepts.spec_text(spec)}\n\n" if spec else "")
-        + (f"THE FAMILY'S TASTE (from Qloo's taste graph): build the interiors from it. Use these palettes and materials in "
+        + (f"THE FAMILY'S TASTE (from Qloo's taste graph): build the house from it. Every exterior material, colour and detail "
+           f"listed under exterior, and every decision that can be seen from outside, must appear on the facade sections in "
+           f"its place (a screen, a stone base, a roof finish, window frame colours, planting). Build the interiors from it too. "
+           f"Use these palettes and materials in "
            f"structure floors, interior_* accent walls and ceilings, and furnish_* pieces and colours; give each room listed here "
            f"its own mood and palette (a person's room follows that person). Shelves of books, a record or music corner, art and "
            f"textiles where it says so. The landscape follows its idea and plants.\n{taste_text(style)}\n\n" if style else "")

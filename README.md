@@ -18,6 +18,7 @@ Language models can guess that someone who loves Kyoto might like timber and cal
 | Destinations and brands people with that taste love | `/v2/insights`, `urn:entity:destination` / `urn:entity:brand` (fashion and retail) | Architectural references and textile language beyond what the family named |
 | How the neighbourhood feels | `/v2/insights`, `urn:entity:place` with `filter.location.query` | The area's character, read from the ambience, decor and setting tags of its places |
 | Places there that suit the family | the same, with `signal.interests.entities` and place-category tags | Galleries, makers and shops for the interiors |
+| Pictures of the places they love | entity `properties.images` from the calls above | Passed to the image model with the family's own exterior to ground each person's room |
 | "Make the lounge feel more like Istanbul" | `/search` + Taste Analysis, from the revision agent | The change is designed from Qloo's reading of Istanbul |
 
 ## Measured impact
