@@ -3,6 +3,9 @@
 The four are genuinely different design takes within the chosen style (massing and materials), all shot with the SAME camera
 and light (straight-on front elevation at golden hour; a corner plot uses one fixed corner three-quarter view), so the family
 compares houses, not photographs. Night versions are edits of each day image with the same camera.
+
+What kind of building it is (how it stands on its lot, its roof, walls, parking) comes from the place's home profile
+(agents/homes.py); the style and the family's taste dress that building, they never replace it.
 """
 from __future__ import annotations
 
@@ -19,13 +22,18 @@ from google.genai import types
 from .. import busy, config, llm, locale
 from ..gemini import client
 from ..store import blobs, db
+from . import homes as local_homes, intake
 
 log = logging.getLogger("naqsha.concepts")
 
 CAMERA_MIDROW = ("Camera: straight-on front elevation from across the road at eye level, 35mm lens, the whole house and its "
-                 "boundary wall in frame, centred, the neighbouring houses filling the left and right edges of the frame; no "
+                 "front in frame, centred, the neighbouring houses filling the left and right edges of the frame; no "
                  "street, lane or open ground visible beside the house; never a corner or three-quarter view. Light: golden hour, "
                  "low warm sun from the side, soft long shadows, clear sky.")
+CAMERA_OPEN = ("Camera: straight-on front elevation from across the road at eye level, 35mm lens, the whole house, its roof and "
+               "its front yard in frame, centred, with open air on both sides of the house and the neighbouring houses just in "
+               "frame at the far edges; never a corner or three-quarter view. Light: golden hour, low warm sun from the side, "
+               "soft long shadows, clear sky.")
 CAMERA_CORNER = ("Camera: three-quarter view from the street corner at eye level, 24mm lens, both road-facing facades in frame. "
                  "Light: golden hour, low warm sun, soft long shadows, clear sky.")
 
@@ -41,19 +49,20 @@ STYLE_HINTS = {
 
 # Fallback takes when the quick model call isn't available: four distinct directions per style family.
 FALLBACK_TAKES = [
-    {"title": "Stone and teak", "direction": "A white upper box floating over a grey stone base, with teak fins"},
-    {"title": "Brick and jaali", "direction": "Warm exposed brick with a full-height brick jaali over the stair and balcony"},
-    {"title": "Stepped terraces", "direction": "Stepped storeys with a planted terrace over the porch and slim black railings"},
-    {"title": "Courtyard screen", "direction": "A perforated metal screen wraps the first floor over a recessed glass entrance"},
+    {"title": "Light and plain", "direction": "Pale walls, deep window reveals and one warm timber entrance"},
+    {"title": "Two materials", "direction": "A darker lower storey under a lighter upper storey"},
+    {"title": "Deep shade", "direction": "Generous overhangs and a shaded entrance with slim dark frames"},
+    {"title": "Garden front", "direction": "Planting up to the door and a wide window beside it"},
 ]
 
 TAKES_SYSTEM = """You are an architect in the family's city proposing four genuinely different exterior design directions for one house, all within
-the family's chosen style. Vary the massing and the material palette (not the camera or the light): e.g. a floating upper box, a
-brick-and-jaali screen, stepped terraces, a courtyard screen. Each must be buildable on the plot and respect the brief (storeys,
-porch, roof). Never add minarets, domes, chhatris or cupolas unless the brief asks for them.
+the family's chosen style. The LOCAL HOME line says what kind of building this is there: how it stands on its lot, its roof,
+walls and parking. Every direction stays that kind of building and varies what a good local architect would vary: the
+proportions, the facade composition and the material palette (not the camera or the light). Each must be buildable on the plot
+and respect the brief (storeys, roof). Never add minarets, domes, chhatris or cupolas unless the brief asks for them.
 Write for a family, not an architect: plain words in British English (aluminium, colour, storey). The direction is ONE sentence
 of at most 14 words. Avoid trade jargon and these words: "board-formed", "louvers" (say "slatted screens"), "aluminum" (say
-"aluminium"), "vigas" (say "timber beams"), and "corner" (a mid-row house has no corner to design).
+"aluminium"), "vigas" (say "timber beams"), and "corner" (say what the part is instead).
 Return JSON: {"takes": [{"title": "<2-3 word name, e.g. Stone and teak>", "direction": "<one plain sentence, at most 14 words:
 massing and materials>"}] } with exactly four takes."""
 
@@ -84,18 +93,41 @@ def plain_take(take: dict) -> dict:
     return {**take, "title": fix(str(take.get("title") or "")), "direction": direction[:1].upper() + direction[1:]}
 
 
-def _site_sentence(brief: dict) -> str:
+def _attached(brief: dict, homes: dict | None) -> bool:
+    return locale.attached(brief, homes)
+
+
+def _site_sentence(brief: dict, homes: dict | None = None) -> str:
+    """How this house meets its plot and its neighbours, in the words of the kind of house it is."""
     p = brief.get("plot") or {}
     if p.get("corner"):
-        return ("It is a CORNER plot: two road-facing facades, both designed with care, a side road running along one side.")
-    return ("It is a MID-ROW plot (NOT a corner): neighbouring houses stand directly against both side walls, there is no side "
-            "street and no visible side facade; only the front facade faces the single road in front. Show the two neighbouring "
-            "houses at the left and right edges of the frame, touching this house's side walls (plain, muted, no gap, no side "
-            "lawn, no side road), so it clearly reads as a house in a row.")
+        return "It is a CORNER plot: two road-facing facades, both designed with care, a side road running along one side."
+    if _attached(brief, homes):
+        return ("It is a MID-ROW plot (NOT a corner): neighbouring houses stand directly against both side walls, there is no side "
+                "street and no visible side facade; only the front facade faces the single road in front. Show the two neighbouring "
+                "houses at the left and right edges of the frame, touching this house's side walls (plain, muted, no gap, no side "
+                "lawn, no side road), so it clearly reads as a house in a row.")
+    f = (homes or {}).get("form") or {}
+    if locale.form(brief, homes) == "semi-detached":
+        return ("It shares one side wall with its other half, which stands beside it at one edge of the frame; on the other side "
+                "there is open side yard and then the next pair of houses.")
+    if not locale.form(brief, homes):
+        return "It stands on its street the way houses there do."
+    gap = f.get("side_gap_ft")
+    return (f"It stands clear of its neighbours, with open side yards{f' about {gap:g} ft wide' if gap else ''} on both sides and "
+            f"sky visible between the houses. {f.get('street_relation') or ''}").strip()
 
 
-def _roof_sentence(brief: dict) -> str:
-    parts = ["Flat roof with a parapet and a compact stair tower (mumty)"]
+def _roof_sentence(brief: dict, homes: dict | None = None) -> str:
+    r = locale.roof(brief, homes)
+    if r.get("form") in locale.PITCHED:
+        ridge = {"parallel": "its ridge running along the street", "perpendicular": "its gable end facing the street"}.get(r.get("ridge") or "", "")
+        bits = [f"A pitched {r['form']} roof at about {r.get('pitch_deg') or 30:g} degrees" + (f" in {r['material']}" if r.get("material") else ""),
+                ridge, f"eaves overhanging about {r['overhang_ft']:g} ft" if r.get("overhang_ft") else "",
+                "no flat roof, no parapet, no roof terrace, no stair tower and no water tank"]
+        return ", ".join(b for b in bits if b) + "."
+    tower = (homes or {}).get("roof", {}).get("tower_name") or "stair tower" if locale.local(brief, homes).get("stair_tower") else ""
+    parts = [f"Flat roof with a parapet{f' and a compact {tower}' if tower else ''}"]
     solar = brief.get("solar") or "ready"
     if solar == "panels":
         parts.append("rows of solar panels on a raised steel frame over the roof")
@@ -117,42 +149,45 @@ def taste_language(style: dict | None) -> str:
     return "; ".join(b for b in bits if b)
 
 
-def street_language(loc: dict | None) -> str:
-    """What the neighbourhood suggests for the outside of the house (its facade and garden ideas), read from the places
-    people love around the plot: so even a first concept, before any favourites, belongs to its street."""
-    ideas = [i for i in (loc or {}).get("ideas") or [] if i.get("where") in ("facade", "garden") and i.get("line")]
-    return " ".join(f"From the neighbourhood: {i['line'].rstrip('.')}." for i in ideas[:2])
+def _camera(brief: dict, homes: dict | None) -> str:
+    if (brief.get("plot") or {}).get("corner"):
+        return CAMERA_CORNER
+    return CAMERA_MIDROW if _attached(brief, homes) else CAMERA_OPEN
 
 
 def concept_prompt(brief: dict, take: dict | None = None, instruction: str | None = None, taste: dict | None = None,
-                   street: str = "") -> str:
+                   homes: dict | None = None) -> str:
     p = brief.get("plot") or {}
-    style = brief.get("style") or "Modern Contemporary"
+    style = brief.get("style") or (homes or {}).get("style") or "contemporary"
     hints = taste_language(taste) or STYLE_HINTS.get(style, brief.get("style_notes") or "")
     storeys = {1: "single-storey", 2: "double-storey", 3: "triple-storey"}.get(brief.get("storeys") or 2, "double-storey")
-    where = locale.place(brief) if not locale.is_pakistan(brief) else (brief.get("scheme") or {"DHA": "DHA Lahore", "BAHRIA": "Bahria Town Lahore"}.get(brief.get("authority"), "a Lahore housing society")) + ", Pakistan"
+    where = locale.place(brief) or "the family's city"
     porch = next((s for s in brief.get("spaces", []) if s.startswith("car_porch")), "car_porch:1")
     cars = porch.split(":")[1] if ":" in porch else "1"
     direction = f" This design's direction: {take['direction']}." if take else ""
     extra = f" Additional direction: {instruction}." if instruction else ""
-    camera = CAMERA_CORNER if p.get("corner") else CAMERA_MIDROW
-    width = p.get("width_ft", 35)
-    row = "" if p.get("corner") else ", one house in a continuous row of houses (a mid-row plot),"
+    width = f" on a {p['width_ft']:g} ft wide plot" if p.get("width_ft") else ""
+    kind = locale.home_line(homes)
+    local = f"The usual home there: {kind}. Build this house as that kind of building; the style dresses it and never replaces it." if kind else ""
+    style_line = f"Style language: {hints}." if hints else ""
     return (
-        f"Photorealistic architectural photograph of a {style} {storeys} family house{row} on a {width:g} ft wide plot in {where}. "
-        f"Style language: {hints}.{direction} {street + ' ' if street else ''}{locale.street_context(brief, cars)} {_roof_sentence(brief)} {_site_sentence(brief)} "
-        f"{camera} High-end real-estate photography, realistic materials and proportions. No people. Absolutely no text, "
+        f"Photorealistic architectural photograph of a {style} {storeys} family house, {locale.form_phrase(brief, homes)},{width} in {where}. "
+        f"{local} {style_line} {locale.walls_sentence(homes)}{direction} {locale.street_context(brief, homes, cars)} "
+        f"{_roof_sentence(brief, homes)} {_site_sentence(brief, homes)} "
+        f"{_camera(brief, homes)} High-end real-estate photography, realistic materials and proportions. No people. Absolutely no text, "
         f"numbers, signs, house plaques or watermarks anywhere in the image.{extra}"
-    )
+    ).replace("  ", " ").replace(" .", ".")
 
 
-async def design_takes(brief: dict, n: int = 4, instruction: str | None = None) -> list[dict]:
+async def design_takes(brief: dict, n: int = 4, instruction: str | None = None, homes: dict | None = None) -> list[dict]:
     """Four distinct design directions within the style (quick model call, with a fallback)."""
     ask = {k: brief.get(k) for k in ("style", "style_notes", "storeys", "plot", "spaces", "solar", "water_tank", "preferences", "budget")
            if brief.get(k) not in (None, "", [], {})}
     try:
         out = None
         async for kind, val in llm.stream_json(config.MODEL_INTAKE, f"BRIEF: {json.dumps(ask)}\n"
+                                               + (f"LOCAL HOME: {locale.home_line(homes)} {locale.street_context(brief, homes)} "
+                                                  f"{_roof_sentence(brief, homes)}\n" if homes else "")
                                                + (f"FAMILY'S DIRECTION: {instruction}\n" if instruction else "")
                                                + "Propose the four directions.", TAKES_SYSTEM, max_tokens=1200, attempts=1,
                                                thinking="LOW"):
@@ -230,9 +265,9 @@ async def side_road(image: tuple[bytes, str]) -> bool | None:
 
 
 FROM_DESIGN = ("THE ATTACHED DRAWINGS ARE THIS HOUSE'S ACTUAL DESIGN. Draw exactly this house: the same number of storeys, the "
-               "same footprint and width on the plot, the car porch on the same side, every front window and door where the "
-               "elevation shows it (same count, sizes and positions), the balconies, the stair tower and tank where they are on "
-               "the roof. Only the materials, colours and detailing come from the style direction. The drawings are "
+               "same footprint and width on the plot, the parking on the same side, every front window and door where the "
+               "elevation shows it (same count, sizes and positions), the balconies, and anything on the roof where it stands. "
+               "Only the materials, colours and detailing come from the style direction. The drawings are "
                "references: never show the drawings, labels or dimension text in the photograph.")
 
 
@@ -264,7 +299,7 @@ async def design_refs(project: dict) -> list[tuple[str, bytes, str]]:
 
 async def _generate_one(pid: str, prompt: str, ref: tuple[bytes, str] | None = None, site: str | None = None,
                         refs: list[tuple[str, bytes, str]] | None = None) -> dict:
-    """One concept image. `site` (mid-row plots): after the day image a quick vision check asks whether a road runs beside
+    """One concept image. `site` (houses in a row, not on a corner): after the day image a quick vision check asks whether a road runs beside
     the house; if it does, the image is made once more with the site sentence repeated (logged). `refs`: the design's
     drawings, so the photograph shows the house as designed."""
     contents: list = [prompt]
@@ -299,7 +334,14 @@ async def _generate_one(pid: str, prompt: str, ref: tuple[bytes, str] | None = N
 
 
 async def generate(project: dict, count: int = 4, instruction: str | None = None, base_id: str | None = None) -> AsyncIterator[tuple[str, dict]]:
-    pid, brief = project["id"], project.get("brief") or {}
+    pid = project["id"]
+    if not base_id and not local_homes.current(project, project.get("brief") or {}) and locale.known(project.get("brief") or {}):
+        yield "stage", {"stage": "wait", "message": f"Looking at how homes are built in {locale.named(project['brief'])}…"}
+    project = await local_homes.localised(project)
+    homes = project.get("homes")
+    brief = project.get("brief") or {}
+    if intake.missing(brief):  # the family went straight to concepts: draw what the brief will be
+        brief, _ = intake.defaults_for(brief, homes)
     base = next((c for c in project.get("concepts", []) if c["id"] == base_id), None) if base_id else None
     ref = None
     if base:
@@ -317,20 +359,20 @@ async def generate(project: dict, count: int = 4, instruction: str | None = None
         style = (project.get("taste") or {}).get("style")
         takes = [plain_take(t) | {k: t.get(k) for k in ("why", "because")} for t in (style or {}).get("takes") or []]
         if instruction or len(takes) < count:  # a typed direction, or no taste pass yet: the generic takes
-            takes = await design_takes(brief, count, instruction)
-        street = street_language(project.get("locality"))
+            takes = await design_takes(brief, count, instruction, homes)
         for take in takes[:count]:
-            jobs.append((concept_prompt(brief, take, instruction, style, street), take))
+            jobs.append((concept_prompt(brief, take, instruction, style, homes), take))
         if style and not instruction:  # the measured comparison: the same brief drawn without the family's taste
             neutral = {**brief, "style": "Modern Contemporary", "style_notes": ""}  # the brief as it was before the taste pass
-            jobs.append((concept_prompt(neutral, {"title": "Without your taste", "direction": "a typical new house for this plot"}),
+            jobs.append((concept_prompt(neutral, {"title": "Without your taste", "direction": "a typical new house for this plot"}, homes=homes),
                          {"title": "Without your taste", "baseline": True}))
     refs = [] if base else await design_refs(project)
     for i, (pr, take) in enumerate(jobs):
         if not (take or {}).get("baseline"):
             yield "concept.started", {"index": i, "prompt": pr, "from_design": bool(refs)}
 
-    site = None if (brief.get("plot") or {}).get("corner") else _site_sentence(brief)
+    # only a house in a row can gain a road it shouldn't have; a detached house has open ground beside it by design
+    site = _site_sentence(brief, homes) if _attached(brief, homes) and not (brief.get("plot") or {}).get("corner") else None
 
     async def one(i: int, pr: str, take: dict | None):
         try:
@@ -451,7 +493,8 @@ and list everything visible on the house and its plot, from the ground up. Be co
 to the facade, its material and its colour as a hex code.
 Cover: the massing of each storey (boxes, setbacks, cantilevers, projections); wall finishes by zone; window sizes, shapes
 and frame colour; doors and the main entrance; balconies and railings; screens, fins, jaali or slats; canopies, chajjas and
-slabs; the car porch and its columns; parapets and the roof (stair tower, water tank, solar); the boundary wall and gate;
+slabs; the car porch or garage door; the roof (its form, pitch and material, any parapet, stair tower, water tank or solar); the
+boundary wall, fence or open front, and any gate;
 lighting (wall lights, LED strips); planting and paving.
 Return JSON: {"summary": "<two sentences: the overall look>", "palette": {"<name>": "#hex"},
 "features": [{"id": "F1", "what": "<the element>", "where": "<floor and position>", "material": "<material>",

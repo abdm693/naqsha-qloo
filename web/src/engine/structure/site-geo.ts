@@ -111,11 +111,14 @@ export function buildSite(ctx: BuildCtx, m: SiteMats): void {
   // remove overlaps between gates
   for (let k = 1; k < gates.length; k++) if (gates[k].x0 < gates[k - 1].x1 + 1.3) gates[k].x0 = gates[k - 1].x1 + 1.3;
   const foot = ctx.model.footprint;
+  // an open front: no wall or gate on the road, and the side fences start level with the house
+  const openFront = hFront < 0.5;
+  const sideFrom = openFront && foot.length ? Math.min(...foot.map((f) => f.y)) : 0;
   const lines: { axis: "x" | "y"; c: number; a: number; b: number; h: number; out: -1 | 1; name: string }[] = [
     { axis: "x", c: 0, a: 0, b: W, h: hFront, out: -1, name: "front" },
     { axis: "x", c: D, a: 0, b: W, h: hRear, out: 1, name: "rear" },
-    { axis: "y", c: 0, a: 0, b: D, h: hSide, out: -1, name: "left" },
-    { axis: "y", c: W, a: 0, b: D, h: hSide, out: 1, name: "right" },
+    { axis: "y", c: 0, a: sideFrom, b: D, h: hSide, out: -1, name: "left" },
+    { axis: "y", c: W, a: sideFrom, b: D, h: hSide, out: 1, name: "right" },
   ];
   const runs: WallRun[] = [];
   for (const ln of lines) {
@@ -170,7 +173,7 @@ export function buildSite(ctx: BuildCtx, m: SiteMats): void {
     pillarKit.box(m.gate, x * FT, (top + 1.48) * FT, y * FT, 0.55 * FT, 0.08 * FT, 0.55 * FT);
   };
   const frontTop = grade + hFront;
-  for (const gt of gates) {
+  if (!openFront) for (const gt of gates) {
     pillarAt(gt.x0 - 0.65, 0, frontTop);
     pillarAt(gt.x1 + 0.65, 0, frontTop);
   }
@@ -193,7 +196,7 @@ export function buildSite(ctx: BuildCtx, m: SiteMats): void {
   }
 
   // ── gates ────────────────────────────────────────────────────────────────────────────────────────
-  for (const gt of gates) {
+  if (!openFront) for (const gt of gates) {
     const kit = new Kit();
     const H = Math.max(5, hFront + 1.0);
     const span = gt.x1 - gt.x0;

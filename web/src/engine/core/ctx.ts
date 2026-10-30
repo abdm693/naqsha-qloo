@@ -6,6 +6,7 @@ import { MaterialLib, type Quality } from "../materials/library";
 import { applyTags, type ObjTags } from "./tags";
 import { NoteLog } from "./notes";
 import type { StructureModel } from "../structure/model";
+import type { PitchSpec } from "../structure/pitched-roof";
 
 export interface PlacedItem {
   id: string;
@@ -80,6 +81,8 @@ export class BuildCtx {
   readonly plantings: { x0: number; x1: number; y0: number; y1: number }[] = [];
   /** callbacks run at the end of the current section (e.g. auto dining chairs) */
   readonly endOfSection: (() => void)[] = [];
+  /** the pitched roof over this house, null for a flat one */
+  pitched: PitchSpec | null = null;
   /** structure options remembered for later sections */
   structureOpts: Record<string, unknown> = {};
   sunHour = 17.5;
@@ -114,6 +117,11 @@ export class BuildCtx {
   get model(): StructureModel {
     if (!this._model) this._model = this.modelFactory!(this);
     return this._model;
+  }
+
+  /** Derive the structure again from the plan (a pitched roof turns the roof level into an attic first). */
+  resetModel(): void {
+    this._model = null;
   }
 
   uid(prefix: string): string {

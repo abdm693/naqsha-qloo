@@ -146,7 +146,7 @@ export class StructureModel {
     // stairs first: the stair tower grows to cover the stair as laid out before any wall is derived
     ensureStairChain(plan, this.notes);
     this.stairs.push(...layoutStairs(plan, this.notes));
-    this.tower = reconcileTower(plan, this.stairs, this.envelope, this.notes);
+    this.tower = plan.attic ? null : reconcileTower(plan, this.stairs, this.envelope, this.notes);
     for (const lv of plan.levels) {
       const runs = this.computeRuns(lv);
       this.runsByLevel.set(lv.id, runs);
@@ -280,7 +280,7 @@ export class StructureModel {
           h0: U.elev - FINISH,
           h1: U.elev + height,
           openings: [],
-          topExposed: true,
+          topExposed: !(U.isRoof && plan.attic), // under a pitched roof it is a knee wall: the soffit covers it
         };
         this.parapets.push(run);
         const arr = this.runsByLevel.get(U.id) ?? [];

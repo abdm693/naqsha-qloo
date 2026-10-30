@@ -1,17 +1,18 @@
 /**
- * Where the home on screen is. Naqsha started in Pakistan (marla, LDA); everywhere else plots read in square feet and the
- * checks are "local rules". ProjectShell sets it from the brief; plotLabel and the compliance line read it.
+ * How plot sizes are said for the home on screen. No place is the default: the family's own units, else what the place's
+ * home profile says, and LDA, DHA and Bahria plots in marla. ProjectShell sets it from the brief; plotLabel and the
+ * compliance line read it.
  */
 import type { Brief } from "@contracts/api-types";
 
-const PK_CITIES = new Set(["lahore", "islamabad", "karachi", "rawalpindi", "faisalabad", "multan", "gujranwala", "peshawar",
-  "quetta", "hyderabad", "sialkot", "bahawalpur", "sargodha", "abbottabad", "murree"]);
+const LAHORE_AUTHORITIES = new Set(["LDA", "DHA", "BAHRIA"]);
 
 let intl = false;
 
+/** Whether this home's plot is spoken of in marla. */
 export function isPakistan(brief: Brief | null | undefined): boolean {
-  const city = String(brief?.city ?? "").trim().toLowerCase();
-  return !city || PK_CITIES.has(city);
+  const units = brief?.units ?? brief?.local?.units;
+  return units ? units === "marla" : LAHORE_AUTHORITIES.has(String(brief?.authority ?? "").toUpperCase());
 }
 
 export function setLocaleFrom(brief: Brief | null | undefined): void {

@@ -12,6 +12,7 @@ import { buildSlabs } from "./slabs-geo";
 import { buildStairs } from "./stairs-geo";
 import { buildDeckRailings, buildPorchColumns, buildPrivacyScreens } from "./extras-geo";
 import { buildSolar, buildTank, computeSolarRect } from "./roof-geo";
+import { buildPitchedRoof, pitchSpec } from "./pitched-roof";
 import { buildSite } from "./site-geo";
 import { buildDropGuards, buildStairWindowGuards } from "./guards";
 import type { RailType } from "./railings";
@@ -28,6 +29,7 @@ export interface StructureOpts {
   boundary_wall?: MaterialSpec;
   gate?: MaterialSpec;
   plinth?: MaterialSpec;
+  roof?: unknown;
 }
 
 const FINISH_MAP: Record<string, MaterialPreset> = {
@@ -92,6 +94,12 @@ export function buildStructure(ctx: BuildCtx, opts: StructureOpts = {}): void {
   ctx.structureBuilt = true;
   const o = (opts && typeof opts === "object" ? opts : {}) as StructureOpts;
   ctx.structureOpts = o as Record<string, unknown>;
+  // a pitched roof first: it turns the roof level into an attic before any wall is derived
+  ctx.pitched = pitchSpec(o.roof, ctx.plan.plan.roof?.pitched);
+  if (ctx.pitched) {
+    ctx.plan.enterAttic();
+    ctx.resetModel();
+  }
   const M = ctx.mats;
   const ext = M.get(o.exterior_wall, "plaster_white");
   const int = M.get(o.interior_wall, { preset: "paint", color: "#efebe3" });
@@ -146,11 +154,16 @@ export function buildStructure(ctx: BuildCtx, opts: StructureOpts = {}): void {
   step("screens", () => buildPrivacyScreens(ctx, { wall: ext, coping }));
   step("guards", () => buildDropGuards(ctx, railType, railMats));
   step("stair windows", () => buildStairWindowGuards(ctx, railType, railMats));
-  step("tank", () => buildTank(ctx, { plaster: ext, concrete: coping, pipe: M.get({ preset: "plastic", color: "#dcdad5" }) }));
-  step("solar", () => {
-    computeSolarRect(ctx);
-    buildSolar(ctx);
-  });
+  if (ctx.pitched) {
+    const pitched = ctx.pitched;
+    step("pitched roof", () => buildPitchedRoof(ctx, pitched, ext));
+  } else {
+    step("tank", () => buildTank(ctx, { plaster: ext, concrete: coping, pipe: M.get({ preset: "plastic", color: "#dcdad5" }) }));
+    step("solar", () => {
+      computeSolarRect(ctx);
+      buildSolar(ctx);
+    });
+  }
   step("site", () =>
     buildSite(ctx, {
       wall: boundary,

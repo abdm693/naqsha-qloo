@@ -229,6 +229,25 @@ const brick: Gen = (N, base, seed, p) => {
   return d;
 };
 
+// ── standing-seam metal roofing: raised seams running up the slope ──────────────────────────────────────
+const seams: Gen = (N, base, seed, p) => {
+  const d = alloc(N, true, true);
+  const cols = pnum(p, "cols", 3);
+  const pw = N / cols;
+  const S1 = sampler(table(seed), N);
+  for (let y = 0; y < N; y++)
+    for (let x = 0; x < N; x++) {
+      const i = y * N + x;
+      const e = Math.abs(((x + pw / 2) % pw) - pw / 2);
+      const seam = 1 - smoothstep(1.5, 4.5, e);
+      const t = 0.97 + 0.06 * (S1(x, y, 40) - 0.5) + 0.05 * seam;
+      put(d, i, base[0] * t, base[1] * t, base[2] * t);
+      d.height![i] = 0.5 + 0.5 * seam;
+      d.rough![i] = 0.42;
+    }
+  return d;
+};
+
 // ── fair-faced concrete with pores, formwork joints and tie holes ─────────────────────────────────────
 const concrete: Gen = (N, base, seed, p) => {
   const d = alloc(N, true, true);
@@ -791,7 +810,7 @@ const smudge: Gen = (N, _base, seed) => {
 };
 
 export const GENERATORS: Record<string, Gen> = {
-  plaster, ledgestone, travertine, brick, concrete, woodGrain, planks, marble, tiles, terrazzo, weave, velvet, leather,
+  plaster, ledgestone, travertine, brick, seams, concrete, woodGrain, planks, marble, tiles, terrazzo, weave, velvet, leather,
   grass, paving, gravel, soil, asphalt, water, brushed, smudge,
 };
 

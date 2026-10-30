@@ -21,7 +21,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from starlette.middleware.gzip import GZipMiddleware
 
-from . import auth, busy, config, qloo, runs, sse
+from . import auth, busy, config, locale, qloo, runs, sse
 from .agents import architect, concepts, heart, importer, intake, jsfix, locality, research, reviser, reviser_adk, taste, views
 from .auth import Identity
 from .compliance import lda
@@ -36,7 +36,7 @@ app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=6)
 
 PUBLIC_FIELDS = ("id", "name", "created_at", "updated_at", "stage", "brief", "envelope", "concepts", "selected_concept_id",
                  "versions", "current_version_id", "thumbnail_url", "brief_changed", "cloned_from", "imported", "taste",
-                 "house_taste_fit", "locality", "family", "heart")
+                 "house_taste_fit", "locality", "family", "heart", "homes")
 CLIENT_FIELDS = ("id", "name", "created_at", "updated_at", "stage", "concepts", "selected_concept_id", "versions",
                  "current_version_id", "thumbnail_url", "taste", "locality", "heart")
 RANK = {"client": 1, "team": 2, "owner": 3}
@@ -674,7 +674,8 @@ async def read_heart(pid: str, me: Identity = Depends(auth.identity)):
     if not people:
         raise HTTPException(400, "Nobody has answered yet.")
     brief = p.get("brief") or {}
-    home = {k: brief.get(k) for k in ("city", "scheme", "storeys", "bedrooms", "style") if brief.get(k)}
+    home = {k: brief.get(k) for k in ("city", "scheme", "storeys", "bedrooms") if brief.get(k)}
+    home["usual_here"] = locale.home_line(p.get("homes"))  # the heart must be a room such a house really has
     found = await heart.read(people, home)
     found["near"] = await heart.near_home(people, _where(brief))
     prefs = [x for x in brief.get("preferences") or [] if not str(x).startswith(("The heart of the home", "A room for "))]
@@ -718,7 +719,7 @@ async def read_locality(pid: str, body: LocalityBody, me: Identity = Depends(aut
     if not where:
         raise HTTPException(400, "Tell me where the house will be first.")
     cur = p.get("locality") or {}
-    if cur.get("location") == where and cur.get("ideas"):
+    if cur.get("location") == where and cur.get("places"):
         return public(p, role)
     got = await locality.read(where, p.get("brief") or {})
     return public(await db.update_project(pid, locality=got), role)
@@ -762,7 +763,7 @@ def _family_people(p: dict) -> list[dict]:
 async def _taste_events(pid: str, p: dict, data: dict):
     """Run the taste agent and save its result on the project (the brief's style follows the family's taste)."""
     brief = p.get("brief") or {}
-    data = {**data, "heart": p.get("heart")}
+    data = {**data, "heart": p.get("heart"), "homes": p.get("homes")}
     async for ev in taste.run(brief, data):
         if ev[0] == "brief":
             style = ev[1]["style"]
@@ -847,13 +848,6 @@ async def make_concepts(pid: str, body: ConceptBody, me: Identity = Depends(auth
         proj = p
         brief = p.get("brief") or {}
         where = _where(brief)
-        if where and not body.base_concept_id and (proj.get("locality") or {}).get("location") != where:
-            # the street comes first: the concepts take their facade and garden from the neighbourhood
-            yield "stage", {"stage": "wait", "message": f"Walking around {where.split(',')[0]}…"}
-            try:
-                proj = await db.update_project(pid, locality=await locality.read(where, brief))
-            except Exception as e:
-                logging.getLogger("naqsha").warning("locality before concepts failed: %r", e)
         if not proj.get("taste") and where and not body.base_concept_id:
             # no favourites shared: the design still follows its locality, read from Qloo before anything is drawn
             async for ev in _taste_events(pid, proj, {"people": _family_people(proj), "location": where, "notes": None}):
@@ -899,7 +893,7 @@ async def design(pid: str, me: Identity = Depends(auth.identity)):
         return _attach(run)
     brief = p["brief"]
     if intake.missing(brief) or not brief.get("plot"):
-        brief, _ = intake.defaults_for(brief)
+        brief, _ = intake.defaults_for(brief, p.get("homes"))
     # within the authority's storeys, and at the limit no enclosed room on the roof (a brief saved before that rule)
     brief, _ = intake.clamp_storeys(brief)
     if brief != p["brief"]:
@@ -1100,8 +1094,7 @@ async def upload_drawing(pid: str, body: DrawingBody, me: Identity = Depends(aut
     except ValueError as e:
         raise HTTPException(422, str(e))
     brief = intake.merge_brief(p.get("brief") or {}, got["brief_patch"], [], spaces_mode="union")
-    for k, v in (("city", "Lahore"), ("authority", "LDA"), ("style", "Modern Contemporary"), ("water_tank", "plastic"),
-                 ("solar", "ready")):
+    for k, v in (("style", "Modern Contemporary"), ("solar", "ready")):
         if not brief.get(k):
             brief[k] = v
     brief["preferences"] = list(dict.fromkeys((brief.get("preferences") or []) + ["keep the layout of our own drawing"]))

@@ -79,6 +79,35 @@ const designs: Record<string, () => { plan: BuildingPlan; sections: DesignSectio
     if (p.roof.water_tank) p.roof.water_tank.material = "concrete";
     return { plan: p, sections: parseDesign(designKanal) };
   },
+  // the same 1 kanal house as a detached home elsewhere: a gable or hip roof over the walls, neighbours standing apart
+  "kanal-gable": () => localHouse("gable", "parallel"),
+  "kanal-gable-side": () => localHouse("gable", "perpendicular"),
+  "kanal-hip": () => localHouse("hip", "auto"),
+  "kanal-gable-solar": () => {
+    const d = localHouse("gable", "perpendicular");
+    d.plan.roof.solar = { mode: "panels" };
+    d.plan.site.facing = "E";
+    return d;
+  },
+  // one half of a semi-detached pair, on a street of pairs
+  "argon-semi": () => {
+    const p = JSON.parse(JSON.stringify(planArgon)) as BuildingPlan;
+    delete p.roof.water_tank;
+    delete p.roof.solar;
+    p.roof.pitched = { form: "gable", pitch_deg: 40, ridge: "across_road", material: "charcoal asphalt shingles", overhang_ft: 1 };
+    p.site.street = { form: "semi-detached", side_gap_ft: 4, setback_ft: 15, storeys: 2, front_wall: false, roof_tank: false, walls: ["red clay brick"], roof: { form: "gable", pitch_deg: 40, ridge: "across_road" } };
+    p.site.boundary_wall = { ...p.site.boundary_wall, front_height_ft: 0 };
+    return { plan: p, sections: parseDesign(designArgon) };
+  },
+  // a row house with a pitched roof: nothing may pass the party walls
+  "row-gable": () => {
+    const p = JSON.parse(JSON.stringify(planArgon)) as BuildingPlan;
+    delete p.roof.water_tank;
+    delete p.roof.solar;
+    p.roof.pitched = { form: "gable", pitch_deg: 35, ridge: "along_road", material: "grey slate", overhang_ft: 1.5 };
+    p.site.street = { form: "row", storeys: 2, roof: { form: "gable", pitch_deg: 35, ridge: "along_road" }, front_wall: true };
+    return { plan: p, sections: parseDesign(designArgon) };
+  },
   "argon-solar": () => {
     const p = JSON.parse(JSON.stringify(planArgon)) as BuildingPlan;
     p.roof.solar = { mode: "panels" };
@@ -86,6 +115,16 @@ const designs: Record<string, () => { plan: BuildingPlan; sections: DesignSectio
     return { plan: p, sections: parseDesign(designArgon) };
   },
 };
+
+function localHouse(form: "gable" | "hip", ridge: string): { plan: BuildingPlan; sections: DesignSectionSrc[] } {
+  const p = JSON.parse(JSON.stringify(planKanal)) as BuildingPlan;
+  delete p.roof.water_tank;
+  delete p.roof.solar;
+  p.roof.pitched = { form, pitch_deg: 30, ridge, material: "charcoal asphalt shingles", overhang_ft: 2 };
+  p.site.street = { form: "detached", side_gap_ft: 8, setback_ft: 20, storeys: 2, front_wall: false, roof_tank: false, walls: ["limestone", "painted siding"], roof: { form, pitch_deg: 30, ridge } };
+  p.site.boundary_wall = { ...p.site.boundary_wall, front_height_ft: 0 };
+  return { plan: p, sections: parseDesign(designKanal) };
+}
 
 let current: BuildResult | null = null;
 let currentPlan: BuildingPlan = planFixture as unknown as BuildingPlan;

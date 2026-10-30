@@ -324,17 +324,18 @@ FACADE_OPEN = {"porch", "balcony", "terrace", "lawn", "driveway", "courtyard", "
 
 def render_front_elevation(plan: dict, px_per_ft: float = 14.0) -> bytes:
     """The front of the house as an architect's elevation: storeys, the front wall of every room with its depth from the road
-    (shaded: nearer is darker), front-facing doors and windows, the porch bay and balconies, parapet, stair tower and tank,
-    the boundary wall and gate. Road crown at the bottom; feet."""
+    (shaded: nearer is darker), front-facing doors and windows, the porch bay and balconies, the roof (a pitched roof's
+    outline, or the parapet, stair tower and tank), the boundary wall and gate. Road crown at the bottom; feet."""
     ix = PlanIndex(plan)
     W = ix.W or 35
     levels = sorted([lv for lv in ix.levels], key=lambda lv: lv.get("index", 0))
     top_ft = max((lv.get("elevation_ft", 0) + lv.get("height_ft", 0) for lv in levels), default=30)
-    mumty = (plan.get("roof") or {}).get("mumty")
+    pitched = (plan.get("roof") or {}).get("pitched")
+    mumty = None if pitched else (plan.get("roof") or {}).get("mumty")
     roof_lv = next((lv for lv in levels if lv["id"] == ix.roof_id), None)
     if mumty and roof_lv:
         top_ft = max(top_ft, roof_lv.get("elevation_ft", 0) + float(mumty.get("height_ft") or 9))
-    top_ft += 5  # room for the tank on the stair tower
+    top_ft += 18 if pitched else 5  # room for the ridge, or the tank on the stair tower
     s, m, head, foot = px_per_ft, 60, 70, 60
     Hpx = int(top_ft * s + head + foot + 20)
     img = Image.new("RGB", (int(W * s + 2 * m), Hpx), PAPER)
@@ -409,6 +410,10 @@ def render_front_elevation(plan: dict, px_per_ft: float = 14.0) -> bytes:
             par = float((plan.get("roof") or {}).get("parapet_ft") or 3.5)
             a, b = P(x0, e + par), P(x1, e)
             dr.rectangle([a[0], a[1], b[0], b[1]], fill=(205, 203, 198), outline=WALL, width=2)
+            if pitched:
+                rise = min(15.0, (x1 - x0) / 2 * math.tan(math.radians(float(pitched.get("pitch_deg") or 30))))
+                dr.polygon([P(x0 - 1, e + par), P((x0 + x1) / 2, e + par + rise), P(x1 + 1, e + par)], fill=(150, 148, 144), outline=WALL)
+                dr.text(P((x0 + x1) / 2 - 8, e + par + rise / 2), f"{pitched.get('form')} roof", fill=PAPER, font=f_small)
         if mumty and isinstance(mumty.get("rect"), dict):
             r = mumty["rect"]
             a, b = P(r["x"], e + float(mumty.get("height_ft") or 9)), P(r["x"] + r["w"], e)
@@ -422,9 +427,11 @@ def render_front_elevation(plan: dict, px_per_ft: float = 14.0) -> bytes:
                 dr.rectangle([a2[0], a2[1], b2[0], b2[1]], fill=(60, 110, 190), outline=INK, width=1)
     # the boundary wall in front, with the gate
     gates = (plan.get("site") or {}).get("gates") or plan.get("gates") or []
+    open_front = ((plan.get("site") or {}).get("boundary_wall") or {}).get("front_height_ft") == 0
     a, b = P(0, 6), P(W, 0)
-    dr.rectangle([a[0], a[1], b[0], b[1]], outline=INK2, width=2)
-    for g in gates:
+    if not open_front:
+        dr.rectangle([a[0], a[1], b[0], b[1]], outline=INK2, width=2)
+    for g in () if open_front else gates:
         gx, gw = (g.get("at") or [W / 2, 0])[0], float(g.get("width_ft") or 12)
         ga, gb = P(gx - gw / 2, 6), P(gx + gw / 2, 0)
         dr.rectangle([ga[0], ga[1], gb[0], gb[1]], fill=(110, 110, 116), outline=INK, width=2)

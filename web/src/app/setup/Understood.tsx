@@ -64,20 +64,20 @@ const SPACE_WORDS = new Set(["drawing room", "tv lounge", "dining", "kitchen", "
  */
 export function assumptionField(line: string, b: Brief | null): string | null {
   const t = line.trim();
-  if (/^\d+(\.\d+)?\s+(marla|kanal),\s*[\d.]+\s*×\s*[\d.]+\s*ft\b/i.test(t)) return "plot";
-  if (t === "Corner plot" || /^Mid-row plot\b/.test(t)) return "corner";
+  if (/^[\d.,]+\s+(marla|kanal|sq ft|sq m),\s*[\d.]+\s*×\s*[\d.]+\s*ft\b/i.test(t)) return "plot";
+  if (t === "Corner plot" || /^Mid-row plot\b/.test(t) || /^Inside lot\b/.test(t)) return "corner";
   if (/^Front faces /.test(t)) return "facing";
   if (/^(Single storey|Two storeys|Three storeys|\d+ storeys|Kept to \d+ storeys?:)/.test(t)) return "storeys";
   if (/^\d+ bedrooms$/.test(t)) return "bedrooms";
   if (/^\d+ baths$/.test(t)) return "bathrooms";
   if (t === "I'll place the rooms on each floor") return "floors";
-  if (/^\d+-car porch$/.test(t)) return "porch";
+  if (/^\d+-car (porch|garage|carport|laneway garage|driveway)$/.test(t)) return "porch";
   if (t === "Concrete water tank in the stair tower" || t === "Blue plastic water tank" || t === "Concrete tank in the stair tower" || t === "Blue plastic tank") return "water_tank";
   if (t === "Roof kept clear for solar" || t === "Solar frame on the roof" || t === "Raised solar frame" || t === "No solar for now" || t === "No solar") return "solar";
   if (/^(Economy|Standard|Premium|Luxury) budget$/.test(t)) return "budget";
   if (b?.style && t.toLowerCase() === `${b.style} style`.toLowerCase()) return "style";
   const parts = t.toLowerCase().split(", ");
-  if (parts.length && SPACE_WORDS.has(parts[0]) && parts.every((x) => SPACE_WORDS.has(x) || /^\d+-car porch$/.test(x))) return "spaces";
+  if (parts.length && SPACE_WORDS.has(parts[0]) && parts.every((x) => SPACE_WORDS.has(x) || /^\d+-car /.test(x))) return "spaces";
   return null;
 }
 

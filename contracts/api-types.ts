@@ -320,9 +320,6 @@ export interface Locality {
   center?: GeoPoint | null;
   feel: { name: string; share?: number | null }[];
   places: LocalPlace[];
-  reading?: string | null;
-  ideas: { title: string; line: string; where?: string; from?: string[] }[];
-  suggestions: string[];
   at: string;
 }
 export interface Swatch { name: string; hex: string }

@@ -551,7 +551,7 @@ export const useProject = create<ProjectState>((set, get) => {
               // Give "Untitled home" a name people recognise in the workspace, e.g. "10 marla house, Johar Town".
               if (p && /^untitled (home|project)$/i.test(p.name.trim()) && brief?.plot?.area_marla) {
                 const size = plotLabel(brief.plot.area_marla).replace(/^\w/, (c) => c.toUpperCase());
-                void get().rename(`${size} house, ${brief.scheme || brief.city || "Lahore"}`);
+                void get().rename(`${size} house, ${brief.scheme || brief.city || "your city"}`);
               }
             },
           },

@@ -91,10 +91,11 @@ def test_dha_storeys_chip_is_clamped_in_the_turn(monkeypatch):
 def test_new_storey_without_rooms_keeps_setup_open():
     b = full_brief(storeys=3)
     assert intake.floors_missing(b) == ["second"]
-    assert "floors" in intake.to_ask(b) and "floors" in intake.missing(b)
+    assert "floors" in intake.missing(b)                       # a design needs them, so Naqsha places those rooms
     q = intake.question("floors", b)
     assert q["text"].startswith("What goes on the second floor?") and q["input"] == "floors"
-    assert "floors" not in intake.to_ask({**b, "auto_filled": ["floors"]})
+    assert "floors" not in intake.missing({**b, "auto_filled": ["floors"]})
+    assert "floors" in intake.defaults_for(b)[0]["auto_filled"]
     assert not intake.floors_missing(full_brief()) and not intake.to_ask(full_brief())
 
 
@@ -124,16 +125,17 @@ def test_dont_assume_clears_and_asks(monkeypatch):
 
 
 # --- BE-16: corner or mid-row ----------------------------------------------------------------------------------------------------
-def test_corner_is_asked_unless_stated():
+def test_corner_is_assumed_unless_stated():
     b = intake.merge_brief(intake.empty_brief(), {"plot": {"width_ft": 35, "depth_ft": 65}})
-    assert b["corner_stated"] is False and intake.to_ask(b)[:2] == ["authority", "corner"]
-    q = intake.question("corner", b)
-    assert q["text"] == "Corner or mid-row?" and {c["value"] for c in q["chips"]} == {"corner:true", "corner:false"}
+    assert b["corner_stated"] is False and intake.to_ask(b) == ["place"]    # the place is all that is asked
+    q = intake.question("corner", b)                                        # reopened by the family ("Don't assume")
+    assert q["text"] == "Is it a corner plot?" and {c["value"] for c in q["chips"]} == {"corner:true", "corner:false"}
+    assert intake.question("corner", {**b, "home_form": "row"})["text"] == "Corner or mid-row?"
     said = intake.merge_brief(b, {"plot": {"corner": False}})
-    assert said["corner_stated"] is True and "corner" not in intake.to_ask(said)
+    assert said["corner_stated"] is True
     assert "Mid-row plot, neighbours on both sides" in intake.understood(said)["preferences"]
     skipped = intake.skip_field(b, "corner")
-    assert "corner" in skipped["auto_filled"] and "corner" not in intake.to_ask(skipped)
+    assert "corner" in skipped["auto_filled"] and not skipped.get("corner_open")
     assert "Mid-row plot, neighbours on both sides" in intake.understood(skipped)["assumptions"]
     d, _ = intake.defaults_for(b)
     assert "corner" in d["auto_filled"]
@@ -153,29 +155,30 @@ def test_skip_ack_and_roof_ack_and_suggestions():
 # --- BE-19: one "Decide for me" on the rooms question -----------------------------------------------------------------------------------
 def test_skip_rooms_decides_floors_too(monkeypatch):
     Msgs(monkeypatch)
-    b = full_brief(bedrooms=None, bathrooms=None, floors=[], spaces=[], water_tank=None, solar=None)
+    b = full_brief(bedrooms=None, bathrooms=None, floors=[], spaces=[], water_tank=None, solar=None, facing=None)
     p = {"id": "p1", "name": "x", "brief": b}
     m = Msgs(monkeypatch)
     m.msgs.append(db.make_message({"role": "assistant", "text": "How many bedrooms?", "field": "bedrooms"}))
     evs = turn(p, action="skip_question")
     nb = brief_of(evs)
     assert nb["bedrooms"] and "floors" in nb["auto_filled"]
+    assert nb["facing"] and "facing" in nb["auto_filled"]           # no more questions: the rest is assumed
     msg = last_msg(evs)
-    assert msg["field"] == "water_tank" and "place the rooms on each floor" in msg["text"]
+    assert not msg.get("field") and "I'll place the rooms on each floor" in msg["understood"]["assumptions"]
 
 
 # --- BE-20: Start with questions ------------------------------------------------------------------------------------------------
-def test_start_asks_the_plot(monkeypatch):
+def test_start_asks_where_and_nothing_else(monkeypatch):
     Msgs(monkeypatch)
     evs = turn({"id": "p1", "name": "Untitled home", "brief": None}, action="start")
     m = last_msg(evs)
-    assert m["text"].startswith("How big is the plot?") and "one message" in m["text"]
-    assert m["input"] == "plot" and m["field"] == "plot" and m["chips"]
+    assert m["text"].startswith("Where will the home be?") and "any order" in m["text"]
+    assert m["field"] == "place" and not m.get("chips") and not m.get("input")
 
 
 # --- BE-27: the auto name follows the plot ---------------------------------------------------------------------------------------------
 def test_auto_name_follows_plot_until_renamed():
-    b12 = {"plot": {"width_ft": 40, "depth_ft": 68, "area_marla": 12.1}, "scheme": "Johar Town"}
+    b12 = {"plot": {"width_ft": 40, "depth_ft": 68, "area_marla": 12.1}, "scheme": "Johar Town", "units": "marla"}
     assert intake.auto_name({"name": "10 marla home, Johar Town", "auto_named": True}, b12) == "12 marla home, Johar Town"
     assert intake.auto_name({"name": "10 marla house, Johar Town"}, b12) == "12 marla home, Johar Town"   # older auto names
     assert intake.auto_name({"name": "Our home", "auto_named": False}, b12) is None
@@ -224,7 +227,7 @@ def test_dha_three_storeys_mid_row_and_default_porch_are_not_you_said():
     assert "Kept to 2 storeys: DHA's limit" in card["assumptions"]
     assert "Mid-row plot, neighbours on both sides" in card["assumptions"]
     assert not any("storey" in p.lower() or "mid-row" in p.lower() for p in card["preferences"])
-    assert intake.to_ask(b)[:1] == ["corner"]                    # still asked, though it is an assumption meanwhile
+    assert not intake.to_ask(b)                                  # an assumption: never asked
     # completion fills the default spaces: the 2-car porch is Naqsha's choice
     d, _ = intake.defaults_for(b)
     done = intake.merge_brief(b, {"spaces": d["spaces"]}, ["spaces"])
@@ -241,21 +244,18 @@ def test_dha_three_storeys_mid_row_and_default_porch_are_not_you_said():
 
 def test_corner_said_skipped_and_reasked():
     b = intake.merge_brief(intake.empty_brief(), {"plot": {"width_ft": 35, "depth_ft": 65}})
-    assert "corner" in b["auto_filled"] and b["corner_open"] and "corner" in intake.to_ask(b)
+    assert "corner" in b["auto_filled"] and b["corner_open"]
     said = intake.merge_brief(b, {"plot": {"corner": False}})          # the "Mid-row" chip
     assert said["corner_stated"] is True and "corner" not in said["auto_filled"] and "corner_open" not in said
     assert all("corner" in s for s in you_said(said))
     corner = intake.merge_brief(b, {"plot": {"corner": True}})
     assert "Corner plot" in intake.understood(corner)["preferences"]
     skipped = intake.skip_field(b, "corner")
-    assert "corner" not in intake.to_ask(skipped) and not any("corner" in s for s in you_said(skipped))
+    assert not any("corner" in s for s in you_said(skipped))
     resized = intake.merge_brief(skipped, {"plot": {"width_ft": 40, "depth_ft": 70}})   # a new size: not asked again
-    assert "corner" not in intake.to_ask(resized) and resized["corner_stated"] is False
+    assert not resized.get("corner_open") and resized["corner_stated"] is False
     again, _ = intake.unset_fields(said, ["corner"])                   # "Don't assume: Mid-row plot"
-    assert "corner" in intake.to_ask(again) and "corner" in again["auto_filled"]
-    # a brief from before round 2 (asked, not answered): still asked
-    legacy = {**full_brief(), "corner_stated": False, "auto_filled": []}
-    assert "corner" in intake.to_ask(legacy)
+    assert again["corner_open"] and "corner" in again["auto_filled"]
     assert "Mid-row plot, neighbours on both sides" in intake.understood({**full_brief(), "corner_stated": None})["assumptions"]
 
 
@@ -265,7 +265,7 @@ def test_corner_chip_in_the_turn_is_said(monkeypatch):
     evs = turn({"id": "p1", "name": "x", "brief": b}, chips=["corner:false"])
     nb = brief_of(evs)
     assert nb["corner_stated"] is True and "corner" not in nb["auto_filled"]
-    assert last_msg(evs)["field"] == "facing"
+    assert not last_msg(evs).get("field") and last_msg(evs)["understood"]          # no next question: the card
 
 
 def test_brief_panel_round_trip_keeps_assumptions():

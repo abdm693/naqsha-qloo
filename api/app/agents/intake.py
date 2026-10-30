@@ -1,9 +1,11 @@
 """Setup (intake): the conversation that fills the project Brief.
 
-Free text goes to the conversational setup agent (setup_agent.py, Google ADK), which takes everything it can from one long
-message and asks only what is missing. Widget answers (structured chips such as `plot:35x65`, `tank:concrete`,
-`floor:ground=drawing,kitchen,bedroom:1`) are parsed deterministically and the next question is asked instantly from a fixed
-bank, so one-tap answers never wait for a model. The LDA envelope is computed deterministically whenever the plot is known.
+The family says whatever they want, in any order. The one thing Naqsha must ask is where the home is; everything else is filled
+from the place's home profile (agents/homes.py), or sensible defaults, and shown as assumptions they can change. Free text
+goes to the conversational setup agent (setup_agent.py, Google ADK), which may ask one follow-up in plain words when it truly
+matters. Widget answers (structured chips such as `plot:35x65`, `tank:concrete`, `floor:ground=drawing,kitchen,bedroom:1`) are
+parsed deterministically; the question bank below only serves a fact the family reopened ("Don't assume"). The rule envelope is
+computed deterministically whenever the plot is known.
 """
 from __future__ import annotations
 
@@ -15,6 +17,7 @@ from typing import AsyncIterator
 from .. import locale
 from ..compliance import lda
 from ..store import db
+from . import homes
 
 log = logging.getLogger("naqsha.intake")
 
@@ -29,21 +32,19 @@ FACING_WORDS = {"north": "N", "northeast": "NE", "north-east": "NE", "east": "E"
 SPACE_IDS = {"drawing", "tv_lounge", "dining", "kitchen", "dirty_kitchen", "servant_quarter", "lawn", "prayer", "store",
              "laundry", "roof_terrace", "study", "gym", "motorbike"}
 BUDGETS = ["economy", "standard", "premium", "luxury"]
-ESSENTIAL = ["authority", "plot", "storeys", "bedrooms", "bathrooms", "style"]
-# The order questions are asked in. Optional ones (corner, facing, floors, water_tank, solar) are asked once, unless already
-# known or skipped (a skipped field is recorded in auto_filled with Naqsha's choice).
-ASK_ORDER = ["authority", "plot", "corner", "facing", "storeys", "bedrooms", "floors", "water_tank", "solar", "style"]
+ESSENTIAL = ["plot", "storeys", "bedrooms", "bathrooms", "style"]  # a design needs these; the profile or defaults fill them
 STOREY_LEVELS = ["ground", "first", "second", "third"]
 AUTHORITY_NAME = {"LDA": "LDA", "DHA": "DHA", "BAHRIA": "Bahria Town", "OTHER": "LDA"}
-DEFAULT_SPACES = ["drawing", "tv_lounge", "dining", "kitchen", "car_porch:1", "lawn", "store"]
-# Outside Pakistan: no drawing room, dirty kitchen or servant quarter unless the family asks (the car bay is a garage there).
-DEFAULT_SPACES_INTL = ["tv_lounge", "dining", "kitchen", "car_porch:1", "lawn", "laundry", "store"]
+# Only when no home profile could be read: nothing local in it. A profile's own rooms replace this.
+DEFAULT_SPACES = ["tv_lounge", "dining", "kitchen", "car_porch:1", "lawn", "laundry", "store"]
+HOME_FORMS = {"detached", "semi-detached", "row", "compound", "townhouse"}
+ROOF_FORMS = {"flat", "gable", "hip"}
 LEVEL_NAMES = ["ground", "first", "second", "third", "basement", "roof"]
 
 
 # --- brief model ---------------------------------------------------------------------------------------------------
 def empty_brief() -> dict:
-    return {"city": "Lahore", "authority": None, "plot": None, "storeys": None, "basement": False, "bedrooms": None,
+    return {"city": None, "authority": None, "plot": None, "storeys": None, "basement": False, "bedrooms": None,
             "bathrooms": None, "spaces": [], "style": None, "auto_filled": [], "preferences": []}
 
 
@@ -88,6 +89,20 @@ def norm_facing(v) -> str | None:
     if s.upper() in FACINGS:
         return s.upper()
     return FACING_WORDS.get(s.lower().replace(" ", ""))
+
+
+def norm_roof(v) -> str | None:
+    s = str(v or "").strip().lower()
+    if s in ROOF_FORMS:
+        return s
+    return "gable" if any(t in s for t in ("pitch", "slop", "gable", "shingle")) else "hip" if "hip" in s else "flat" if "flat" in s else None
+
+
+def norm_home_form(v) -> str | None:
+    s = str(v or "").strip().lower().replace(" ", "-").replace("_", "-")
+    if s in HOME_FORMS:
+        return s
+    return "row" if "row" in s or "terrace" in s else "semi-detached" if "semi" in s else "detached" if "detach" in s else None
 
 
 def norm_style(v) -> str | None:
@@ -160,7 +175,7 @@ def _drop_prefs(cur: list, remove: list) -> list:
 
 # Kept by the server from what was said (never taken from a patch): whether the family stated corner/mid-row, whether that
 # question is still open, and the storeys they asked for before clamp_storeys capped them.
-SERVER_KEYS = ("corner_stated", "corner_open", "storeys_asked")
+SERVER_KEYS = ("corner_stated", "corner_open", "storeys_asked", "local", "rules_tried")
 
 
 def panel_patch(before: dict, sent: dict) -> dict:
@@ -219,7 +234,7 @@ def merge_brief(brief: dict, patch: dict, auto: list[str] | None = None, spaces_
                 continue
         elif k == "authority":
             v = str(v).upper()
-            if v not in AUTHORITIES:
+            if v not in AUTHORITIES and not lda.has_pack(v):
                 continue
         elif k == "storeys":
             v = max(1, min(3, int(v)))
@@ -232,6 +247,14 @@ def merge_brief(brief: dict, patch: dict, auto: list[str] | None = None, spaces_
                 continue
         elif k == "style":
             v = norm_style(v)
+            if not v:
+                continue
+        elif k == "roof_form":
+            v = norm_roof(v)
+            if not v:
+                continue
+        elif k == "home_form":
+            v = norm_home_form(v)
             if not v:
                 continue
         elif k == "water_tank":
@@ -339,6 +362,7 @@ def parse_chips(chips: list[str] | None) -> tuple[dict, list[str]]:
                 patch.setdefault("plot", {}).update(width_ft=w, depth_ft=d)
             elif k == "marla":
                 patch.setdefault("plot", {}).update(area_marla=float(val))
+                patch["units"] = "marla"
             elif k == "corner":
                 patch.setdefault("plot", {})["corner"] = val.lower() in ("true", "yes", "1")
             elif k == "unset" and val.strip():  # "Don't assume": clear that field and ask it again
@@ -389,43 +413,59 @@ def parse_chips(chips: list[str] | None) -> tuple[dict, list[str]]:
     return patch, unknown
 
 
-def defaults_for(brief: dict) -> tuple[dict, list[str]]:
-    """Sensible defaults for anything missing (used by skip_all and before a design run)."""
-    b, auto = {**brief}, []
+def _local_spaces(brief: dict, prof: dict | None, area_marla: float) -> list[str]:
+    """The rooms a home here has: the profile's, else the plain default; a car bay when homes here park under cover."""
+    spaces = list(((prof or {}).get("rooms") or {}).get("spaces") or []) or [s for s in DEFAULT_SPACES if not s.startswith("car_porch")]
+    spaces = [s for s in ("tv_lounge", "kitchen") if s not in spaces] + spaces  # every home has these, whatever they're called
+    if prof and prof.get("form"):
+        park = prof.get("parking") or {}
+        cars = int(park.get("cars") or 0) if park.get("type") not in ("street", "driveway") else 0  # (a bay is a covered one)
+    else:
+        cars = 2 if area_marla >= 20 else 1
+    if cars:
+        spaces.insert(min(4, len(spaces)), f"car_porch:{cars}")
+    return spaces
+
+
+def defaults_for(brief: dict, prof: dict | None = None) -> tuple[dict, list[str]]:
+    """Everything the family hasn't said: from the place's home profile `prof`, else plain defaults. Each one goes in
+    auto_filled, so the card lists it under what Naqsha assumed."""
+    b, auto = homes.stamp({**brief}, prof), []
     if str(b.get("style") or "").upper() in AUTHORITIES:
         b["style"] = None
 
     def put(k, v):
-        if not b.get(k):
+        if not b.get(k) and v not in (None, "", [], {}):
             b[k] = v
             auto.append(k)
-    put("authority", "LDA")
+    p = prof or {}
     if not b.get("plot"):
-        b["plot"] = _normalize_plot({"area_marla": 10})
+        b["plot"] = _normalize_plot(p.get("lot") or homes.LOT_FALLBACK)
         auto.append("plot")
     marla = b["plot"]["area_marla"]
-    put("storeys", 1 if marla < 4 else 2)
-    put("bedrooms", 2 if marla < 4 else 3 if marla < 7 else 4 if marla < 15 else 5)
+    put("storeys", p.get("storeys") or (1 if marla < 4 else 2))
+    put("bedrooms", p.get("bedrooms") or (2 if marla < 4 else 3 if marla < 7 else 4 if marla < 15 else 5))
     put("bathrooms", b["bedrooms"] + 1)
-    pk = locale.is_pakistan(b)
-    spaces = list(DEFAULT_SPACES if pk else DEFAULT_SPACES_INTL)
-    if marla >= 10 and pk:
-        spaces += ["dirty_kitchen", "laundry"]
-    if marla >= 20:
-        spaces += ["servant_quarter", "prayer", "roof_terrace"] if pk else ["study", "roof_terrace"]
-        spaces = [s if not s.startswith("car_porch") else "car_porch:2" for s in spaces]
-    put("spaces", spaces)
-    if "spaces" in auto:
-        auto.append("porch")  # the car porch in the default spaces is Naqsha's choice too
-    put("style", "Modern Contemporary")
+    if not b.get("spaces"):
+        b["spaces"] = _local_spaces(b, prof, marla)
+        auto.append("spaces")
+        if any(str(s).startswith("car_porch") for s in b["spaces"]):
+            auto.append("porch")  # the car bay in the default spaces is Naqsha's choice too
+    put("style", p.get("style") or "Modern Contemporary")
     put("facing", "N")
     put("budget", "standard")
-    if locale.roof_tank_usual(b):
-        put("water_tank", "concrete")
-    put("solar", "ready")
+    if locale.roof_tank_usual(b, prof):
+        put("water_tank", (p.get("services") or {}).get("roof_tank") or "concrete")
+    if not locale.pitched(b, prof):
+        put("solar", "ready")
+    if locale.form(b, prof) and not b.get("home_form"):
+        auto.append("home_form")
+    auto.append("parking")
+    if locale.roof(b, prof).get("form") and not b.get("roof_form"):
+        auto.append("roof_form")
     if not b.get("corner_stated"):
         if "corner" not in (b.get("auto_filled") or []):
-            auto.append("corner")  # mid-row unless they said corner: shown under "I assumed"
+            auto.append("corner")  # not on a corner unless they said so: shown under "I assumed"
         b.pop("corner_open", None)  # decided for them: no longer asked
     if floors_missing(b) and "floors" not in (b.get("auto_filled") or []):
         auto.append("floors")  # Naqsha places the rooms on the floors that have none yet
@@ -433,8 +473,7 @@ def defaults_for(brief: dict) -> tuple[dict, list[str]]:
     return b, auto
 
 
-DEFAULT_FOR_FIELD = {"authority": "LDA", "facing": "N", "water_tank": "concrete", "solar": "ready",
-                     "style": "Modern Contemporary", "budget": "standard"}
+DEFAULT_FOR_FIELD = {"facing": "N", "solar": "ready", "style": "Modern Contemporary", "budget": "standard"}
 
 
 def skip_field(brief: dict, field: str | None) -> dict:
@@ -443,7 +482,9 @@ def skip_field(brief: dict, field: str | None) -> dict:
         return brief
     if field == "floors":
         return merge_brief(brief, {}, ["floors"])
-    if field == "corner":  # mid-row, the usual Lahore plot
+    if field == "water_tank":
+        return merge_brief(brief, {"water_tank": "concrete"}, ["water_tank"]) if locale.roof_tank_usual(brief) else brief
+    if field == "corner":  # not a corner unless they said so
         out = merge_brief({**brief, "plot": {**(brief.get("plot") or {}), "corner": False}}, {}, ["corner"])
         out.pop("corner_open", None)
         return out
@@ -480,26 +521,8 @@ def missing(brief: dict) -> list[str]:
 
 
 def to_ask(brief: dict) -> list[str]:
-    """What to ask next, in order: missing essentials plus the optional questions not yet answered or skipped."""
-    auto = set(brief.get("auto_filled") or [])
-    out = []
-    for k in ASK_ORDER:
-        if k == "bedrooms":
-            if not brief.get("bedrooms"):
-                out.append(k)
-        elif k == "floors":
-            if "floors" in auto:
-                continue
-            if ((brief.get("storeys") or 1) >= 2 and not brief.get("floors")) or floors_missing(brief):
-                out.append(k)
-        elif k == "corner":  # not said: asked once (the assumption is still open), unless they skipped it
-            if brief.get("plot") and brief.get("corner_stated") is False and ("corner" not in auto or brief.get("corner_open")):
-                out.append(k)
-        elif k == "water_tank" and not locale.roof_tank_usual(brief):
-            continue  # only Pakistan and the Gulf put water tanks on the roof
-        elif not brief.get(k) and k not in auto:
-            out.append(k)
-    return out
+    """What Naqsha must still ask: where the home is, and nothing else."""
+    return [] if locale.known(brief) else ["place"]
 
 
 def _sum_tokens(tokens: list[str]) -> list[str]:
@@ -515,9 +538,17 @@ def _sum_tokens(tokens: list[str]) -> list[str]:
     return [f"{k}:{n}" if n != 1 else k for k, n in counts.items()]
 
 
+def has_rules(brief: dict) -> bool:
+    """Whether rule numbers can be quoted for this home: a Lahore authority Naqsha ships, or a researched pack."""
+    auth = str(brief.get("authority") or "").upper()
+    return auth in lda.BUILTIN_AUTHORITIES or lda.has_pack(auth)
+
+
 def storey_cap(brief: dict) -> tuple[int, str]:
     """The most storeys the authority allows for this brief, and how to say so ("DHA allows ground + first, plus a
-    basement")."""
+    basement"). Without a rule pack, what Naqsha designs."""
+    if not has_rules(brief):
+        return 3, "I design up to three storeys"
     auth = str(brief.get("authority") or "LDA").upper()
     env = envelope_for(brief)
     cap = int(env["max_storeys"]) if env else int(lda._authority_overrides(auth)[0].get("max_storeys") or 3)
@@ -644,8 +675,10 @@ def envelope_for(brief: dict) -> dict | None:
 
 
 def lda_facts(brief: dict) -> str:
-    """Plain facts the agent may quote (and nothing else) about the LDA envelope for this plot."""
+    """Plain facts the agent may quote (and nothing else) about the building rules for this plot."""
     env = envelope_for(brief)
+    if not has_rules(brief):
+        return "This place's building rules are being looked up: quote no numbers for now."
     if not env:
         return "Plot not known yet. LDA heights by band: under 10 marla 38 ft; 10 marla and above 45 ft; both measured to the top " \
                "of the parapet with the stair tower (mumty, up to 9'6\") excluded; max 3 storeys plus a basement."
@@ -658,6 +691,9 @@ def lda_facts(brief: dict) -> str:
 
 
 # --- the question bank (instant, deterministic) ------------------------------------------------------------------------
+PLACE_QUESTION = "Where will the home be?"
+
+
 def _solar_hint(brief: dict) -> str:
     env = envelope_for(brief)
     if not env:
@@ -669,21 +705,19 @@ def _solar_hint(brief: dict) -> str:
 
 def question(field: str, brief: dict) -> dict:
     """The message for asking `field`, with its widget and one-tap chips."""
-    if field == "authority":
-        return {"text": "Where is the plot?", "field": "authority", "input": None, "allow_skip": True, "chips": [
-            {"label": "Lahore · LDA scheme", "value": "LDA"}, {"label": "DHA Lahore", "value": "DHA"},
-            {"label": "Bahria Town Lahore", "value": "BAHRIA"}, {"label": "Another Punjab city", "value": "OTHER"}]}
+    if field in ("place", "authority"):
+        return {"text": PLACE_QUESTION, "field": "place", "input": None, "allow_skip": False, "chips": []}
     if field == "plot":
-        return {"text": "How big is the plot? Tap a size or enter the exact width and depth.", "field": "plot", "input": "plot",
-                "allow_skip": True, "chips": [
-                    {"label": "5 marla", "value": "plot:25x45", "hint": "25 × 45 ft"},
-                    {"label": "7 marla", "value": "plot:30x52.5", "hint": "30 × 52.5 ft"},
-                    {"label": "10 marla", "value": "plot:35x65", "hint": "35 × 65 ft · Most popular"},
-                    {"label": "1 kanal", "value": "plot:50x90", "hint": "50 × 90 ft"},
-                    {"label": "2 kanal", "value": "plot:75x120", "hint": "75 × 120 ft"}]}
+        chips = []
+        if locale.units(brief) == "marla":
+            chips = [{"label": "5 marla", "value": "plot:25x45", "hint": "25 × 45 ft"}, {"label": "7 marla", "value": "plot:30x52.5", "hint": "30 × 52.5 ft"},
+                     {"label": "10 marla", "value": "plot:35x65", "hint": "35 × 65 ft"}, {"label": "1 kanal", "value": "plot:50x90", "hint": "50 × 90 ft"},
+                     {"label": "2 kanal", "value": "plot:75x120", "hint": "75 × 120 ft"}]
+        return {"text": "How big is the plot? Give me the width and depth.", "field": "plot", "input": "plot", "allow_skip": True, "chips": chips}
     if field == "corner":
-        return {"text": "Corner or mid-row?", "field": "corner", "input": None, "allow_skip": True, "chips": [
-            {"label": "Mid-row", "value": "corner:false", "hint": "Neighbours on both sides"},
+        attached = locale.attached(brief)
+        return {"text": "Corner or mid-row?" if attached else "Is it a corner plot?", "field": "corner", "input": None, "allow_skip": True, "chips": [
+            {"label": "Mid-row" if attached else "Not a corner", "value": "corner:false", "hint": "Neighbours on both sides"},
             {"label": "Corner plot", "value": "corner:true", "hint": "Roads on two sides"}]}
     if field == "facing":
         return {"text": "Which way does the front of the plot face?", "field": "facing", "input": "map", "allow_skip": True,
@@ -705,11 +739,11 @@ def question(field: str, brief: dict) -> dict:
                 if gaps else "What goes on each floor? Move rooms between floors, or let me decide.")
         return {"text": text, "field": "floors", "input": "floors", "allow_skip": True,
                 "chips": [{"label": "Decide for me", "value": "floors:auto"}]}
-    if field == "water_tank":
+    if field == "water_tank" and locale.roof_tank_usual(brief):
         return {"text": "Which water tank should the roof have?", "field": "water_tank", "input": None, "allow_skip": True, "chips": [
             {"label": "Concrete tank in the stair tower", "value": "tank:concrete", "hint": "Hidden, lasts decades · Recommended"},
             {"label": "Blue plastic tank", "value": "tank:plastic", "hint": "Cheaper, visible on the roof"}]}
-    if field == "solar":
+    if field == "solar" and not locale.pitched(brief):
         return {"text": "Shall I keep the roof clear for solar panels?", "field": "solar", "input": None, "allow_skip": True, "chips": [
             {"label": "Keep the roof clear for solar", "value": "solar:ready", "hint": _solar_hint(brief)},
             {"label": "Add the solar frame now", "value": "solar:panels"},
@@ -717,6 +751,11 @@ def question(field: str, brief: dict) -> dict:
     if field == "style":
         return {"text": "Which style feels like home?", "field": "style", "input": "style", "allow_skip": True,
                 "chips": [{"label": s, "value": s} for s in STYLE_NAMES[:6]]}
+    if field == "roof_form":
+        return {"text": "What kind of roof would you like?", "field": field, "input": "text", "allow_skip": True, "chips": []}
+    if field == "home_form":
+        return {"text": "How should the house stand on its plot: detached, semi-detached or in a row?", "field": field,
+                "input": "text", "allow_skip": True, "chips": []}
     return {"text": "Anything else I should know?", "field": field, "input": "text", "allow_skip": True, "chips": []}
 
 
@@ -748,6 +787,47 @@ def marla_label(m: float) -> str:
     return f"{round(m):g} marla" if abs(m - round(m)) < 0.2 else f"{m:g} marla"
 
 
+def size_label(brief: dict) -> str:
+    """The plot's size the way people say it there ("10 marla", "6,000 sq ft", "557 sq m"); plots are stored in feet."""
+    p = brief.get("plot") or {}
+    area = (p.get("width_ft") or 0) * (p.get("depth_ft") or 0)
+    u = locale.units(brief)
+    if u == "marla":
+        return marla_label(p.get("area_marla") or area / lda.MARLA_SQFT)
+    if u == "sqm":
+        return f"{round(area / 10.764):,} sq m"
+    return f"{round(area, -1):,.0f} sq ft"
+
+
+def street_line(brief: dict) -> str:
+    """The plot's corner fact in the words of the kind of house it is."""
+    if (brief.get("plot") or {}).get("corner"):
+        return "Corner plot"
+    return "Mid-row plot, neighbours on both sides" if locale.attached(brief) or not locale.form(brief) else "Inside lot, not a corner"
+
+
+FORM_LINE = {"detached": "Detached house", "semi-detached": "Semi-detached house", "row": "Row house, sharing side walls with its neighbours",
+             "townhouse": "Townhouse in a row", "compound": "Villa inside a walled compound"}
+
+
+def form_line(brief: dict) -> str | None:
+    f = locale.form(brief)
+    if not f:
+        return None
+    gap = (brief.get("local") or {}).get("side_gap_ft")
+    return FORM_LINE.get(f, f.capitalize()) + (f", {gap:g} ft side yards" if f == "detached" and gap else "")
+
+
+def roof_line(brief: dict) -> str | None:
+    r = locale.roof(brief)
+    if not r.get("form"):
+        return None
+    if r["form"] == "flat":
+        return "Flat roof" + (" with a stair tower" if (brief.get("local") or {}).get("stair_tower") else "")
+    material = str(r.get("material") or "").split(",")[0].strip()
+    return f"{r['form'].capitalize()} roof" + (f" in {material}" if material else "")
+
+
 def _floor_line(f: dict) -> str:
     from ..compliance.planning import parse_program
     parts = []
@@ -773,8 +853,14 @@ def _fact_items(brief: dict) -> list[tuple[str, str]]:
     p = brief.get("plot")
     if p:
         where = brief.get("scheme") or {"DHA": "DHA Lahore", "BAHRIA": "Bahria Town"}.get(brief.get("authority") or "", brief.get("city") or "")
-        items.append(("plot", f"{marla_label(p['area_marla'])}, {p['width_ft']:g} × {p['depth_ft']:g} ft" + (f", {where}" if where else "")))
-        items.append(("corner", "Corner plot" if p.get("corner") else "Mid-row plot, neighbours on both sides"))
+        items.append(("plot", f"{size_label(brief)}, {p['width_ft']:g} × {p['depth_ft']:g} ft" + (f", {where}" if where else "")))
+        items.append(("corner", street_line(brief)))
+    if form_line(brief):
+        items.append(("home_form", form_line(brief)))
+    if roof_line(brief):
+        items.append(("roof_form", roof_line(brief)))
+    if (brief.get("local") or {}).get("parking") in ("driveway", "street"):
+        items.append(("parking", "Parking on the street" if brief["local"]["parking"] == "street" else "Parking on the driveway"))
     if brief.get("facing"):
         items.append(("facing", f"Front faces {FACING_NAME.get(brief['facing'], brief['facing'])}"))
     if brief.get("storeys"):
@@ -787,8 +873,9 @@ def _fact_items(brief: dict) -> list[tuple[str, str]]:
     for f in brief.get("floors") or []:
         items.append(("floors", _floor_line(f)))
     on_floors = {floor_space(f.get("level"), t) for f in brief.get("floors") or [] for t in f.get("rooms") or []}
-    sp = [SPACE_LABEL.get(s.split(":")[0], s.replace("_", " ")) if not s.startswith("car_porch") else
-          f"{s.split(':')[1] if ':' in s else 1}-car porch" for s in brief.get("spaces") or [] if s not in on_floors]
+    labels = {**SPACE_LABEL, **({"tv_lounge": (brief.get("local") or {})["living_room"]} if (brief.get("local") or {}).get("living_room") else {})}
+    sp = [labels.get(s.split(":")[0], s.replace("_", " ")) if not s.startswith("car_porch") else
+          f"{s.split(':')[1] if ':' in s else 1}-car {locale.parking_word(brief)}" for s in brief.get("spaces") or [] if s not in on_floors]
     if sp:
         line = ", ".join(sp)
         items.append(("spaces", line[:1].upper() + line[1:]))
@@ -806,7 +893,7 @@ def _fact_items(brief: dict) -> list[tuple[str, str]]:
 def understood(brief: dict, agent: dict | None = None) -> dict:
     """The "Here's what I understood" card. Guaranteed facts are computed (never model-written numbers); preferences are
     what the family said; assumptions are what Naqsha chose."""
-    env = envelope_for(brief)
+    env = envelope_for(brief) if has_rules(brief) else None
     g = []
     if env:
         sb = env["setbacks_ft"]
@@ -829,7 +916,7 @@ def understood(brief: dict, agent: dict | None = None) -> dict:
             prefs.append(line)
         elif field == "spaces" and "porch" in auto and "spaces" not in auto:  # their rooms, Naqsha's default porch
             parts = line.split(", ")
-            porch = [x for x in parts if x.endswith("-car porch")]
+            porch = [x for x in parts if re.search(r"^\d+-car ", x)]
             rest = [x for x in parts if x not in porch]
             if rest:
                 prefs.append(rest[0][:1].upper() + ", ".join(rest)[1:])
@@ -846,7 +933,7 @@ def understood(brief: dict, agent: dict | None = None) -> dict:
 
 def summary(b: dict) -> str:
     p = b.get("plot") or {}
-    return (f"{marla_label(p.get('area_marla') or 10)} ({p.get('width_ft', '?'):g} × {p.get('depth_ft', '?'):g} ft), "
+    return (f"{size_label(b)} ({p.get('width_ft', '?'):g} × {p.get('depth_ft', '?'):g} ft), "
             f"{b.get('storeys')}-storey, {b.get('bedrooms')} bedrooms and {b.get('bathrooms')} baths, {b.get('style')}")
 
 
@@ -865,14 +952,13 @@ def auto_name(project: dict, brief: dict) -> str | None:
     p = brief.get("plot")
     if not p:
         return None
-    m = p["area_marla"]
-    from .. import locale
-    if locale.is_pakistan(brief):
-        size = marla_label(m)
-        where = brief.get("scheme") or {"DHA": "DHA Lahore", "BAHRIA": "Bahria Town"}.get(brief.get("authority") or "", brief.get("city") or "Lahore")
-    else:  # outside Pakistan: the plot in feet and the neighbourhood and city ("40 × 100 ft home, Hyde Park, Austin")
-        size = f"{p.get('width_ft', 0):g} × {p.get('depth_ft', 0):g} ft" if p.get("width_ft") else f"{round(m * 272.25):,} sq ft"
-        where = ", ".join(x for x in (brief.get("scheme"), brief.get("city")) if x) or "your city"
+    if locale.units(brief) == "marla":
+        size = marla_label(p["area_marla"])
+    else:  # the plot in feet ("40 × 100 ft home, Hyde Park, Austin")
+        size = f"{p.get('width_ft', 0):g} × {p.get('depth_ft', 0):g} ft"
+    where = brief.get("scheme") or {"DHA": "DHA Lahore", "BAHRIA": "Bahria Town"}.get(brief.get("authority") or "", "") or brief.get("city") or "your city"
+    if locale.units(brief) != "marla" and brief.get("scheme") and brief.get("city"):
+        where = f"{brief['scheme']}, {brief['city']}"
     new = f"{size} home, {where}"
     return new if new != name else None
 
@@ -887,14 +973,13 @@ def next_stage(project: dict, complete: bool) -> str:
     return "concepts" if complete else "setup"
 
 
-GREETING = "Tell me about the plot and who will live there. One message is enough."
-START_NOTE = "Or tell me about the whole home in one message; that works too."
+GREETING = "Tell me about the home in any order: where it will be, and anything else you already know."
+START_NOTE = "Tell me anything else in any order; I'll fill in the rest from how homes are built there."
 GREETING_SUGGESTIONS = [
-    "10 marla in Johar Town, mid-row, facing north. Two storeys, 5 bedrooms with attached baths, my parents' room on the "
-    "ground floor, open kitchen with a dirty kitchen, 2-car porch, solar panels and a concrete water tank. Modern style.",
     "A 50 by 120 ft lot in Travis Heights, Austin, two storeys, four bedrooms, a two-car garage",
-    "A villa plot in Al Barsha, Dubai, 60 by 100 ft, five bedrooms, a majlis and a maid's room",
     "A 30 by 120 ft lot in Leslieville, Toronto, three bedrooms and a home studio",
+    "A villa plot in Al Barsha, Dubai, 60 by 100 ft, five bedrooms, a majlis and a maid's room",
+    "10 marla in Johar Town, Lahore. Two storeys, 5 bedrooms with attached baths, my parents' room on the ground floor",
 ]
 COMPLETE_SUGGESTIONS = ["Show me concepts", "Add a prayer room", "Make the kitchen open"]
 # Follow-ups offered once the brief is complete; each is left out when the brief already has it.
@@ -923,7 +1008,7 @@ async def _save(project: dict, brief: dict, complete: bool, before: dict | None)
 
 def _design_fields(b: dict) -> dict:
     return {k: b.get(k) for k in ("plot", "storeys", "basement", "bedrooms", "bathrooms", "spaces", "floors", "water_tank",
-                                  "solar", "preferences", "style", "facing")}
+                                  "solar", "preferences", "style", "facing", "roof_form", "home_form")}
 
 
 async def run_turn(project: dict, message: str | None, action: str | None, chips: list[str] | None) -> AsyncIterator[tuple[str, dict]]:
@@ -939,7 +1024,7 @@ async def run_turn(project: dict, message: str | None, action: str | None, chips
 # --- "Don't assume" ------------------------------------------------------------------------------------------------------------
 DONT_ASSUME_RE = re.compile(r"^\s*don['’]?t\s+assume\s*[:,\-–]?\s*(.+?)\s*$", re.I | re.S)
 UNSET_ALIAS = {"tank": "water_tank", "rooms": "bedrooms", "beds": "bedrooms", "baths": "bathrooms", "floors_per_level": "floors",
-               "location": "authority", "mid_row": "corner", "midrow": "corner"}
+               "location": "place", "authority": "place", "mid_row": "corner", "midrow": "corner"}
 UNSET_ASKS = {"bathrooms": "bedrooms", "spaces": "bedrooms"}  # the rooms widget answers these
 
 
@@ -979,7 +1064,9 @@ def unset_fields(brief: dict, fields: list[str]) -> tuple[dict, list[str]]:
             b[f] = []
             if f == "spaces":
                 auto.discard("porch")
-        elif f in ("plot", "bedrooms", "bathrooms", "storeys", "facing", "water_tank", "solar", "style", "budget", "authority"):
+        elif f == "place":
+            b.update(city=None, scheme=None, country=None, authority=None)
+        elif f in ("plot", "bedrooms", "bathrooms", "storeys", "facing", "water_tank", "solar", "style", "budget", "roof_form", "home_form"):
             b[f] = None
             if f == "storeys":
                 b.pop("storeys_asked", None)
@@ -999,9 +1086,9 @@ async def _turn(project: dict, message: str | None, action: str | None, chips: l
     history = await db.list_messages(pid)
     last_q = next((m for m in reversed(history) if m["role"] == "assistant"), None)
 
-    if action == "start":  # "Start with questions": the first question, with its widget; one long message is fine too
+    if action == "start":  # the opening: the one thing Naqsha must know, and that anything else is welcome in any order
         if not history:
-            q = question("plot", brief)
+            q = question("place", brief)
             yield "message", await db.add_message(pid, {"role": "assistant", "text": f"{q['text']} {START_NOTE}", "chips": q["chips"],
                                                         "input": q["input"], "field": q["field"], "allow_skip": q["allow_skip"],
                                                         "suggestions": GREETING_SUGGESTIONS, "multi": False})
@@ -1022,15 +1109,8 @@ async def _turn(project: dict, message: str | None, action: str | None, chips: l
         yield "message", um
 
     if action == "skip_all":
-        brief, _ = defaults_for(brief)
-        brief, _ = clamp_storeys(brief)
-        brief, env, _ = await _save(project, brief, True, before)
-        yield "brief", {"brief": brief, "envelope": env}
-        text = (f"Here's a starting brief: {summary(brief)}. Tap anything to change it; when you tap Show me concepts, I'll "
-                f"sketch four exteriors.")
-        yield "message", await db.add_message(pid, {"role": "assistant", "text": text, "chips": [], "input": None,
-                                                    "understood": understood(brief), "suggestions": _complete_suggestions(project, brief)})
-        yield "intake.complete", {"brief": brief, "envelope": env}
+        async for ev in finish(project, brief, before, starting=True):
+            yield ev
         return
 
     structured, unknown = parse_chips(chips)
@@ -1054,7 +1134,7 @@ async def _turn(project: dict, message: str | None, action: str | None, chips: l
         complete = not nxt and not missing(brief)
         brief, env, _ = await _save(project, brief, complete, before)
         yield "brief", {"brief": brief, "envelope": env}
-        ask = next((UNSET_ASKS.get(f, f) for f in cleared if UNSET_ASKS.get(f, f) in ASK_ORDER), None) or (nxt[0] if nxt else None)
+        ask = next((UNSET_ASKS.get(f, f) for f in cleared), None) or (nxt[0] if nxt else None)
         if ask:
             q = question(ask, brief)
             msg = {"role": "assistant", "text": f"Okay, I won't assume that. {q['text']}", "chips": q["chips"], "input": q["input"],
@@ -1073,29 +1153,81 @@ async def _turn(project: dict, message: str | None, action: str | None, chips: l
             if structured.get("bedrooms") and not structured.get("bathrooms") and not brief.get("bathrooms"):
                 brief = merge_brief(brief, {"bathrooms": structured["bedrooms"] + 1}, ["bathrooms"])
         brief, push = clamp_storeys(brief)
-        nxt = to_ask(brief)
-        complete = not nxt and not missing(brief)
-        if complete and not brief.get("spaces"):
-            brief = merge_brief(brief, {"spaces": defaults_for(brief)[0]["spaces"]}, ["spaces"])
-        brief, env, newly = await _save(project, brief, complete, before)
-        yield "brief", {"brief": brief, "envelope": env}
-        if complete:
-            msg = {"role": "assistant", "text": ((push + " ") if push else "") + _complete_text(project, brief), "chips": [],
-                   "input": None, "understood": understood(brief), "suggestions": _complete_suggestions(project, brief)}
-            yield "message", await db.add_message(pid, msg)
-            if newly:
-                yield "intake.complete", {"brief": brief, "envelope": env}
-        else:
-            q = question(nxt[0], brief)
-            ack = push or (_ack(structured, brief) if action != "skip_question" else _ack_skip((last_q or {}).get("field"), brief))
-            msg = {"role": "assistant", "text": (ack + " " + q["text"]).strip(), "chips": q["chips"], "input": q["input"],
-                   "field": q["field"], "allow_skip": q["allow_skip"], "multi": False}
-            yield "message", await db.add_message(pid, msg)
+        ack = push or (_ack(structured, brief) if action != "skip_question" else _ack_skip((last_q or {}).get("field"), brief))
+        async for ev in finish(project, brief, before, lead=ack):
+            yield ev
         return
 
     # free text (or chips the bank doesn't know): the conversational agent
     from .setup_agent import agent_turn
     async for ev in agent_turn(project, brief, before, history, user_text, structured):
+        yield ev
+
+
+QUICK_S = 2.0  # a profile that comes this fast (it was cached) arrives with the reply; a slower one follows it
+
+
+async def conclude(project: dict, brief: dict, before: dict, lead: str = "", starting: bool = False, card: bool = True,
+                   agent: dict | None = None, suggestions: list[str] | None = None) -> AsyncIterator[tuple[str, dict]]:
+    """The brief is ready to go ahead (the place is known): fill what the family didn't say from the home profile and show
+    it as assumptions. The chat never waits for the research: when the profile isn't to hand a short reply goes first, and the
+    brief and its card follow when the profile lands, then a line on the local rules if they had to be looked up."""
+    pid = project["id"]
+    task = homes.start(project, brief)
+    prof = homes.current(project, brief)
+    waited = False
+    if task and not project.get("versions"):  # (a designed home keeps talking; its next run reads the profile)
+        done, _ = await asyncio.wait({task}, timeout=QUICK_S)
+        if done:
+            prof = task.result()
+        else:
+            waited = True
+            saved, env, _ = await _save(project, brief, False, before)
+            yield "brief", {"brief": saved, "envelope": env}
+            text = (lead + " " if lead else "") + f"Let me look at how homes are built in {locale.named(brief)}."
+            yield "message", await db.add_message(pid, {"role": "assistant", "text": text, "chips": [], "input": None})
+            lead = ""
+            prof = await homes.ensure(project, brief)
+    brief, _ = defaults_for(brief, prof)
+    brief, push = clamp_storeys(brief)
+    brief, env, newly = await _save(project, brief, True, before)
+    yield "brief", {"brief": brief, "envelope": env}
+    if starting:
+        text = (f"Here's a starting brief: {summary(brief)}. Tap anything to change it; when you tap Show me concepts, I'll "
+                f"sketch four exteriors.")
+    else:
+        text = _complete_text(project, brief) if card or waited or project.get("versions") else "When you're ready, tap Show me concepts."
+    text = " ".join(x for x in (push, lead, text) if x)
+    msg = {"role": "assistant", "text": text, "chips": [], "input": None, "suggestions": _complete_suggestions(project, brief)
+           if suggestions is None else suggestions}
+    if card or waited or newly:
+        msg["understood"] = understood(brief, agent)
+    yield "message", await db.add_message(pid, msg)
+    if newly:
+        yield "intake.complete", {"brief": brief, "envelope": env}
+    if homes.needs_rules(brief):
+        got, pack = await homes.rules_for(brief, prof)
+        if got is not brief:
+            brief, env, _ = await _save(project, got, True, before)
+            yield "brief", {"brief": brief, "envelope": env}
+        if pack:
+            who = pack.get("authority_name") or brief.get("authority")
+            yield "message", await db.add_message(pid, {
+                "role": "assistant", "text": f"I've looked up {who}'s building rules for your plot. Treat them as a draft and "
+                                             f"confirm them with the authority before you build.", "chips": [], "input": None})
+
+
+async def finish(project: dict, brief: dict, before: dict, lead: str = "", starting: bool = False) -> AsyncIterator[tuple[str, dict]]:
+    """The end of a turn with no model in it: ask where the home is if that is still unknown, else go ahead."""
+    if not locale.known(brief):
+        saved, env, _ = await _save(project, brief, False, before)
+        yield "brief", {"brief": saved, "envelope": env}
+        q = question("place", brief)
+        text = "I'll decide everything else, but I need to know this." if starting else lead
+        yield "message", await db.add_message(project["id"], {"role": "assistant", "text": f"{text} {q['text']}".strip(), "chips": q["chips"],
+                                                              "input": q["input"], "field": q["field"], "allow_skip": q["allow_skip"], "multi": False})
+        return
+    async for ev in conclude(project, brief, before, lead=lead, starting=starting):
         yield ev
 
 
@@ -1130,10 +1262,10 @@ def _ack(patch: dict, brief: dict) -> str:
     """A short read-back of a widget answer."""
     if "plot" in patch and brief.get("plot") and set(patch["plot"]) - {"corner"}:
         p = brief["plot"]
-        env = envelope_for(brief)
+        env = envelope_for(brief) if has_rules(brief) else None
         who = AUTHORITY_NAME.get(str(brief.get("authority") or "LDA").upper(), "LDA")
         extra = f" {who} needs {env['setbacks_ft']['front']:g} ft open at the front; I'll keep it." if env else ""
-        return f"{marla_label(p['area_marla'])}, {p['width_ft']:g} × {p['depth_ft']:g} ft.{extra}"
+        return f"{size_label(brief)}, {p['width_ft']:g} × {p['depth_ft']:g} ft.{extra}"
     if "plot" in patch and "corner" in patch["plot"]:
         return "A corner plot, with roads on two sides." if brief.get("plot", {}).get("corner") else \
             "A mid-row plot, with neighbours on both sides."

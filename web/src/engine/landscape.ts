@@ -10,6 +10,8 @@ import { FT, clamp, hashStr, num, rng, warn } from "./core/util";
 import { makeCanvas } from "./materials/gen";
 import type { RoomM } from "./plan/model";
 import { openingNameLow, sentenceName as sentence } from "./structure/labels";
+import { massRoof, pitchSpec, type PitchSpec } from "./structure/pitched-roof";
+import { resolvePresetName } from "./materials/library";
 import { carWays, onWalkwayRect, parking } from "./furniture/parking";
 import { CLEAR_H, CLEAR_W, freeAcross, keepsReach, outdoorItems, outdoorModel, overlaps, passagesClear, reachedWith, type Box, type OutdoorModel, type Passage } from "./outdoor";
 
@@ -474,7 +476,7 @@ export function landscapeAPI(ctx: BuildCtx) {
     }
   }
 
-  function street(o?: { road_width_ft?: number; neighbours?: boolean; streetlights?: boolean }): void {
+  function street(o?: StreetOpts): void {
     const RW = clamp(num(o?.road_width_ft, plan.plan.site?.road_width_ft ?? 40), 12, 150);
     const W = plan.plotW, D = plan.plotD;
     const ext = 110;
@@ -532,7 +534,7 @@ export function landscapeAPI(ctx: BuildCtx) {
       ctx.add(context(kit.build()), ctag("Streetlights"));
       utilityPoles(ctx, W, fpY0 + 0.5, ext);
     }
-    if (o?.neighbours !== false) neighbours(ctx, W, D, RW, FOOTPATH);
+    if (o?.neighbours !== false) neighbours(ctx, W, D, RW, FOOTPATH, streetFrom(ctx, o));
   }
 
   return { lawn, paving, planter, tree, hedge, street };
@@ -881,7 +883,47 @@ function utilityPoles(ctx: BuildCtx, W: number, y: number, ext: number): void {
   }
 }
 
-function neighbours(ctx: BuildCtx, W: number, D: number, RW: number, FP: number): void {
+export interface StreetOpts {
+  road_width_ft?: number;
+  neighbours?: boolean;
+  streetlights?: boolean;
+  /** how the neighbours stand; each defaults to plan.site.street */
+  form?: "row" | "detached" | "semi-detached";
+  side_gap_ft?: number;
+  storeys?: number;
+  roof?: unknown;
+}
+
+interface StreetCfg {
+  form: "row" | "detached" | "semi-detached";
+  gap: number;
+  setback: number | null;
+  storeys: number | null;
+  roof: PitchSpec | null;
+  frontWall: boolean;
+  tank: boolean;
+  walls: string[];
+}
+
+/** How the street stands: the design's options over plan.site.street (stamped from the place's home profile). A plan
+ *  without one is a row of flat-roofed houses, as every plan before profiles was. */
+function streetFrom(ctx: BuildCtx, o?: StreetOpts): StreetCfg {
+  const s = (ctx.plan.plan.site?.street ?? {}) as NonNullable<NonNullable<typeof ctx.plan.plan.site>["street"]>;
+  const stamped = !!ctx.plan.plan.site?.street;
+  const form = o?.form ?? s.form ?? "row";
+  return {
+    form: form === "detached" || form === "semi-detached" ? form : "row",
+    gap: clamp(num(o?.side_gap_ft, s.side_gap_ft ?? 6), 2, 40),
+    setback: s.setback_ft != null ? clamp(num(s.setback_ft, 10), 0, 60) : null,
+    storeys: o?.storeys != null || s.storeys != null ? clamp(Math.round(num(o?.storeys, s.storeys ?? 2)), 1, 3) : null,
+    roof: pitchSpec(o?.roof, s.roof),
+    frontWall: stamped ? s.front_wall !== false : true,
+    tank: stamped ? !!s.roof_tank : true,
+    walls: (s.walls ?? []).filter((w): w is string => typeof w === "string"),
+  };
+}
+
+function neighbours(ctx: BuildCtx, W: number, D: number, RW: number, FP: number, cfg: StreetCfg): void {
   const M = ctx.mats;
   const r = rng(hashStr(`nb${W}|${D}`));
   const walls = [
@@ -890,6 +932,12 @@ function neighbours(ctx: BuildCtx, W: number, D: number, RW: number, FP: number)
     M.get({ preset: "plaster_grey", color: "#c3c0ba" }),
     M.get({ preset: "plaster_warm", color: "#e2d8c8" }),
   ];
+  // the street's usual walls, where the place's profile names them
+  for (const w of cfg.walls.slice(0, 2).reverse()) {
+    const p = resolvePresetName(/brick/i.test(w) ? "brick_red" : w);
+    if (p) walls.unshift(M.get(p.color ? { preset: p.preset, color: p.color } : p.preset));
+  }
+  const roofTone = M.get({ preset: "roof_shingle", color: "#5e5f63" });
   const trim = M.get({ preset: "plaster_white", color: "#f2efe9" });
   const stone = M.get({ preset: "stone_cladding", color: "#8f8a83" });
   const wood = M.get("wood_teak");
@@ -899,9 +947,10 @@ function neighbours(ctx: BuildCtx, W: number, D: number, RW: number, FP: number)
   const grade = ctx.plan.grade;
   const bx = (a: number, b: number, c: number, d: number, h0: number, h1: number, m: THREE.Material) =>
     kit.mb(m).box(Math.min(a, b) * FT, h0 * FT, Math.min(c, d) * FT, Math.max(a, b) * FT, h1 * FT, Math.max(c, d) * FT);
-  const house = (x0: number, w: number, frontY: number, depth: number, facing: 1 | -1, storeys: number) => {
-    const wm = walls[Math.floor(r() * walls.length)];
-    const setback = 9 + r() * 4;
+  const house = (x0: number, w: number, frontY: number, depth: number, facing: 1 | -1, storeysIn: number) => {
+    const wm = walls[Math.floor(r() * Math.min(walls.length, cfg.walls.length ? 2 : walls.length))];
+    const storeys = cfg.storeys ?? storeysIn;
+    const setback = cfg.setback != null ? cfg.setback + r() * 2 : 9 + r() * 4;
     const fy = frontY + facing * setback;
     const H = storeys * 11 + 1.5;
     const back = fy + facing * depth;
@@ -911,9 +960,15 @@ function neighbours(ctx: BuildCtx, W: number, D: number, RW: number, FP: number)
     const projLeft = r() < 0.5;
     const pa = projLeft ? x0 + 0.6 : split, pb = projLeft ? split : x0 + w - 0.6;
     bx(pa, pb, fy, fy + facing * 2.6, grade, grade + H + 1.2, wm);
-    // parapet + coping
-    bx(x0 + 0.6, x0 + w - 0.6, fy + facing * 2.5, back, grade + H, grade + H + 3, wm);
-    bx(x0 + 0.4, x0 + w - 0.4, fy + facing * 2.3, back + facing * 0.2, grade + H + 3, grade + H + 3.25, trim);
+    if (cfg.roof) {
+      // a pitched roof over the whole house, the projecting front volume included
+      const y0 = Math.min(fy, back), y1 = Math.max(fy, back);
+      massRoof(kit, roofTone, wm, { x0: x0 + 0.6, x1: x0 + w - 0.6, y0, y1 }, grade + H + 1.2, cfg.roof.pitch, cfg.roof.form, cfg.roof.ridge, cfg.form === "row" ? 0.2 : 1.2);
+    } else {
+      // parapet + coping
+      bx(x0 + 0.6, x0 + w - 0.6, fy + facing * 2.5, back, grade + H, grade + H + 3, wm);
+      bx(x0 + 0.4, x0 + w - 0.4, fy + facing * 2.3, back + facing * 0.2, grade + H + 3, grade + H + 3.25, trim);
+    }
     // per storey: chajja band + windows with frames
     for (let s = 0; s < storeys; s++) {
       const fl = grade + 1.5 + s * 11;
@@ -940,19 +995,38 @@ function neighbours(ctx: BuildCtx, W: number, D: number, RW: number, FP: number)
     const acc = r();
     if (acc < 0.45) bx(projLeft ? pb - 3.5 : pa, projLeft ? pb : pa + 3.5, fy - facing * 0.25, fy + facing * 0.4, grade, grade + H + 1.2, stone);
     else if (acc < 0.75) bx(pa + 1, pb - 1, fy - facing * 0.2, fy, grade + 12.4, grade + 13.4, wood);
-    // boundary wall + gate + water tank
-    bx(x0, x0 + w, frontY - 0.35, frontY + 0.35, grade - 0.2, grade + 4.5, walls[2]);
-    bx(x0, x0 + w, frontY - 0.45, frontY + 0.45, grade + 4.5, grade + 4.7, trim);
+    // boundary wall + gate + water tank, where homes here have them
     const gx = x0 + w * (0.25 + r() * 0.3);
-    bx(gx, gx + 12, frontY - 0.25, frontY + 0.25, grade, grade + 5.4, frame);
-    kit.cyl(M.get({ preset: "plastic", color: "#1f2022" }), (x0 + w * 0.3) * FT, (grade + H + 3) * FT + 0.7, ((fy + back) / 2) * FT, 0.65, 1.4, 20);
+    if (cfg.frontWall) {
+      bx(x0, x0 + w, frontY - 0.35, frontY + 0.35, grade - 0.2, grade + 4.5, walls[walls.length - 2]);
+      bx(x0, x0 + w, frontY - 0.45, frontY + 0.45, grade + 4.5, grade + 4.7, trim);
+      bx(gx, gx + 12, frontY - 0.25, frontY + 0.25, grade, grade + 5.4, frame);
+    }
+    if (cfg.tank && !cfg.roof) kit.cyl(M.get({ preset: "plastic", color: "#1f2022" }), (x0 + w * 0.3) * FT, (grade + H + 3) * FT + 0.7, ((fy + back) / 2) * FT, 0.65, 1.4, 20);
   };
-  house(-36, 35, 0, D - 24, 1, 2);
-  house(W, 35, 0, D - 24, 1, 2);
-  house(-72, 36, 0, D - 24, 1, r() < 0.5 ? 2 : 3);
-  house(W + 35, 36, 0, D - 24, 1, 2);
   const yAcross = -FP - RW - FP;
-  for (let i = -1; i <= 2; i++) house(-30 + i * 36, 35, yAcross, 44, -1, r() < 0.6 ? 2 : 3);
+  if (cfg.form === "row") {
+    house(-36, 35, 0, D - 24, 1, 2);
+    house(W, 35, 0, D - 24, 1, 2);
+    house(-72, 36, 0, D - 24, 1, r() < 0.5 ? 2 : 3);
+    house(W + 35, 36, 0, D - 24, 1, 2);
+    for (let i = -1; i <= 2; i++) house(-30 + i * 36, 35, yAcross, 44, -1, r() < 0.6 ? 2 : 3);
+  } else {
+    // lots like this one along both sides of the street; a house stands clear of its lot lines, or of one when semi-detached
+    const lot = Math.max(W, 24);
+    const g = cfg.gap, depth = Math.min(D - (cfg.setback ?? 12) - 15, 55);
+    if (cfg.form === "semi-detached") {
+      // pairs sharing a wall: this house's other half on its left, the next pair on its right
+      house(-lot + g, lot - g, 0, depth, 1, 2);
+      house(W + g, lot - g, 0, depth, 1, 2);
+      house(W + lot, lot - g, 0, depth, 1, 2);
+      house(-2 * lot, lot - g, 0, depth, 1, 2);
+      for (let i = -2; i <= 2; i++) house(i * 2 * lot, 2 * lot - g, yAcross, Math.min(depth, 44), -1, 2);
+    } else {
+      for (const i of [-2, -1, 1, 2]) house((i < 0 ? i * lot : W + (i - 1) * lot) + g, lot - 2 * g, 0, depth, 1, 2);
+      for (let i = -2; i <= 2; i++) house((W - lot) / 2 + i * lot + g, lot - 2 * g, yAcross, Math.min(depth, 44), -1, 2);
+    }
+  }
   const g = kit.build();
   g.userData.mergeGroup = "context";
   ctx.add(g, { kind: "context", label: "Neighbouring houses", level: ctx.plan.levels[0].id });

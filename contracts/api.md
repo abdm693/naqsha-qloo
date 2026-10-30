@@ -317,3 +317,8 @@ interface AsBuiltSummary {
 `checks` lists what the engine had to repair or could not repair while building (stair fit, roof door moved to the
 top landing, guard rails added, openings not built, furniture moved or dropped, blocked walking paths, cars that
 had no parking bay). The backend can append them to the as-built report with `category: "livable"`.
+
+## Local home profile (2026-10-30)
+- `Project.homes` (`HomeProfile`, api-types.ts): what a family home is in this place, for any place, Lahore included. Researched with Tavily and written by Gemini Flash in `agents/homes.py`, cached by place for 90 days (the `rulepacks` collection, key `home-<place>`). Concepts, plan, 3D build and photos read it; nothing else decides form, roof, parking or rooms.
+- `Brief.local` is its digest (`locale.digest`), for code that has only the brief. `Brief.units` is what the family spoke in; `Brief.roof_form` and `Brief.home_form` are set only when they asked, and beat the profile.
+- **Setup**: the one required fact is the place (`intake.to_ask` returns `["place"]` or `[]`). There is no question sequence: a turn with the place known fills the rest from the profile as assumptions and sends the card. When the profile isn't ready within 2 s, the turn sends a short `message` first and holds the stream: `brief`, the card `message` and `intake.complete` follow when it lands (about 15 s), then a `message` about the local rules if they had to be looked up. The question bank (`intake.question`) only serves a fact reopened with "Don't assume". The agent may ask one follow-up in plain words (`field: "other"`, no chips).

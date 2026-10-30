@@ -215,6 +215,7 @@ function checkRoof(ctx: BuildCtx, res: BuildResult, col: THREE.Mesh): Check {
   const missing: string[] = [];
   for (let k = 0; k + 1 < chain.length; k++) if (!ctx.model.stairs.some((l) => l.stair.from === chain[k] && l.stair.to.elev >= chain[k + 1].elev - 0.01)) missing.push(`${chain[k].name} → ${chain[k + 1].name}`);
   if (!ctx.model.stairs.length) return { id: "roof", title: "Stair reaches the roof door", status: chain.length > 2 ? "fail" : "warn", detail: "no stairs in the plan" };
+  if (plan.attic) return { id: "roof", title: "Stair reaches the attic", status: missing.length ? "fail" : "pass", detail: missing.length ? `no stair ${missing.join(", ")}` : "a pitched roof: the stair arrives in the attic behind a guard rail" };
   const tw = ctx.model.tower;
   const door = tw ? ctx.model.openings.find((o) => o.op.level === tw.room.level && o.isDoor && (o.neg === tw.room || o.pos === tw.room)) : null;
   if (missing.length || !door || !tw) return { id: "roof", title: "Stair reaches the roof door", status: "fail", detail: missing.length ? `no stair ${missing.join(", ")}` : "no roof door" };
@@ -448,7 +449,7 @@ function checkStairs(ctx: BuildCtx): Check {
   const notes = ctx.model.notes.list.filter((n) => n.id.startsWith("asbuilt.stair_fit"));
   const roof = ctx.plan.roof.id;
   const tw = ctx.model.tower;
-  const uncovered = ctx.model.stairs.filter((l) => l.holeLevel === roof).flatMap((l) => l.holes).filter((h) => !tw || !(h.x >= tw.room.rect.x + 0.3 && h.y >= tw.room.rect.y + 0.3 && h.x + h.w <= tw.room.rect.x + tw.room.rect.w - 0.3 && h.y + h.d <= tw.room.rect.y + tw.room.rect.d - 0.3));
+  const uncovered = ctx.plan.attic ? [] : ctx.model.stairs.filter((l) => l.holeLevel === roof).flatMap((l) => l.holes).filter((h) => !tw || !(h.x >= tw.room.rect.x + 0.3 && h.y >= tw.room.rect.y + 0.3 && h.x + h.w <= tw.room.rect.x + tw.room.rect.w - 0.3 && h.y + h.d <= tw.room.rect.y + tw.room.rect.d - 0.3));
   const treads = ctx.model.stairs.flatMap((l) => l.flights.map((f) => f.tread * 12));
   const minT = treads.length ? Math.min(...treads) : 0;
   const strips = ctx.model.stairs.map((l) => l.strip);

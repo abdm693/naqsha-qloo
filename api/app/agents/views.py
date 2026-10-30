@@ -33,9 +33,10 @@ ANGLES = {
 }
 
 
-def photo_prompt(angle: str, has_concept: bool, brief: dict | None = None) -> str:
+def photo_prompt(angle: str, has_concept: bool, brief: dict | None = None, homes: dict | None = None) -> str:
     where = ANGLES.get(angle, "")
-    place = locale.place(brief or {})
+    place = locale.place(brief or {}) or "the family's city"
+    usual = locale.home_line(homes)
     return ("Turn this 3D architectural model view into a photorealistic photograph "
             f"({where}). This is an image-to-image edit of the FIRST image: the output must line up with it pixel for pixel. "
             "Keep the camera exactly where it is: the same height, angle, viewpoint, lens and framing, with the house in the "
@@ -46,10 +47,11 @@ def photo_prompt(angle: str, has_concept: bool, brief: dict | None = None) -> st
             "dark cladding stays dark, a screen stays a screen; never swap, move or invent finishes. "
             + ("Use the attached concept photograph only for how real those materials look (texture, grain, finish), not for "
                "where they go. " if has_concept else "Make each material realistic in the same colour. ")
-            + f"Real-world lighting, soft shadows, realistic glass reflections, planting and sky. The house is in {place}: "
-            "the street, kerbs, pavement, power lines, trees, planting, light and the neighbouring houses look the way they do "
-            "there (keep the neighbours' positions and sizes from the model, render them as local houses, plainer and muted "
-            "beside this one). No people, no text, no numbers, no signs, no watermarks.")
+            + f"Real-world lighting, soft shadows, realistic glass reflections, planting and sky. The house is in {place}"
+            + (f", where the usual home is this: {usual} The" if usual else ": the")
+            + " street, kerbs, pavement, trees, planting, light and the neighbouring houses look the way they do "
+            "there (keep the neighbours' positions, sizes and roof shapes from the model, render them as local houses, plainer "
+            "and muted beside this one). No people, no text, no numbers, no signs, no watermarks.")
 
 
 async def _concept_image(project: dict) -> tuple[bytes, str] | None:
@@ -79,7 +81,7 @@ async def photos(project: dict, version: dict, shots: list[dict]) -> AsyncIterat
                     contents += ["The finished front photograph of this same house (match every material, colour and detail "
                                  "to it exactly; only the camera differs):",
                                  types.Part.from_bytes(data=anchor["front"][0], mime_type=anchor["front"][1])]
-                contents.append(photo_prompt(shot["angle"], bool(ref), project.get("brief") or {}))
+                contents.append(photo_prompt(shot["angle"], bool(ref), project.get("brief") or {}, project.get("homes")))
                 resp = await concepts._image_call(contents, aspect="16:9")
                 got = concepts._image_bytes(resp)
                 if not got:

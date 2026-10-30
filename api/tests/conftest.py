@@ -17,6 +17,16 @@ def load(name: str) -> dict:
     raise FileNotFoundError(name)
 
 
+@pytest.fixture(autouse=True)
+def no_research(monkeypatch):
+    """Tests never go to the web or Firestore for a home profile: a test that wants one patches it in."""
+    from app.agents import homes
+
+    async def none(brief, force=False):
+        return None
+    monkeypatch.setattr(homes, "profile", none)
+
+
 @pytest.fixture
 def plans():
     return {

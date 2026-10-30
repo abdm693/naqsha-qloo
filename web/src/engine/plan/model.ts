@@ -116,6 +116,8 @@ export class PlanModel {
   readonly grade: number;
   readonly ground: LevelM;
   readonly roof: LevelM;
+  /** the roof level is a floored attic under a pitched roof (enterAttic) */
+  attic = false;
   readonly parapet: number;
   readonly palette: string[];
   private grids = new Map<string, CellGrid<RoomM>>();
@@ -371,6 +373,22 @@ export class PlanModel {
     if (l.isRoof) r.ceilH = l.elev + this.mumtyHeight - l.slab;
     else if (r.cat === "enclosed" && src?.ceiling_height_ft) r.ceilH = clamp(r.floorH + num(src.ceiling_height_ft, 10), r.floorH + 7, slabBottom);
     else r.ceilH = slabBottom;
+  }
+
+  /**
+   * Under a pitched roof the roof level is an attic: no stair tower or roof room stands on it (their walls would come up
+   * through the roof), and the stair arrives on the open slab behind a guard rail.
+   */
+  enterAttic(): void {
+    this.attic = true;
+    for (let i = this.rooms.length - 1; i >= 0; i--) {
+      const r = this.rooms[i];
+      if (!r.lv.isRoof || r.cat !== "enclosed") continue;
+      this.rooms.splice(i, 1);
+      this.roomById.delete(r.id);
+    }
+    for (let i = this.openings.length - 1; i >= 0; i--) if (this.openings[i].level === this.roof.id) this.openings.splice(i, 1);
+    this.grids.delete(this.roof.id);
   }
 
   /** Add a synthesized room (e.g. the stair tower) after construction; level grids are rebuilt lazily. */

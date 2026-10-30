@@ -6,7 +6,8 @@ from app.agents import concepts
 
 BANNED = re.compile(r"board-formed|louvers?|aluminum|vigas|corner", re.I)
 MIDROW = {"plot": {"width_ft": 35, "depth_ft": 65, "corner": False}, "storeys": 2, "style": "Modern Contemporary",
-          "spaces": ["car_porch:1"], "solar": "panels"}
+          "spaces": ["car_porch:1"], "solar": "panels", "city": "Lahore"}
+ROW = {"summary": "A flat-roofed row house", "form": {"type": "row", "side_gap_ft": 0}, "roof": {"form": "flat", "stair_tower": True}}
 
 
 def test_takes_are_plain_and_short():
@@ -37,10 +38,10 @@ def test_panels_stand_on_a_raised_frame():
 
 
 def test_a_mid_row_prompt_says_so_first():
-    p = concepts.concept_prompt(MIDROW)
+    p = concepts.concept_prompt(MIDROW, homes=ROW)
     assert p.index("continuous row of houses") < p.index("Style language") and "35mm lens" in p
-    corner = concepts.concept_prompt({**MIDROW, "plot": {**MIDROW["plot"], "corner": True}})
-    assert "continuous row" not in corner and "three-quarter view from the street corner" in corner
+    corner = concepts.concept_prompt({**MIDROW, "plot": {**MIDROW["plot"], "corner": True}}, homes=ROW)
+    assert "It is a CORNER plot" in corner and "three-quarter view from the street corner" in corner
 
 
 class _Resp:
@@ -66,7 +67,7 @@ def test_a_mid_row_image_with_a_side_road_is_made_once_more(monkeypatch):
     monkeypatch.setattr(concepts, "_image_bytes", lambda r: (f"img{r.tag}".encode(), "image/png"))
     monkeypatch.setattr(concepts, "side_road", beside)
     monkeypatch.setattr(concepts.blobs, "put", put)
-    site = concepts._site_sentence(MIDROW)
+    site = concepts._site_sentence(MIDROW, ROW)
     c = asyncio.run(concepts._generate_one("p1", "PROMPT", None, site))
     # made once more as an edit of the day image (same house and camera), with the site sentence repeated
     assert len(calls) == 2 and calls[1].startswith(concepts.SIDE_ROAD_FIX) and "It is a MID-ROW plot" in calls[1]

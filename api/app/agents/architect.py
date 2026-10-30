@@ -24,7 +24,7 @@ from .. import config, locale, llm
 from ..compliance import lda, planning
 from ..gemini import client
 from ..store import blobs, db
-from . import concepts, drawing, fixer, importer, jsfix, research
+from . import concepts, drawing, fixer, homes as local_homes, importer, jsfix, research
 from .intake import FACING_NAME
 
 log = logging.getLogger("naqsha.architect")
@@ -32,7 +32,7 @@ ROOT = Path(__file__).resolve().parents[3]
 CONTRACTS = ROOT / "contracts"
 EXAMPLES = Path(__file__).with_name("examples")
 EXAMPLE_PLAN = EXAMPLES / "plan-10-marla.json"
-# Proven layouts (they pass every LDA check), by plot size: the planner adapts the nearest one instead of starting blank.
+# Proven layouts (they pass every rule check), by plot size: the planner takes their stair and tiling from the nearest one.
 TEMPLATES = [(15.0, EXAMPLES / "plan-10-marla-4bed.json"), (999.0, EXAMPLES / "plan-1-kanal.json")]
 
 
@@ -46,8 +46,10 @@ def _read(path: Path) -> str:
     return path.read_text() if path.exists() else ""
 
 
-PLAN_SYSTEM = """You are a senior Lahore architect and a precise space planner. You design single-family houses that comply with
-the LDA Building & Zoning Regulations 2019 (consolidated 2026) and that a family will love living in for decades.
+PLAN_SYSTEM = """You are a senior architect practising where this home will stand (LOCAL PLANNING in the prompt says where) and a
+precise space planner. You design single-family houses that comply with the building rules given in the ENVELOPE and that a
+family will love living in for decades. How homes stand on their lots, what rooms they have and what those rooms are called
+differ from place to place: LOCAL PLANNING governs all of that, and the numbers below are the baseline wherever the envelope is silent.
 
 Output ONE BuildingPlan JSON. Follow the conventions in the TypeScript reference exactly:
 - FEET; origin at the plot's front-left corner; +x along the road, +y into the plot; the road is at y < 0.
@@ -59,7 +61,7 @@ Output ONE BuildingPlan JSON. Follow the conventions in the TypeScript reference
   level. Windows go on outside walls or onto a same-level porch, balcony, terrace or open_space; never on a party wall (a
   plot edge with zero setback). Two openings on the same wall keep at least 0.5 ft of wall between them (a window beside the
   main door included), or the later one can't be built.
-- LDA minimums: habitable rooms ≥ 100 sq ft and ≥ 8 ft wide; kitchen ≥ 50 sq ft and ≥ 6 ft wide; clear height ≥ 9.5 ft (11 ft
+- Minimums: habitable rooms ≥ 100 sq ft and ≥ 8 ft wide; kitchen ≥ 50 sq ft and ≥ 6 ft wide; clear height ≥ 9.5 ft (11 ft
   floor-to-floor, 0.5 ft slab); windows ≥ 8% of the floor area for habitable rooms and kitchens; parapet 3.5 ft; mumty ≤ 9.5 ft;
   boundary walls ≤ 7 ft; height, storeys and ground coverage within the envelope.
 - Every bath and powder room touches an outside wall (or a same-floor open_space or terrace) and gets a "ventilator" opening
@@ -67,9 +69,10 @@ Output ONE BuildingPlan JSON. Follow the conventions in the TypeScript reference
   against a party wall.
 - An open_space or courtyard that lights rooms stays open to the sky: nothing on any floor above covers it (no room, terrace or
   balcony; leave an open_space void with a railing over it).
-- Car porch: a 9 × 18 ft bay per car in brief.spaces car_porch:N, plus a 3 ft 6 in walkway past the cars to the main door
+- Covered parking (a porch or a garage, as LOCAL PLANNING says): a 9 × 18 ft bay per car in brief.spaces car_porch:N, plus a 3 ft 6 in walkway past the cars to the main door
   (2 cars side by side: at least 21.5 ft wide × 18 ft deep, or 18 ft wide × 21.5 ft deep). A bay may be as little as 14 ft
   deep only where the porch opens straight onto the driveway or the front open space (the car's tail stands out over it).
+  A garage is a `garage` room with a `garage_door` opening on its driveway side; name either with its car count ("Garage (2 cars)").
   When the brief mentions a motorbike (brief.spaces motorbike, or the preferences), add a 3 × 7 ft motorbike bay in the porch,
   clear of the cars and the walkway: the porch is 3 ft wider (or 3 ft deeper) than the cars and walkway need.
 - Levels: ground (index 0, elevation = plinth 1.5), first, second as needed, then a final "roof" level whose height_ft equals
@@ -89,9 +92,9 @@ STAIRS (objective geometry, checked):
 - roof.mumty.rect = the top-floor stair hall; roof.mumty.door_side = the start-end side (front for "+y", back for "-y", left
   for "+x", right for "-x"). If that side is a party wall, use a long side and make the hall ≥ 3.6 ft longer than the stair there.
 
-ARCHITECT'S COMMON SENSE: plan the way a thoughtful local architect would (in Pakistan, a Lahore architect). Every room has its own way in from circulation: a
+ARCHITECT'S COMMON SENSE: plan the way a thoughtful local architect would. Every room has its own way in from circulation: a
 bedroom opens onto a corridor, lobby, stair hall or the family lounge (plus its own bath, dressing or balcony), never through
-another bedroom, a bath, the kitchen or the drawing room; a bath has exactly one door, and the master bath opens into the master
+another bedroom, a bath, the kitchen or a formal reception room; a bath has exactly one door, and the master bath opens into the master
 bedroom. A powder room or common bath never opens into the dining room (its door would face the dining table): open it off a
 lobby, passage or the lounge. From the open main door guests must never look into a WC: a powder room or common bath door
 never faces the main door across the lobby, lounge or drawing room it opens into, and never sits within about 30° of the main
@@ -99,11 +102,11 @@ door's line within 15 ft; put it on a side wall, round a corner. Keep the entran
 doors open off it. A dressing opens only into its own bedroom (or that bedroom's bath), never onto a lounge, and is
 at least 5 ft across and 25 sq ft (a 2 ft wardrobe plus a 3 ft aisle); smaller than that, give the bedroom a wardrobe wall
 instead. Two bedrooms never share a
-balcony or terrace, and their balconies never touch (keep a room or a gap between them). Guests reach the drawing room from the
-porch or lobby without seeing the family's rooms; the family reaches the lounge without crossing the drawing room. Doors sit near
+balcony or terrace, and their balconies never touch (keep a room or a gap between them). Where the home has a formal reception
+room, guests reach it from the entrance without seeing the family's rooms, and the family reaches the lounge without crossing it. Doors sit near
 room corners on walls the two rooms share; each bedroom keeps a solid wall for the bed and each lounge one for the TV. Rooms take
 daylight from their own outside wall on their own floor. Stack baths over baths, the kitchen, stores or the porch; never over a
-bedroom, the drawing room or the prayer room. Proportions stay livable; passages are at least 4 ft wide.
+bedroom or a formal reception room. Proportions stay livable; passages are at least 4 ft wide.
 
 THE BRIEF: honour the per-floor program (brief.floors) and the family's preferences (brief.preferences, brief.notes) exactly:
 the bedroom count, the rooms on each floor, attached baths, an open kitchen, parents downstairs. They are promises.
@@ -114,14 +117,9 @@ storey to the road. Over the car porch put a room or a front balcony (a bedroom'
 bedroom, the lounge) face the road on every floor; never put a bath, store or stair hall as the main thing on the front
 face. Leave open roof or terraces at the back, not the front, unless the brief asks otherwise.
 
-ROOF: solar-ready roofs stay clear: no minarets, domes or chhatris unless asked; the stair tower and tank sit in one corner.
-roof.water_tank only when brief.water_tank is set (Pakistan and the Gulf; homes elsewhere have no roof tank): its material
-follows brief.water_tank ("plastic" sits on the stair tower, its rect inside roof.mumty.rect; "concrete" sits on the roof
-slab beside it). Outside Pakistan the stair tower is a light roof-deck access, not a mumty with a tank. roof.solar = {"mode": brief.solar} when it is "ready" or "panels".
+ROOF: the prompt's ROOF note says what this home has. A flat roof stays clear: no minarets, domes or chhatris unless asked; the
+stair tower and any tank sit in one corner. roof.solar = {"mode": brief.solar} when it is "ready" or "panels".
 
-Pakistani planning sense (homes in Pakistan; elsewhere follow LOCAL PLANNING in the prompt): the drawing room near the entrance (guests enter from the porch); a family TV lounge at the heart;
-the kitchen beside the dining with a dirty kitchen or service access at the rear; a car porch at the front within the
-building line; on larger plots the master bedroom upstairs at the front with a balcony and a servant quarter at the rear.
 Style: palette (hex) and materials matching the brief and the chosen concept image.
 notes: 3–6 short sentences explaining the key decisions and how the rules shaped the plan.
 Write ids as <level-initial>_<name>, e.g. g_drawing, f_master, f_master_bath."""
@@ -145,8 +143,22 @@ def storey_limit_note(brief: dict, env: dict) -> str:
             if at_cap else "")
 
 
-def _plan_prompt(brief: dict, env: dict, concept: str | None, imported: dict | None = None) -> str:
+def _starting_layout(brief: dict, homes: dict | None) -> str:
+    """The proven plan, as a start for a house of its own kind and only for its discipline elsewhere."""
     tpl = template_for(brief)
+    size = f"{tpl['site']['plot']['width_ft']:g} × {tpl['site']['plot']['depth_ft']:g} ft"
+    head = f"STARTING LAYOUT: a proven plan for a {size} plot that passes every check."
+    if locale.attached(brief, homes) and not locale.pitched(brief, homes):
+        body = ("Adapt it to THIS brief and plot: keep its zoning, its stair and its massing (front rooms and balcony over the "
+                "porch, rooms stacked floor over floor), resize rooms to the plot, and add, remove or swap rooms to give the family "
+                "exactly what the brief asks. Don't copy what the brief doesn't want.")
+    else:
+        body = ("It comes from another kind of house: take only its discipline (rooms tiling exactly, the stair's geometry, stacked "
+                "walls). Its zoning, room names, porch and roof are not this home's: lay this one out from LOCAL PLANNING and the brief.")
+    return f"{head} {body}\n{json.dumps(tpl, separators=(',', ':'))}\n\n"
+
+
+def _plan_prompt(brief: dict, env: dict, concept: str | None, imported: dict | None = None, homes: dict | None = None) -> str:
     drawn = ""
     if imported:
         drawn = ("THE FAMILY'S OWN DRAWING (their uploaded floor plan, transcribed room by room in plot feet; road at y = 0):\n"
@@ -155,19 +167,13 @@ def _plan_prompt(brief: dict, env: dict, concept: str | None, imported: dict | N
                  "position and its porch. Change only what the regulations, a buildable plan or the conventions above require "
                  "(tiling, setbacks, stair geometry, baths on an outside wall), and say in notes exactly what you changed and "
                  "why. Name rooms as the drawing names them.\n\n")
-    local = locale.planning_sense(brief)
     return (
-        drawn + (f"LOCAL PLANNING: {local}\n\n" if local else "") +
+        drawn + f"LOCAL PLANNING:\n{locale.planning_sense(brief, homes)}\n\nROOF: {locale.roof_planning(brief, homes)}\n\n" +
         f"BRIEF:\n{json.dumps(_brief_for_prompt(brief), indent=1)}\n\n"
-        f"LDA ENVELOPE (deterministic, from the regulations):\n{json.dumps({k: v for k, v in env.items() if k != '_band'}, indent=1)}\n\n"
+        f"ENVELOPE (deterministic, from the regulations):\n{json.dumps({k: v for k, v in env.items() if k != '_band'}, indent=1)}\n\n"
         + storey_limit_note(brief, env) +
         f"TYPESCRIPT REFERENCE for the plan (conventions + types):\n{_read(CONTRACTS / 'plan.ts')}\n\n"
-        + ("" if imported else
-           f"STARTING LAYOUT: a proven plan for a {tpl['site']['plot']['width_ft']:g} × {tpl['site']['plot']['depth_ft']:g} ft "
-           f"plot that passes every check. Adapt it to THIS brief and plot: keep its zoning, its stair and its massing (front "
-           f"rooms and balcony over the porch, rooms stacked floor over floor), resize rooms to the plot, and add, remove or "
-           f"swap rooms to give the family exactly what the brief asks. Don't copy what the brief doesn't want.\n"
-           f"{json.dumps(tpl, separators=(',', ':'))}\n\n")
+        + ("" if imported else _starting_layout(brief, homes))
         + (f"THE EXTERIOR CONCEPT THE FAMILY CHOSE (read from the image): match its massing (porch side, balconies, "
            f"roof features, window rhythm) where the rules allow.\n{concept}\n\n" if concept else "")
         + "Now produce the BuildingPlan JSON for this brief."
@@ -201,8 +207,8 @@ def _clean_plan(plan: dict, brief: dict) -> dict:
         p.update({k: brief["plot"][k] for k in ("width_ft", "depth_ft", "area_marla", "corner") if k in brief["plot"]})
     # where the house is comes from the brief, never from the model ("DHA / Johar Town")
     site["scheme"] = str(brief.get("scheme") or "").strip()
-    site["authority"] = brief.get("authority") or site.get("authority") or "LDA"
-    site["city"] = brief.get("city") or site.get("city") or "Lahore"
+    site["authority"] = brief.get("authority") or site.get("authority") or "OTHER"
+    site["city"] = brief.get("city") or site.get("city") or locale.named(brief)
     if brief.get("facing"):
         site["facing"] = brief["facing"]
     if brief.get("coordinates"):
@@ -213,11 +219,23 @@ def _clean_plan(plan: dict, brief: dict) -> dict:
     if roof.get("water_tank") and brief.get("water_tank") in ("plastic", "concrete"):
         roof["water_tank"]["material"] = brief["water_tank"]
     elif not brief.get("water_tank") and not locale.roof_tank_usual(brief):
-        roof.pop("water_tank", None)  # nobody in Austin or Toronto has a tank on the roof
+        roof.pop("water_tank", None)  # a tank on the roof only where homes have one
     if brief.get("solar") in ("ready", "panels"):
         roof["solar"] = {**(roof.get("solar") or {}), "mode": brief["solar"]}
     elif brief.get("solar") == "none":
         roof.pop("solar", None)
+    # what the place decides, on the plan so the engine builds it whatever the design code says
+    if (pitched := locale.attic_roof(brief)):
+        roof["pitched"] = pitched
+        roof.pop("water_tank", None)
+        if (roof.get("solar") or {}).get("mode") != "panels":
+            roof.pop("solar", None)
+    else:
+        roof.pop("pitched", None)
+    if brief.get("local"):
+        site["street"] = locale.street(brief)
+        if not locale.front_wall(brief):
+            site["boundary_wall"] = {**(site.get("boundary_wall") or {"side_height_ft": 6, "rear_height_ft": 6}), "front_height_ft": 0}
     return plan
 
 
@@ -302,12 +320,12 @@ def _status(report: dict) -> str:
 
 async def make_plan(project: dict) -> AsyncIterator[tuple[str, dict]]:
     brief = project["brief"]
-    env = lda.envelope(brief["plot"]["width_ft"], brief["plot"]["depth_ft"], brief.get("authority") or "LDA",
-                       bool(brief["plot"].get("corner")))
     await research.ensure(brief.get("authority"))
+    env = lda.envelope(brief["plot"]["width_ft"], brief["plot"]["depth_ft"], brief.get("authority") or "OTHER",
+                       bool(brief["plot"].get("corner")))
     spec = await _concept_spec(project)
     first = types.Content(role="user", parts=[types.Part.from_text(
-        text=_plan_prompt(brief, env, concepts.spec_text(spec) or None, project.get("imported")))])
+        text=_plan_prompt(brief, env, concepts.spec_text(spec) or None, project.get("imported"), project.get("homes")))])
     contents = [first]
     history: list = []
     # 1. a quick full draft (Gemini 4 Argon, low reasoning: about half a minute)
@@ -395,16 +413,17 @@ async def make_plan(project: dict) -> AsyncIterator[tuple[str, dict]]:
 
 # --- Step 2: the architect's self-review ------------------------------------------------------------------------------
 REVIEW_SYSTEM = """You are a senior architect reviewing floor plans drawn by a junior before they go to the family. Software
-has already checked the LDA regulations and the hard livability rules; your job is the judgement software can't make. Study the
+has already checked the building regulations and the hard livability rules; your job is the judgement software can't make,
+for how families live where this home stands (LOCAL HOME below). Study the
 drawings (road at the bottom of each sheet) with the room table and the adjacency list, and critique like an architect:
 - circulation: natural routes, no rooms used as corridors, no wasted passages, the kitchen-dining-lounge relationship;
-- privacy: guests vs family (purdah), bedrooms away from the entrance and the drawing room, baths not opening onto living areas;
+- privacy: guests vs family, as much as families expect there; bedrooms away from the entrance, baths not opening onto living areas;
 - proportions: rooms too long and thin, too small for their use or oversized; awkward leftover spaces;
 - daylight and air: rooms that will be dark or stuffy; cross-ventilation;
 - the brief: anything the family asked for that is missing or misplaced;
 - furniture: a bed with side tables and a wardrobe, a sofa set facing a TV, a dining table for six, each with 3 ft paths and doors
   that don't hit furniture;
-- roof access: the stair reaches the roof under the stair tower, with its door beside the top landing.
+- roof access, on a flat roof: the stair reaches the roof under the stair tower, with its door beside the top landing.
 Name sides as front, back, left and right: the road is the front, at the bottom of every sheet, and left and right are as seen
 from the road. Never use compass points (north, south-east...) for a side of the house or a room.
 Call an issue "major" only if the family would suffer from it every day; don't nitpick taste or ask for things outside the brief.
@@ -449,6 +468,7 @@ async def review(project: dict, plan: dict, report: dict) -> dict:
     remaining = [f"- [{c['status'].upper()}] {c['message']}" + (f" (ids: {', '.join(c['element_ids'])})" if c.get("element_ids") else "")
                  for c in report["checks"] if c["status"] in ("fail", "warn") and not lda.is_review(c)]
     text = (f"ORIENTATION: {orientation(brief, plan)}\n\n"
+            f"LOCAL HOME: {locale.planning_sense(brief, project.get('homes'))}\n\n"
             f"THE FAMILY'S BRIEF:\n{json.dumps(_brief_for_prompt(brief))}\n\nROOMS (feet):\n{room_table(plan)}\n\n"
             f"STAIRS: {json.dumps(plan.get('stairs'))}\nROOF: {json.dumps(plan.get('roof'))}\n\n"
             f"ISSUES THE SOFTWARE ALREADY REPORTS (the family sees these; don't repeat them):\n{chr(10).join(remaining) or '(none)'}"
@@ -791,21 +811,19 @@ Order and naming:
    (e.g. `// builds F2, F5`). Use the palette's hex colours. Never skip a feature with a note: adapt it to the plan as
    built (slats or fins on whichever front wall the plan has, the glass railing on the balcony or terrace that faces the
    road, a canopy over the door that exists). The facade should read rich from the road: at least two wall finishes, framed
-   windows, one strong feature element (fins, a screen or a projecting frame), a parapet trim, wall lights and a gate that
-   match the concept. Use s.face(side, level) for facade math. Every element must stay
+   windows, one strong feature element, wall lights, and a gate only if the plan has a front wall. Use s.face(side, level) for facade math. Every element must stay
    inside the plot. Canopies and chajjas may project at most 3 ft beyond the building line into a 10 ft+ open space, or 1.5 ft otherwise.
 3. `interior_<room or theme> [interior]`: accent walls, false ceilings with cove lights and downlights for the main rooms
    (drawing, lounges, master bedroom).
 4. `furnish_<room_id> [furniture]`: ONE section per enclosed room (and the porch: a car). Place key pieces explicitly with
    `against`/`along_ft` or `at`/`rot_deg` in room-local feet, sized to the room. Use s.auto_furnish(room) only for minor rooms.
-   Include the local touches given in LOCAL TOUCHES below (fixtures, cooling or heating, appliances typical where the home is).
+   Include the local touches given in LOCAL TOUCHES below, and only those: fixtures, cooling or heating, appliances typical where the home is.
    Never put a TV, painting, mirror, wardrobe or bookshelf across a door or window; keep 3 ft clear in front of every door and
    a 3 ft path through each room; the car sits in the porch bay, never in front of the main door.
 5. `landscape [landscape]`: lawn, paving, planters, trees that grow where the home is (see LOCAL TOUCHES), and s.landscape.street({ neighbours: true, streetlights: true }).
 6. `lighting [lighting]`: s.lights.sun({ hour: 17.5 }) and s.lights.interior().
 
-Roof: keep it clear for solar unless the brief asks otherwise: no domes, cupolas, minarets, chhatris or pergolas; the water tank
-and solar frame come from the plan.
+Roof: follow the ROOF line below. A tank and solar frame come from the plan, never from design.js.
 Rules: Only use APIs that exist in the SDK reference. Coordinates are plan FEET (x along the road, y into the plot, h above the
 road crown). Keep each section under about 60 lines. Sections share NOTHING: each runs on its own, so a material, colour or helper
 used in a section must be declared in that same section (repeat the palette's few consts where needed; never rely on a
@@ -827,17 +845,19 @@ def taste_text(style: dict | None) -> str:
     return json.dumps(strip({k: v for k, v in keep.items() if v}))
 
 
-def _build_prompt(plan: dict, brief: dict, spec: dict | None = None, style: dict | None = None) -> str:
+def _build_prompt(plan: dict, brief: dict, spec: dict | None = None, style: dict | None = None, homes: dict | None = None) -> str:
     example = _read(CONTRACTS / "fixtures" / "design-10-marla.js")
     engine_notes = _read(CONTRACTS / "engine-notes.md")
-    keys = ("style", "style_notes", "budget", "notes", "spaces", "floors", "water_tank", "solar", "preferences")
+    keys = ("style", "style_notes", "budget", "notes", "spaces", "floors", "water_tank", "solar", "preferences", "roof_form", "home_form")
     return (
         f"HOUSE SDK REFERENCE (TypeScript declarations; the API you can call):\n{_read(CONTRACTS / 'house-sdk.d.ts')}\n\n"
         + (f"ENGINE NOTES (behaviour details and gotchas):\n{engine_notes}\n\n" if engine_notes else "")
         + (f"EXAMPLE design.js for a different 10-marla plan (format and quality reference only):\n{example}\n\n" if example else "")
         + f"THE PLAN TO BUILD (BuildingPlan JSON, feet):\n{json.dumps(plan)}\n\n"
         f"FAMILY BRIEF: {json.dumps({k: brief.get(k) for k in keys if brief.get(k) not in (None, '', [], {})})}\n\n"
-        f"WHERE: {locale.place(brief)}. LOCAL TOUCHES: {locale.local_touches(brief)}\n\n"
+        f"WHERE: {locale.place(brief)}. {locale.home_line(homes)}\nLOCAL TOUCHES: {locale.local_touches(brief, homes)}\n"
+        f"{locale.roof_build(brief, homes)}\n"
+        f"STREET: s.landscape.street() already follows plan.site.street (how the neighbours stand and what roofs they have).\n\n"
         + (f"CONCEPT SPECIFICATION (the exterior the family chose, read from its image; build every feature):\n"
            f"{concepts.spec_text(spec)}\n\n" if spec else "")
         + (f"THE FAMILY'S TASTE (from Qloo's taste graph): build the house from it. Every exterior material, colour and detail "
@@ -891,7 +911,7 @@ class SectionStream:
 
 async def write_design(project: dict, plan: dict, extra_instruction: str | None = None) -> AsyncIterator[tuple[str, dict]]:
     spec = await _concept_spec(project)
-    text = _build_prompt(plan, project.get("brief") or {}, spec, (project.get("taste") or {}).get("style")) + (f"\n\nADDITIONAL INSTRUCTIONS:\n{extra_instruction}" if extra_instruction else "")
+    text = _build_prompt(plan, project.get("brief") or {}, spec, (project.get("taste") or {}).get("style"), project.get("homes")) + (f"\n\nADDITIONAL INSTRUCTIONS:\n{extra_instruction}" if extra_instruction else "")
     contents = [types.Content(role="user", parts=[types.Part.from_text(text=text)])]
     cfg = types.GenerateContentConfig(system_instruction=BUILD_SYSTEM, max_output_tokens=65536)
     yield "stage", {"stage": "build", "message": "Building the 3D model…"}
@@ -986,6 +1006,13 @@ async def design(project: dict) -> AsyncIterator[tuple[str, dict]]:
     loop = asyncio.get_running_loop()
     t0 = loop.time()
     await db.update_project(pid, stage="planning")
+    project = await local_homes.localised(project)
+    brief = project.get("brief") or {}
+    if local_homes.needs_rules(brief):  # rules the setup didn't get to look up
+        got, _ = await local_homes.rules_for(brief, project.get("homes"))
+        if got is not brief:
+            await db.patch_project(pid, brief=got, envelope=lda.envelope(got["plot"]["width_ft"], got["plot"]["depth_ft"], got.get("authority") or "OTHER", bool(got["plot"].get("corner"))))
+            project = {**project, "brief": got}
     plan = report = first = None
     history: list = []
     async for ev, data in make_plan(project):

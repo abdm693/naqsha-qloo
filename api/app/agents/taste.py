@@ -19,7 +19,7 @@ import logging
 import time
 from typing import AsyncIterator
 
-from .. import config, llm, qloo
+from .. import config, llm, locale, qloo
 
 log = logging.getLogger("naqsha.taste")
 
@@ -368,13 +368,19 @@ def heart_text(heart: dict | None) -> str:
             f"Each person's own room: {people or '-'}. Shared between them: {between or '-'}.\n")
 
 
+def home_text(homes: dict | None) -> str:
+    """The kind of home that is usual here. Taste dresses that building; it never replaces it with a flat box or a jaali."""
+    line = locale.home_line(homes)
+    return f"HOW HOMES ARE BUILT HERE: {line}. Keep this building form in the exterior and all four concept directions; the family's taste is in its materials, details and rooms.\n" if line else ""
+
+
 async def write(brief: dict, taste: dict, ev: Evidence) -> dict:
     people = [{"label": p.get("label"), "role": p.get("role"), "favourites": [f.get("name") for f in p.get("favourites") or []]}
               for p in _people(taste)]
     home = {k: brief.get(k) for k in ("city", "scheme", "authority", "plot", "storeys", "bedrooms", "floors", "spaces",
                                       "preferences", "style", "style_notes") if brief.get(k) not in (None, "", [], {})}
     prompt = (f"THE HOME: {json.dumps(home)}\nTHE FAMILY: {json.dumps(people)}\nLOCALITY: {_location(brief, taste) or 'unknown'}\n"
-              f"EXTRA WORDS FROM THE FAMILY: {taste.get('notes') or '-'}\n{heart_text(taste.get('heart'))}\nEVIDENCE (Qloo):\n{ev.compact()}\n\nWrite the style brief.")
+              f"EXTRA WORDS FROM THE FAMILY: {taste.get('notes') or '-'}\n{heart_text(taste.get('heart'))}{home_text(taste.get('homes'))}\nEVIDENCE (Qloo):\n{ev.compact()}\n\nWrite the style brief.")
     out = None
     for model, limit in ((config.MODEL_TASTE, 150), (config.MODEL_INTAKE, 120)):  # Argon, then Flash if Argon is slow or busy
         try:

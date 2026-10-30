@@ -91,6 +91,10 @@ export const PRESETS: Record<MaterialPreset, PresetDef> = {
   linen: { base: "#e2dccf", tex: { gen: "weave", size: [0.14, 0.14], N: 256, normal: 1.3, tint: true, params: { thread: 6, slub: 1 } }, roughness: 0.95 },
   ceramic_white: { base: "#f6f6f3", tex: { gen: "smudge", size: [1.0, 1.0], N: 256, normal: 0 }, roughness: 0.08, physical: { clearcoat: 1, clearcoatRoughness: 0.05 } },
   plastic: { base: "#e7e7e4", roughness: 0.45 },
+  roof_shingle: { base: "#57585c", tex: { gen: "brick", size: [1.0, 0.86], N: 512, normal: 3, params: { cols: 3, rows: 6, mortar: "#26272a", joint: 0.05, recess: 0.8 } }, roughness: 0.92 },
+  roof_tile: { base: "#a65a3a", tex: { gen: "brick", size: [1.2, 1.0], N: 512, normal: 4, params: { cols: 5, rows: 6, mortar: "#5b2e1f", joint: 0.09, recess: 1 } }, roughness: 0.78 },
+  roof_slate: { base: "#4b5056", tex: { gen: "brick", size: [1.0, 0.9], N: 512, normal: 2.6, params: { cols: 4, rows: 7, mortar: "#2a2d31", joint: 0.05, recess: 0.8 } }, roughness: 0.7 },
+  roof_metal: { base: "#6d7276", tex: { gen: "seams", size: [1.35, 1.35], N: 512, normal: 3, params: { cols: 3 } }, roughness: 0.42, metalness: 0.65 },
   grass: { base: "#5b7c34", tex: { gen: "grass", size: [1.4, 1.4], N: 1024, normal: 1.6 }, roughness: 0.92 },
   paving: { base: "#8d8a85", tex: { gen: "paving", size: [1.6, 1.6], N: 1024, normal: 2.6, params: { units: 8 } }, roughness: 0.86 },
   gravel: { base: "#a69e93", tex: { gen: "gravel", size: [0.6, 0.6], N: 512, normal: 3 }, roughness: 0.85 },
@@ -150,7 +154,7 @@ const CAPS: Record<string, { h: boolean; r: boolean; est: number }> = {
   terrazzo: { h: true, r: true, est: 0.22 }, weave: { h: true, r: false, est: 1 }, velvet: { h: true, r: false, est: 1 },
   leather: { h: true, r: true, est: 0.5 }, grass: { h: true, r: true, est: 0.9 }, paving: { h: true, r: true, est: 0.82 },
   gravel: { h: true, r: true, est: 0.8 }, soil: { h: true, r: true, est: 0.92 }, asphalt: { h: true, r: true, est: 0.88 },
-  water: { h: true, r: false, est: 1 }, brushed: { h: true, r: true, est: 0.22 }, smudge: { h: false, r: true, est: 0.5 },
+  seams: { h: true, r: true, est: 0.5 }, water: { h: true, r: false, est: 1 }, brushed: { h: true, r: true, est: 0.22 }, smudge: { h: false, r: true, est: 0.5 },
 };
 
 function dataTex(data: Uint8Array, N: number, srgb: boolean): THREE.DataTexture {
