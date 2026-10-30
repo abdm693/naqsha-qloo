@@ -2,7 +2,7 @@
 
 **Each person in the family shares what they love: places they've been, what they watch and listen to, where they like to eat. Naqsha reads the taste behind it with Qloo's taste graph and designs the house around it: a floor plan checked against the city's building rules, a 3D home you can walk through, a room for each person, and photographs from every angle.**
 
-**Live app:** _URL added on deploy_ — open the sample home, or start your own. No account needed.
+**Live app:** https://naqsha-qloo-242926648187.us-central1.run.app — open the sample home, or start your own. No account needed.
 **License:** AGPL-3.0 (open source)
 
 *Naqsha* (نقشہ) is what families in Pakistan call a house plan. A family builds a house once in a lifetime, and in most places it still starts from a contractor's sketch and a handful of stock styles. Two families with nothing in common end up with the same house. Naqsha starts from the people instead.
@@ -20,18 +20,40 @@ Language models can guess that someone who loves Kyoto might like timber and cal
 | Places there that suit the family | the same, with `signal.interests.entities` and place-category tags | Galleries, makers and shops for the interiors |
 | "Make the lounge feel more like Istanbul" | `/search` + Taste Analysis, from the revision agent | The change is designed from Qloo's reading of Istanbul |
 
+## Measured impact
+
+Naqsha measures how much of the family's taste each design shows. A vision check scores every picture
+against the family's taste checklist (the materials, colours, details and decisions in their style brief, each tied to Qloo
+evidence), and every concept run also draws the same plot and brief **without** the taste, scored the same way.
+
+| The Malik family, DHA Phase 6, Lahore (the sample home) | Taste fit |
+|---|---|
+| The same brief without their taste | 23% |
+| Their concept, "Lahore Craft & Calm" | **96%** (+73 points) |
+| The photograph of the built 3D house | 77% (8 of 13 choices judged from the front) |
+
+Two families, two different houses: the Malik family (Istanbul, Fez, Abida Parveen, Coke Studio; Kyoto, Spirited Away,
+Coldplay) got "Crafted Heritage Meets Serene Modernism"; the Siddiqui family in Karachi (Marrakech, Nusrat Fateh Ali Khan;
+Santorini, Copenhagen, IKEA; Taylor Swift, Friends) got "Aegean Light Meets Moroccan Craft". A family who shares no
+favourites still gets a personal house: in F-11 Islamabad the agent read the area's taste from the places people love there
+and designed "Margalla Stone and Modern Craft".
+
+Even Naqsha's one-tap suggestions come from Qloo ("Add Marrakech brass screens for privacy", "Try Santorini white arches on
+balconies"), each with its evidence.
+
 Only favourites and a place name are sent to Qloo, never names or personal data. Qloo results are cached privately on the server and never stored in this repository.
 
 ## What it does
 
 1. **Brief.** One message is enough: *"10 marla in DHA Phase 6 Lahore, four bedrooms, parents downstairs."* A setup agent (Google ADK, Gemini) records the brief and asks only what's missing. Or **upload a drawing** of a plan, and a vision model reads it room by room.
 2. **Taste.** Each person adds a few favourites. The **taste agent** gathers each person's taste and the family's from Qloo, explores further with Qloo tools where it matters (Gemini 3.8 Flash: a destination worth reading, local makers), and Gemini 4 Argon writes the family's **style brief**: exterior, interiors, a room for each person, the garden, four concept directions and the key decisions. Every choice carries "because" chips that show the Qloo evidence behind it.
-3. **A room for each of you.** Each room follows one person's taste, or everyone's. Switch whose taste a room follows and it is restyled from their Qloo tags, then pictured as a photoreal interior.
-4. **Concepts.** Four exteriors, one per taste direction: the family's shared taste, the parents', a fit with the neighbourhood, and a bolder direction from an adjacent taste. Each says why it suits them.
-5. **Rules for the city.** Lahore's LDA rules ship hand-verified; for any other city the agent researches the authority's bylaws with **Tavily** and writes a cited rule pack.
-6. **Plan.** The architect drafts four plans in parallel from proven layouts; a deterministic rules engine scores them against the bylaws and livable-home rules, and two tool-using fixer agents repair the best ones edit by edit until every check passes.
-7. **House.** The 3D model is written as code against our House SDK (three.js), built from the chosen concept feature by feature and furnished from the family's palettes and materials, room by room. A vision check compares it with the concept and rebuilds what's missing. Photos from the road, the corner, the garden and the air are made from the model.
-8. **Walk, comment, revise.** Walk through in first person, pin a note on any wall, share a link so relatives can comment from their phones. The revision agent applies the notes in the family's taste, re-checks the rules and answers each one.
+3. **Measured, every time.** Each concept shows its taste fit, next to the same brief drawn without the family's taste; the built house is scored from its photograph. No favourites? The locality's taste is read from Qloo first, so no design is generic.
+4. **A room for each of you.** Each room follows one person's taste, or everyone's. Switch whose taste a room follows and it is restyled from their Qloo tags, then pictured as a photoreal interior.
+5. **Concepts.** Four exteriors, one per taste direction: the family's shared taste, the parents', a fit with the neighbourhood, and a bolder direction from an adjacent taste. Each says why it suits them.
+6. **Rules for the city.** Lahore's LDA rules ship hand-verified; for any other city the agent researches the authority's bylaws with **Tavily** and writes a cited rule pack.
+7. **Plan.** The architect drafts four plans in parallel from proven layouts; a deterministic rules engine scores them against the bylaws and livable-home rules, and two tool-using fixer agents repair the best ones edit by edit until every check passes.
+8. **House.** The 3D model is written as code against our House SDK (three.js), built from the chosen concept feature by feature and furnished from the family's palettes and materials, room by room. A vision check compares it with the concept and rebuilds what's missing. Photos from the road, the corner, the garden and the air are made from the model.
+9. **Walk, comment, revise.** Walk through in first person, pin a note on any wall, share a link so relatives can comment from their phones. The revision agent applies the notes in the family's taste, re-checks the rules and answers each one.
 
 ## Models
 
