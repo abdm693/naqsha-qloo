@@ -4,13 +4,13 @@
  * Naqsha design tokens (docs/design/DESIGN.md §2), "Warm" edition.
  * Home is where the heart is: the app should feel like a lived-in room, not a drafting table. Warm ivory canvas,
  * warm white surfaces, warm greys for ink and lines, and one deep accent for "next move" or "selected".
- * Big headings use a serif display face (Instrument Serif); all UI text stays Geist.
+ * Big headings use a modern geometric sans (Plus Jakarta Sans, bold and tight); all UI text stays Geist.
  * The app is light only; anything over 3D or photos uses glass-hud.
  */
 @theme {
   --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-  --font-display: "Instrument Serif", ui-serif, Georgia, "Times New Roman", serif;
+  --font-display: "Plus Jakarta Sans", "Geist", ui-sans-serif, system-ui, sans-serif;
   --font-urdu: "Noto Nastaliq Urdu", serif;
 
   --color-canvas: #F8F4ED;      /* page (warm ivory) */
@@ -68,13 +68,13 @@
   --shadow-e3: 0 0 0 1px rgb(74 52 30 / .06), 0 4px 10px rgb(74 52 30 / .05), 0 36px 80px -28px rgb(74 52 30 / .34);
   --shadow-focus: 0 0 0 4px rgb(107 42 94 / .20);
 
-  /* hero, display and title are set in the serif (see the base layer); it has one weight, so they are 400. */
-  --text-hero: clamp(3.25rem, 7vw, 6.75rem); --text-hero--line-height: .98;
-  --text-hero--letter-spacing: -.02em;  --text-hero--font-weight: 400;
-  --text-display: 3.25rem;  --text-display--line-height: 3.5rem;
-  --text-display--letter-spacing: -.015em; --text-display--font-weight: 400;
-  --text-title: 2rem;       --text-title--line-height: 2.375rem;
-  --text-title--letter-spacing: -.01em;  --text-title--font-weight: 400;
+  /* hero, display and title are set in the display sans (see the base layer): bold, tightly tracked. */
+  --text-hero: clamp(2.75rem, 5.8vw, 5.5rem); --text-hero--line-height: 1;
+  --text-hero--letter-spacing: -.045em;  --text-hero--font-weight: 700;
+  --text-display: 2.75rem;  --text-display--line-height: 3.1rem;
+  --text-display--letter-spacing: -.035em; --text-display--font-weight: 700;
+  --text-title: 1.75rem;    --text-title--line-height: 2.2rem;
+  --text-title--letter-spacing: -.025em;  --text-title--font-weight: 700;
   --text-heading: 1.25rem; --text-heading--line-height: 1.625rem;
   --text-heading--letter-spacing: -.01em; --text-heading--font-weight: 600;
   --text-body-lg: 1.0625rem; --text-body-lg--line-height: 1.625rem;
@@ -163,8 +163,9 @@
     -webkit-tap-highlight-color: transparent;
   }
   ::selection { background: var(--color-accent-soft); color: var(--color-ink); }
-  /* The display serif for hero, display and title (any breakpoint variant). Geist stays the UI face. */
+  /* The display sans for hero, display and title (any breakpoint variant). Geist stays the UI face. */
   [class*="text-hero"], [class*="text-display"], [class*="text-title"] { font-family: var(--font-display); }
+  .font-display { font-weight: 700; letter-spacing: -.035em; }
   :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
   button { cursor: pointer; }
   button:disabled { cursor: not-allowed; }

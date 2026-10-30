@@ -149,9 +149,9 @@ export function Landing() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: ease.out }}
-              className="max-w-[11ch] font-display text-[clamp(3.25rem,6.6vw,6.5rem)] font-normal leading-[.95] tracking-[-.02em] text-ink"
+              className="max-w-[11ch] font-display text-[clamp(2.75rem,5.6vw,5.25rem)] leading-[.95] tracking-[-.035em] text-ink"
             >
-              A home that feels like <em className="text-accent">your family.</em>
+              A home that feels like <span className="taste-text">your family.</span>
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 10 }}
@@ -205,7 +205,7 @@ export function Landing() {
                 <span className="taste-gradient size-2 rounded-full" aria-hidden />
                 Home is where the heart is
               </p>
-              <h2 id="taste-title" className="mt-4 font-display text-[40px]/[44px] font-normal tracking-[-.015em] text-ink sm:text-display">
+              <h2 id="taste-title" className="mt-4 font-display text-[40px]/[44px] tracking-[-.035em] text-ink sm:text-display">
                 A house that knows <em className="taste-text pr-1">what you love.</em>
               </h2>
               <p className="mt-4 text-body-lg text-ink-2">
@@ -274,7 +274,7 @@ export function Landing() {
             {benefits(counts).map((b, i) => (
               <Reveal key={b.title} delay={(i % 4) * 0.06} as="li">
                 <div className="flex items-center gap-3" aria-hidden>
-                  <span className="font-display text-[22px] italic leading-none text-accent">{String(i + 1).padStart(2, "0")}</span>
+                  <span className="font-display text-[22px] leading-none text-accent">{String(i + 1).padStart(2, "0")}</span>
                   <span className="h-px flex-1 bg-line-strong" />
                 </div>
                 {/* Two lines reserved: a title that wraps never pushes its body below its neighbours'. */}
@@ -376,7 +376,7 @@ export function Landing() {
             style={{ backgroundImage: "radial-gradient(70% 90% at 100% 0%, rgb(107 42 94 / .45), transparent 65%)" }}
           >
             <div className="max-w-[40rem]">
-              <h2 id="builders-title" className="font-display text-[36px]/[40px] font-normal tracking-[-.015em] sm:text-display">
+              <h2 id="builders-title" className="font-display text-[36px]/[40px] tracking-[-.035em] sm:text-display">
                 For builders and architects: win the client in the first meeting.
               </h2>
               <p className="mt-4 text-body-lg text-white/75">
@@ -508,7 +508,7 @@ function TasteStep({ n, title, featured, children }: { n: number; title: string;
 function SectionHead({ id, title, line }: { id: string; title: string; line: string }) {
   return (
     <Reveal className="max-w-[44rem]">
-      <h2 id={id} className="font-display text-[40px]/[44px] font-normal tracking-[-.015em] text-ink sm:text-display">{title}</h2>
+      <h2 id={id} className="font-display text-[40px]/[44px] tracking-[-.035em] text-ink sm:text-display">{title}</h2>
       <p className="mt-4 text-body-lg text-ink-2">{line}</p>
     </Reveal>
   );

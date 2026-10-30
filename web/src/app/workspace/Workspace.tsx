@@ -183,7 +183,7 @@ export function Workspace() {
         {/* Start a home in one message */}
         {/* One left edge: the heading, the composer, the tabs and the grid all start at the container's gutter. */}
         <section className="max-w-[720px] pb-10 pt-10 sm:pb-14 sm:pt-16" aria-labelledby="start-heading">
-          <h1 id="start-heading" className="font-display text-[44px]/[48px] font-normal tracking-[-.015em] text-ink sm:text-[64px]/[68px]">
+          <h1 id="start-heading" className="font-display text-[44px]/[48px] tracking-[-.035em] text-ink sm:text-[64px]/[68px]">
             {user?.name ? `Salaam, ${user.name.split(" ")[0]}.` : mine.length || shared.length ? "Your homes" : "Start a home"}
           </h1>
           <p className="mt-3 text-body-lg text-ink-2">Describe your plot and your family to start. One message is enough.</p>

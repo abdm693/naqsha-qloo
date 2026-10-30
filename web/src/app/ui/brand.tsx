@@ -6,7 +6,7 @@ import { cn } from "@/app/lib/utils";
 export function Wordmark({ className, compact, tone = "ink" }: { className?: string; compact?: boolean; tone?: "ink" | "white" }) {
   return (
     <span className={cn("inline-flex items-baseline gap-2 leading-none", tone === "white" ? "text-white" : "text-ink", className)}>
-      <span className="font-display text-[26px] leading-none tracking-[-.01em]">Naqsha</span>
+      <span className="font-display text-[26px] leading-none tracking-[-.035em]">Naqsha</span>
       {!compact && (
         <span lang="ur" dir="rtl" className="font-urdu text-[15px] opacity-70" aria-hidden>
           نقشہ

@@ -125,7 +125,7 @@ function Composer({ project, onRead, onCancel }: { project: Project; onRead(i: T
       <header className="flex flex-wrap items-end justify-between gap-6">
         <div className="max-w-[760px]">
           <TasteBadge />
-          <h1 className="mt-4 font-display text-[clamp(2.2rem,5vw,3.6rem)] leading-[1.02] tracking-[-0.03em] text-ink">
+          <h1 className="mt-4 font-display text-[clamp(2.2rem,5vw,3.6rem)] leading-[1.02] tracking-[-.035em] text-ink">
             A home should feel like the people in it.
           </h1>
           <p className="mt-4 text-body-lg text-ink-2">
@@ -298,7 +298,7 @@ function Reading({ steps, found, missing, profile, error, onRetry }: {
     <div className="grid gap-8 lg:grid-cols-[minmax(0,420px)_1fr]">
       <section>
         <TasteBadge live={!error} />
-        <h1 className="mt-4 font-display text-[clamp(2rem,4vw,3rem)] leading-[1.05] tracking-[-0.03em] text-ink">Reading your taste</h1>
+        <h1 className="mt-4 font-display text-[clamp(2rem,4vw,3rem)] leading-[1.05] tracking-[-.035em] text-ink">Reading your taste</h1>
         <ol className="mt-6 space-y-3" aria-live="polite">
           <AnimatePresence initial={false}>
             {steps.map((s) => (
@@ -382,7 +382,7 @@ function Profile({ taste, project, editor, onEdit, onProjectChange }: { taste: T
           </ul>
         )}
         <TasteBadge onDark />
-        <h1 className="mt-4 max-w-[820px] xl:max-w-[640px] font-display text-[clamp(2.2rem,5vw,4rem)] leading-[1] tracking-[-0.03em]">{s.headline}</h1>
+        <h1 className="mt-4 max-w-[820px] xl:max-w-[640px] font-display text-[clamp(2rem,4.2vw,3.25rem)] leading-[1.05] tracking-[-.035em]">{s.headline}</h1>
         <p className="mt-4 max-w-[720px] xl:max-w-[620px] text-body-lg text-white/90">{s.story}</p>
         {p.locality_only && (
           <p className="mt-3 max-w-[620px] text-small text-white/85">Read from {p.area?.location || "your area"}: add your favourites to make it yours.</p>
@@ -709,7 +709,7 @@ export function TasteBadge({ live, onDark }: { live?: boolean; onDark?: boolean 
 function SectionTitle({ title, sub }: { title: string; sub?: string }) {
   return (
     <div>
-      <h2 className="font-display text-[1.75rem] leading-tight tracking-[-0.02em] text-ink">{title}</h2>
+      <h2 className="font-display text-[1.75rem] leading-tight tracking-[-.035em] text-ink">{title}</h2>
       {sub && <p className="mt-1 text-body text-ink-3">{sub}</p>}
     </div>
   );
