@@ -534,3 +534,12 @@ def test_counts_never_take_a_warning_for_a_pass():
     assert c["warn"] == 2 and c["fail"] == 0
     assert lda.status_line(rep) == "1/2 LDA · 1/2 livable · 2 architect's notes"
     assert lda.status_line({"checks": rep["checks"][:4]}) == "1/2 LDA · 1/2 livable"
+
+
+def test_a_plan_outside_lahore_is_not_held_to_lahore_rules(plans):
+    p = copy.deepcopy(plans["example"])
+    p["site"]["authority"] = "COA"
+    rep = lda.check(p, {"bedrooms": 4, "bathrooms": 4})
+    assert not any(c["id"] == "services.water_tank" for c in rep["checks"])
+    words = " ".join(f"{c['message']} {c['rule_ref']}" for c in rep["checks"])
+    assert "LDA" not in words and "marla" not in words

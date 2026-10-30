@@ -135,16 +135,17 @@ def envelope(width_ft: float, depth_ft: float, authority: str = "LDA", corner: b
     cov = float(b["max_coverage_pct"])
     buildable = {"x": left, "y": setbacks["front"], "w": max(0.0, width_ft - left - right),
                  "d": max(0.0, depth_ft - setbacks["front"] - setbacks["rear"])}
+    lahore = str(authority or "").upper() in BUILTIN_AUTHORITIES
     side_note = {0: "No side space required", 1: f"{side:g} ft side space on one side", 2: f"{side:g} ft side space on both sides"}[min(count, 2)]
     max_h = over.get("max_height_ft", b["max_height_ft"])
     max_st = over.get("max_storeys", b["max_storeys"])
     notes = [
-        f"Plot {width_ft:g}×{depth_ft:g} ft = {area:,.0f} sq ft ≈ {marla:.1f} marla ({b['label']}).",
+        f"Plot {width_ft:g}×{depth_ft:g} ft = {area:,.0f} sq ft" + (f" ≈ {marla:.1f} marla ({b['label']})." if lahore else "."),
         f"Setbacks: front {setbacks['front']:g} ft, rear {setbacks['rear']:g} ft; {side_note.lower()}.",
         f"Ground coverage up to {cov:g}% ({area * cov / 100:,.0f} sq ft); FAR 1:{b['max_far']:g} (basement counts).",
         f"Height up to {max_h:g} ft to top of parapet (mumty ≤ 9′6″ excluded); max {max_st} storeys + basement.",
     ] + notes
-    if corner:
+    if corner and lahore:
         notes.append(f"Corner plot: keep a {corner_splay_ft(b, marla):g} ft splay at the corner boundary wall.")
     return {
         "authority": authority, "band": b["label"], "setbacks_ft": setbacks, "side_space_note": side_note,
@@ -190,6 +191,14 @@ def _fmt_ft(v: float) -> str:
     return f"{feet}′{inches}″" if inches else f"{feet}′"
 
 
+def _voice(authority: str) -> tuple[str, str]:
+    """Who a rule is said in the name of, and its reference. Outside Lahore, a number that isn't the place's own is Naqsha's."""
+    if str(authority or "").upper() in BUILTIN_AUTHORITIES:
+        return "LDA", REF
+    pack = PACKS.get(str(authority or "").upper()) or {}
+    return "Naqsha", str(pack.get("instrument") or pack.get("authority_name") or "Naqsha's baseline")
+
+
 def check(plan: dict, brief: dict | None = None) -> dict:
     """LDA regulation checks (category "lda") plus Naqsha's planning rules (category "livable", see planning.py)."""
     site = plan.get("site", {})
@@ -201,6 +210,7 @@ def check(plan: dict, brief: dict | None = None) -> dict:
     env = envelope(W, D, authority, bool(plot.get("corner")), side_on)
     band = env.pop("_band")
     plot_area = W * D
+    who, base_ref = _voice(authority)
 
     levels = {lv["id"]: lv for lv in plan.get("levels", [])}
     rooms = plan.get("rooms", [])
@@ -209,7 +219,7 @@ def check(plan: dict, brief: dict | None = None) -> dict:
 
     def add(cid, title, ok, message, value=None, limit=None, ref=None, ids=None, warn=False, unit=None, category="lda", fix=None):
         c = {"id": cid, "title": title, "status": "pass" if ok else ("warn" if warn else "fail"), "message": message,
-             "value": value, "limit": limit, "rule_ref": ref or REF, "element_ids": ids or [], "category": category}
+             "value": value, "limit": limit, "rule_ref": ref or base_ref, "element_ids": ids or [], "category": category}
         if unit:
             c["unit"] = unit
         if fix and not ok:
@@ -251,7 +261,7 @@ def check(plan: dict, brief: dict | None = None) -> dict:
     add("setback.envelope", "Building within setbacks", not outside,
         "All rooms, porches and balconies sit inside the building line." if not outside else
         "Inside the mandatory open space: " + ", ".join(r["name"] for r in outside) +
-        ". LDA does not allow rooms, porches or balconies to project into mandatory open spaces.",
+        ". Rooms, porches and balconies can't project into mandatory open spaces.",
         ids=[r["id"] for r in outside], fix="Pull these rooms back inside the setback lines (porches and balconies too).")
 
     # --- Coverage & FAR ----------------------------------------------------------------------------
@@ -282,7 +292,7 @@ def check(plan: dict, brief: dict | None = None) -> dict:
     n_storeys = len([lv for lv in storey_levels if lv.get("index", 0) >= 0])
     add("storeys", "Number of storeys", n_storeys <= env["max_storeys"],
         f"{n_storeys} storey{'s' if n_storeys != 1 else ''} above ground (max {env['max_storeys']}, basement excluded).", n_storeys,
-        env["max_storeys"], ref=f"{REF} §2.7.1(a)", unit="storeys")
+        env["max_storeys"], ref=f"{base_ref} §2.7.1(a)" if who == "LDA" else None, unit="storeys")
     mumty = (plan.get("roof") or {}).get("mumty")
     if mumty:
         mh = float(mumty.get("height_ft", 0))
@@ -343,7 +353,7 @@ def check(plan: dict, brief: dict | None = None) -> dict:
             need = area * win_pct / 100
             add(f"room.light:{r['id']}", f"{r['name']} daylight", g + EPS >= need,
                 f"{g:.0f} sq ft of windows for {need:.0f} sq ft needed ({win_pct:g}% of the floor area)." if g + EPS >= need else
-                f"{r['name']} has {g:.0f} sq ft of windows to the outside; LDA needs {need:.0f} sq ft ({win_pct:g}% of the floor area).",
+                f"{r['name']} has {g:.0f} sq ft of windows to the outside; {who} needs {need:.0f} sq ft ({win_pct:g}% of the floor area).",
                 round(g, 1), round(need, 1), ids=[r["id"]], unit="sq ft",
                 fix=f"Give {r['name']} windows on its OWN outside wall on the same floor (or onto a same-floor porch, balcony, "
                     f"terrace or open space): at least {need:.0f} sq ft. A window onto another room or another floor doesn't count.")
@@ -352,8 +362,8 @@ def check(plan: dict, brief: dict | None = None) -> dict:
             g = glazing(r["id"])
             add(f"room.vent:{r['id']}", f"{r['name']} ventilation", g + EPS >= 2,
                 f"Has {g:.1f} sq ft of opening to the outside (min 2 sq ft)." if g + EPS >= 2 else
-                f"{r['name']} has only {g:.1f} sq ft open to the outside; LDA asks for at least 2 sq ft." if g > EPS else
-                f"{r['name']} has no opening to the outside: it needs a ventilator on an outside wall, or a duct (LDA: at least "
+                f"{r['name']} has only {g:.1f} sq ft open to the outside; {who} asks for at least 2 sq ft." if g > EPS else
+                f"{r['name']} has no opening to the outside: it needs a ventilator on an outside wall, or a duct ({who}: at least "
                 f"2 sq ft).",
                 round(g, 1), 2, ids=[r["id"]], warn=g > EPS, unit="sq ft",
                 fix=f"Give {r['id']} a 'ventilator' opening (about 2 × 1.5 ft, between [\"{r['id']}\", \"exterior\"]) on its OWN "
@@ -375,13 +385,13 @@ def check(plan: dict, brief: dict | None = None) -> dict:
                                   ("treads at least 10 in", tread + EPS < 10), ("at most 15 risers per flight", per_flight > 15)) if bad]
         add(f"stair:{st['id']}", ix.sname(st), ok,
             f"{n_risers} risers of {actual:.2f} in, {_fmt_ft(width)} wide, {tread:g} in treads, {flights} flight{'s' if flights > 1 else ''}"
-            + (f" of up to {per_flight} risers." if flights > 1 else ".") + (f" LDA needs {', '.join(wrong)}." if wrong else ""),
+            + (f" of up to {per_flight} risers." if flights > 1 else ".") + (f" {who} needs {', '.join(wrong)}." if wrong else ""),
             per_flight, 15, ids=[st["id"]], unit="risers per flight",
             fix="Flights 3.5 ft wide, risers 6.95 in, treads 10 in, a dog-leg with a mid-landing.")
 
     # --- Services ---------------------------------------------------------------------------------
     marla = plot_area / MARLA_SQFT
-    if marla >= 3:
+    if marla >= 3 and who == "LDA":
         has_tank = bool((plan.get("roof") or {}).get("water_tank"))
         add("services.water_tank", "Overhead water tank", has_tank,
             "Overhead water tank on the roof." if has_tank else "Plots of 3 marla and above need overhead and underground water tanks.",
@@ -474,6 +484,7 @@ def check_asbuilt(plan: dict, summary: dict) -> dict:
     W, D = site["plot"]["width_ft"], site["plot"]["depth_ft"]
     sb = {**{"front": 0, "rear": 0, "left": 0, "right": 0}, **(site.get("setbacks_ft") or {})}
     env = envelope(W, D, site.get("authority", "LDA"))
+    who, base_ref = _voice(site.get("authority", "LDA"))
     band = env.pop("_band")
 
     def allow(space: float) -> float:
@@ -496,12 +507,12 @@ def check_asbuilt(plan: dict, summary: dict) -> dict:
         if amount > lim[side]:
             what = (o.get("kind") or o.get("id") or "element").split(":")[-1].replace("_", " ")
             checks.append({"id": f"asbuilt.projection:{o['id']}", "title": "Projection into open space", "status": "fail", "category": "lda",
-                           "message": f"The {what} project{'' if what.endswith('s') else 's'} {amount:.1f} ft into the {side} open space (LDA allows "
+                           "message": f"The {what} project{'' if what.endswith('s') else 's'} {amount:.1f} ft into the {side} open space ({who} allows "
                                       f"{allow(sb[side]):g} ft for sunshades there).",
-                           "rule_ref": f"{REF} §2.7 (projections)", "element_ids": [o["id"]]})
+                           "rule_ref": f"{base_ref} §2.7 (projections)" if who == "LDA" else base_ref, "element_ids": [o["id"]]})
     if not checks:
         checks.append({"id": "asbuilt.ok", "title": "As-built projections", "status": "pass", "category": "lda",
-                       "message": "Nothing projects into the mandatory open spaces beyond LDA's sunshade allowance.", "element_ids": []})
+                       "message": f"Nothing projects into the mandatory open spaces beyond {who}'s sunshade allowance.", "element_ids": []})
     for e in summary.get("section_errors", []):
         checks.append({"id": f"asbuilt.section:{e['section']}", "title": "3D section error", "status": "warn", "category": "livable",
                        "message": f"Section {e['section']} failed: {e['error'][:200]}", "element_ids": []})
