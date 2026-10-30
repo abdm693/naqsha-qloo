@@ -1,5 +1,5 @@
 /**
- * The landing page (/): the street at dusk. One sentence, one house whose lights come on, and four real families.
+ * The landing page (/): the street at dusk. One sentence, one house whose lights come on, and four sample families.
  */
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -60,6 +60,7 @@ export function Landing() {
 
   const s = STORIES[story];
   const families = useMemo(() => STORIES.map((x) => ({ ...x, sample: samples.find((p) => (p.brief?.city ?? "").toLowerCase() === x.city) })), [samples]);
+  const story_ = families[story];
   const open = async (id?: string) => {
     setOpening(id ?? "any");
     if (!(await openSampleHome(navigate, id))) setOpening(null);
@@ -79,7 +80,7 @@ export function Landing() {
       </header>
 
       <section aria-labelledby="hero" className="relative flex min-h-[100dvh] flex-col overflow-hidden">
-        <div className="relative z-20 mx-auto w-full max-w-[1200px] px-5 pt-[13dvh] sm:px-8">
+        <div className="relative z-20 mx-auto w-full max-w-[1200px] px-5 pt-[11dvh] sm:px-8">
           <h1 id="hero" className="max-w-[12ch] font-display text-[clamp(3.2rem,9.2vw,6rem)] leading-[.96] tracking-[-.035em] text-dusk-ink">Home is where the heart is.</h1>
           <p className="mt-5 max-w-[30rem] text-[1.125rem] leading-7 text-dusk-ink-2">Everyone in your family answers alone. What you share becomes the heart of your house.</p>
           <div className="mt-7 flex flex-wrap items-center gap-5">
@@ -91,30 +92,16 @@ export function Landing() {
           <HouseScene key={story} windows={s.people.map((name, i) => ({ id: String(i), name, lit: !!still || step > i }))} heart={!!still || step >= heartAt}
             className="size-full" title="A house at dusk, its lights coming on" />
         </div>
-        <div className="absolute inset-x-0 bottom-3 z-20 mx-auto flex w-full max-w-[1200px] items-baseline justify-between gap-4 px-5 sm:bottom-5 sm:px-8">
-          <motion.p initial={false} animate={{ opacity: showing ? 1 : 0 }} transition={{ duration: 0.8 }} className="font-display text-[1.5rem] tracking-[-.02em] text-lamp-soft sm:text-[2rem]">{s.words}</motion.p>
-          <motion.p initial={false} animate={{ opacity: showing ? 1 : 0 }} transition={{ duration: 0.8 }} className="text-right text-small text-dusk-ink-2 sm:text-body">{s.family}, {s.place}</motion.p>
-        </div>
-      </section>
-
-      <section className="bg-dusk-1 px-5 py-24 sm:px-8 sm:py-32">
-        <div className="mx-auto grid w-full max-w-[1200px] gap-14 sm:grid-cols-3 sm:gap-10">
-          {[
-            ["Everyone answers alone.", "A link for each person. The film they rewatch, the song that's home, the place they miss."],
-            ["You see what you share.", "Windows light one by one. The heart lights last, and tells you what your family has in common."],
-            ["The house grows around it.", "What you share becomes the centre. What's yours alone becomes your room."],
-          ].map(([t, l]) => (
-            <div key={t}>
-              <h2 className="font-display text-[1.9rem] leading-[1.08] tracking-[-.025em] text-dusk-ink">{t}</h2>
-              <p className="mt-3 text-[1.0625rem] leading-7 text-dusk-ink-2">{l}</p>
-            </div>
-          ))}
-        </div>
+        <button type="button" disabled={!story_.sample || !!opening} onClick={() => story_.sample && void open(story_.sample.id)} tabIndex={showing ? 0 : -1}
+          className="absolute inset-x-0 bottom-2 z-20 mx-auto flex w-full max-w-[1200px] flex-col items-start gap-0 px-5 text-left outline-none sm:bottom-4 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4 sm:px-8">
+          <motion.span initial={false} animate={{ opacity: showing ? 1 : 0 }} transition={{ duration: 0.8 }} className="font-display text-[1.25rem] leading-tight tracking-[-.02em] text-lamp-soft sm:text-[2rem]">{wordsOf(story_.sample, s.words)}</motion.span>
+          <motion.span initial={false} animate={{ opacity: showing ? 1 : 0 }} transition={{ duration: 0.8 }} className="inline-flex items-center gap-1.5 text-small text-dusk-ink-2 sm:text-body">{s.family}, {s.place} <ArrowRight className="size-4" /></motion.span>
+        </button>
       </section>
 
       <section aria-labelledby="street" className="bg-dusk-1 px-5 pb-24 sm:px-8 sm:pb-32">
         <div className="mx-auto w-full max-w-[1200px]">
-          <h2 id="street" className="font-display text-[2.4rem] leading-[1.05] tracking-[-.03em] text-dusk-ink sm:text-[3.4rem]">Four families, four homes.</h2>
+          <h2 id="street" className="font-display text-[2.4rem] leading-[1.05] tracking-[-.03em] text-dusk-ink sm:text-[3.4rem]">Four sample families, four homes.</h2>
           <ul className="mt-10 grid gap-x-6 gap-y-10 sm:grid-cols-2">
             {families.map((f) => {
               const img = chosenImage(f.sample);

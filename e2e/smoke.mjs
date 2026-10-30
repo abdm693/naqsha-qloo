@@ -46,19 +46,18 @@ async function imagesLoaded(p, min) {
 
 async function walk(p, family, city) {
   await p.goto(BASE + "/");
-  await p.getByRole("heading", { name: "Four families, four homes." }).waitFor({ timeout: 20000 });
+  await p.getByRole("heading", { name: "Four sample families, four homes." }).waitFor({ timeout: 20000 });
   const card = p.getByRole("button", { name: new RegExp(`${family}, ${city}`) });
   await card.waitFor({ timeout: 20000 });
   await p.waitForFunction((n) => [...document.querySelectorAll("button")].some((b) => b.textContent.includes(n) && !b.disabled), `${family}, ${city}`, { timeout: 20000 });
   await card.click();
   await p.waitForURL(/\/taste/, { timeout: 60000 });
   await p.getByText(/answered alone\./).waitFor({ timeout: 20000 });
-  const see = p.getByRole("button", { name: "See the home" }).first();
-  await see.waitFor({ timeout: 30000 });
-  await p.getByText(/What (you all|most of you) share|Together, you are/).first().waitFor({ timeout: 5000 });
-  if (!(await p.locator("main img, section img").count())) throw new Error(`${city}: no favourite behind the word`);
+  const inside = p.getByRole("button", { name: "Look inside" });
+  await inside.waitFor({ timeout: 30000 });
+  if (!(await p.locator("section img").count())) throw new Error(`${city}: no favourite behind the word`);
   await clean(p, city);
-  await see.click();
+  await inside.click();
   await p.getByRole("heading", { name: /Everything opens onto/ }).waitFor({ timeout: 10000 });
   await p.getByText(/How much of you is in it/).first().waitFor({ timeout: 10000 });
   await clean(p, city);
@@ -103,7 +102,7 @@ await check("phone", async () => {
     await q.getByRole("button", { name: /The Garcias, Austin/ }).scrollIntoViewIfNeeded({ timeout: 20000 });
     await q.getByRole("button", { name: /The Garcias, Austin/ }).click();
     await q.waitForURL(/\/taste/, { timeout: 60000 });
-    await q.getByRole("button", { name: "See the home" }).first().waitFor({ timeout: 30000 });
+    await q.getByRole("button", { name: "Look inside" }).waitFor({ timeout: 30000 });
     const over = await q.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     if (over > 1) throw new Error(`the page scrolls sideways by ${over}px`);
     await q.screenshot({ path: `${OUT}phone.png` });
@@ -114,7 +113,7 @@ await check("landing", async (p) => {
   await p.goto(BASE + "/");
   await p.getByRole("heading", { level: 1, name: /Home is where the heart is/ }).waitFor();
   await p.getByRole("button", { name: "Start your home" }).first().waitFor({ timeout: 10000 });
-  await p.getByText("Four families, four homes").waitFor({ timeout: 10000 });
+  await p.getByText("Four sample families, four homes").waitFor({ timeout: 10000 });
   if (await p.getByText(/Qloo/).count()) throw new Error("the app names Qloo");
 }, page);
 
@@ -122,7 +121,7 @@ await check("sample", async (p) => {
   await p.goto(BASE + "/");
   await p.getByRole("button", { name: /See a family's home/ }).click();
   await p.waitForURL(/\/taste/, { timeout: 60000 });
-  await p.getByText(/What (you all|most of you) share|Together, you are/).first().waitFor({ timeout: 60000 });
+  await p.getByRole("button", { name: "Look inside" }).click({ timeout: 60000 });
   await p.getByRole("radio", { name: "House" }).first().click();
   await p.waitForURL(/\/house/, { timeout: 30000 });
   await p.getByText(/LDA|CDA|local rules/).first().waitFor({ timeout: 60000 });
@@ -131,7 +130,7 @@ await check("sample", async (p) => {
 
 await check("taste", async (p) => {
   await p.getByRole("radio", { name: "Heart" }).or(p.getByRole("tab", { name: "Heart" })).first().click();
-  await p.getByText(/What (you all|most of you) share|Together, you are/).first().waitFor({ timeout: 30000 });
+  await p.getByRole("heading", { name: /Everything opens onto/ }).waitFor({ timeout: 30000 });
   await p.getByText(/Inside: a room for each of you/).first().waitFor({ timeout: 30000 });
   await p.getByText(/How much of you is in it/).first().waitFor({ timeout: 30000 });
   if (await p.getByText(/Qloo/).count()) throw new Error("the app names Qloo");

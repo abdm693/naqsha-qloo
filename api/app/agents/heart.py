@@ -17,6 +17,9 @@ from ..store import db
 
 log = logging.getLogger("naqsha.heart")
 
+WORDING_TRIES = 3
+WORDING_TIMEOUT_S = 75.0
+
 SYSTEM = """You are Naqsha's architect. A family answered separately about what they love, and you are shown the words their
 tastes truly share. Choose what will become the heart of their home. JSON only:
 {"words": ["one or two words, copied exactly from HEART WORDS, the ones that say most about how a family lives"],
@@ -107,11 +110,14 @@ async def read(people: list[dict], home: dict) -> dict:
     prompt = (f"THE HOME: {json.dumps(home)}\nHEART WORDS: {', '.join(heart_words[:30])}\nWHAT EACH PERSON HAS OF THEIR OWN: {json.dumps(own)}\n"
               f"WHAT PAIRS SHARE: {json.dumps(pairs)[:1500]}")
     out: dict = {}
-    try:
-        text = await asyncio.wait_for(llm.generate_text(config.MODEL_INTAKE, prompt, system=SYSTEM, max_tokens=1500, json_mode=True, thinking=False), timeout=40)
-        out = llm.parse_json(text)
-    except Exception as e:
-        log.warning("heart wording failed: %r", e)
+    for attempt in range(1, WORDING_TRIES + 1):  # without this step there is no heart room, so a slow model gets more chances
+        try:
+            text = await asyncio.wait_for(llm.generate_text(config.MODEL_INTAKE, prompt, system=SYSTEM, max_tokens=1500, json_mode=True, thinking=False), WORDING_TIMEOUT_S)
+            out = llm.parse_json(text)
+            if out.get("room"):
+                break
+        except Exception as e:
+            log.warning("heart wording, attempt %d: %r", attempt, e)
     allowed = {w.lower(): w for w in heart_words}
     words = [allowed[str(w).strip().lower()] for w in out.get("words") or [] if str(w).strip().lower() in allowed][:2] or heart_words[:2]
     by = {str(p.get("name")): p for p in out.get("people") or [] if isinstance(p, dict)}

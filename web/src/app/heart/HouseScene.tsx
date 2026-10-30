@@ -90,7 +90,7 @@ export function HouseScene({ windows = [], heart = false, roof = "gable", labels
           <g key={w.id}>
             <Glass id={id} x={x} y={y} w={ww} h={h} lit={w.lit} delay={delays?.[w.id] ?? 0} />
             {labels && (
-              <text x={x + ww / 2} y={y + h + 27} textAnchor="middle" fontSize="15" fontWeight="500" fill={w.lit ? "#FFE3B0" : "#AEB4D2"} className="font-sans">
+              <text x={x + ww / 2} y={y + h + 33} textAnchor="middle" fontSize="26" fontWeight="500" fill={w.lit ? "#FFE3B0" : "#AEB4D2"} className="font-sans">
                 {w.name.length > 14 ? `${w.name.slice(0, 13)}…` : w.name}
               </text>
             )}

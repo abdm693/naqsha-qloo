@@ -18,6 +18,7 @@ export function HomeLinkPage() {
   const [heartPlace, setHeartPlace] = useState<Pick[]>([]);
   const [step, setStep] = useState<"love" | "heart" | "done">("love");
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     api.openLink(token).then((l) => {
@@ -39,11 +40,12 @@ export function HomeLinkPage() {
 
   async function finish() {
     setSaving(true);
+    setSaveError(null);
     try {
       setLink(await api.answerLink(token, [...picks, ...heartPlace.map((h) => ({ ...h, heart: true }))]));
       setStep("done");
     } catch (e) {
-      setFailed(errorMessage(e));
+      setSaveError(errorMessage(e));
     } finally {
       setSaving(false);
     }
@@ -62,7 +64,7 @@ export function HomeLinkPage() {
         {step === "love" && (
           <motion.section key="love" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="relative z-10">
             <h1 className="font-display text-[2.6rem] leading-[1.02] tracking-[-.03em] text-dusk-ink sm:text-[3.4rem]">{first}, what do you love?</h1>
-            <p className="mt-3 text-body-lg text-dusk-ink-2">Only Naqsha sees this. Your family won't.</p>
+            <p className="mt-3 text-body-lg text-dusk-ink-2">Your family sees only what you have in common.</p>
             <div className="mt-8"><Picker value={picks} onChange={setPicks} autoFocus /></div>
             <div className="mt-8">
               <LampButton disabled={picks.length < MIN} onClick={() => setStep("heart")}>
@@ -79,6 +81,7 @@ export function HomeLinkPage() {
               <LampButton loading={saving} onClick={() => void finish()}>Turn my light on</LampButton>
               {!heartPlace.length && <button type="button" onClick={() => void finish()} className="text-body text-dusk-ink-2 underline underline-offset-4 hover:text-dusk-ink">Skip</button>}
             </div>
+            {saveError && <p role="alert" className="mt-3 text-body text-lamp-soft">{saveError}</p>}
           </motion.section>
         )}
         {step === "done" && (
@@ -93,7 +96,7 @@ export function HomeLinkPage() {
       </div>
       {/* The house stays at the foot of the screen; the person's own window answers as soon as they finish. */}
       <div aria-hidden={step !== "done"} className="pointer-events-none fixed inset-x-0 bottom-0 h-[38dvh]">
-        <HouseScene windows={windows} className="size-full" title={`The house, ${windows.filter((w) => w.lit).length} of ${windows.length} lights on`} />
+        <HouseScene windows={windows} labels className="size-full" title={`The house, ${windows.filter((w) => w.lit).length} of ${windows.length} lights on`} />
       </div>
     </Dusk>
   );

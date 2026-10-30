@@ -77,7 +77,7 @@ Write JSON only:
  "rooms": [{"room": "lounge | drawing | kitchen | master_bedroom | bedroom | kids_bedroom | parents_bedroom | study | terrace",
             "for": "person label or 'everyone'", "mood": "…", "palette": ["#…"], "ideas": ["…"], "because": ["…"]}],
  "landscape": {"idea": "…", "plants": ["…"], "because": ["…"]},
- "neighbourhood": {"reading": "how the area feels, from Qloo", "response": "how the house answers it", "because": ["…"]},
+ "neighbourhood": {"reading": "how the area feels", "response": "how the house answers it", "because": ["…"]},
  "takes": [{"title": "2-4 words", "direction": "massing + materials + palette for one concept image", "why": "one line",
             "because": ["…"]}],                                                  // exactly 4: the family's shared taste,
                                                                                 // the parents' (or first person's) taste,

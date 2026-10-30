@@ -118,7 +118,7 @@ export function Workspace() {
     setOpening(s.id);
     try {
       const p = await api.cloneProject(s.id);
-      navigate(`/app/p/${p.id}/${p.current_version_id ? "house" : ""}`);
+      navigate(`/app/p/${p.id}/${p.taste ? "taste" : p.current_version_id ? "house" : ""}`);
     } catch (e) {
       toast.error("Couldn't open the sample", e);
       setOpening(null);

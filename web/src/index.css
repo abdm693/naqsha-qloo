@@ -281,5 +281,9 @@
 .nbh-place { display: block; }
 
 /* The sky at the last of the light. */
-.dusk-sky { background: linear-gradient(180deg, #0E1432 0%, #161E4A 46%, #2A3268 70%, #5F5688 86%, #C28C78 97%, #E3AD82 100%) fixed; color-scheme: dark; }
+.dusk-sky { background: #0E1432; isolation: isolate; color-scheme: dark; }
+/* On a fixed layer: background-attachment: fixed stretches the band of last light down the whole page on iOS. */
+.dusk-sky::before { content: ""; position: fixed; inset: 0; z-index: -1; background: linear-gradient(180deg, #0E1432 0%, #161E4A 46%, #2A3268 70%, #5F5688 86%, #C28C78 97%, #E3AD82 100%); }
+.dusk-sky :focus-visible { outline-color: var(--color-lamp); }
+[data-dusk] .glass-hud { background: rgb(23 31 72 / .78); }
 .dusk-sky ::selection { background: var(--color-lamp); color: var(--color-dusk-1); }

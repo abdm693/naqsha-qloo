@@ -69,6 +69,7 @@ export function viewAvailable(p: Project, view: ViewId): boolean {
 /** The view a home opens on. */
 export function defaultView(p: Project): ViewId {
   if (roleOf(p) === "client") return hasVersion(p) ? "house" : "plan";
+  if (p.family?.people.length && !p.heart) return "taste";  // the family is still answering
   switch (p.stage) {
     case "setup":
       return "brief";

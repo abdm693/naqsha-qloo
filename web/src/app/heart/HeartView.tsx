@@ -16,12 +16,14 @@ import { HouseScene } from "./HouseScene";
 import { Picker, Thumb } from "./Picker";
 import { Dusk, LampButton } from "./kit";
 
+const wordsClass = "font-display text-[clamp(3.2rem,11vw,6rem)] leading-[.98] !tracking-[-.02em] text-lamp-soft";
 const heading = "font-display text-[2.8rem] leading-[1.02] tracking-[-.03em] text-dusk-ink sm:text-[4rem]";
 
 export function HeartView({ project, onProjectChange }: { project: Project; onProjectChange(p: Project): void }) {
   const editor = canEdit(project);
   // A sample family's reveal plays once on arrival, so the first thing a visitor sees is their lights coming on.
   const [revealing, setRevealing] = useState(() => !!project.heart?.words.length && !!project.cloned_from && firstVisit(project.id));
+  const [inside, setInside] = useState(false);
   useAskContext({ hidden: true });
 
   const commit = (p: Project) => {
@@ -45,10 +47,11 @@ export function HeartView({ project, onProjectChange }: { project: Project; onPr
 
   return (
     <div className="h-full overflow-y-auto">
+      <div aria-hidden className="pointer-events-none fixed inset-x-0 top-0 z-20 h-[calc(var(--chrome-top,72px)+12px)] bg-gradient-to-b from-dusk-1 via-dusk-1/80 to-transparent" />
       <Dusk>
-        {revealing ? <Reveal project={project} onDone={(p) => { commit(p); setRevealing(false); }} onFail={() => setRevealing(false)} />
+        {revealing ? <Reveal project={project} onDone={(p) => { commit(p); setRevealing(false); setInside(true); }} onFail={() => setRevealing(false)} />
           : !people?.length ? <Who project={project} editor={editor} onDone={commit} />
-          : project.heart?.words.length ? <Home project={project} editor={editor} onChange={commit} onAgain={() => setRevealing(true)} />
+          : project.heart?.words.length ? <Home project={project} editor={editor} inside={inside} onChange={commit} onAgain={() => setRevealing(true)} />
           : <Waiting project={project} editor={editor} onChange={commit} onReveal={() => setRevealing(true)} />}
       </Dusk>
     </div>
@@ -109,7 +112,7 @@ function Who({ project, editor, onDone }: { project: Project; editor: boolean; o
 }
 
 function Scene(props: Parameters<typeof HouseScene>[0]) {
-  return <div className="pointer-events-none fixed inset-x-0 bottom-0 h-[52dvh]"><HouseScene {...props} className="size-full" /></div>;
+  return <div className="pointer-events-none fixed inset-x-0 bottom-0 h-[52dvh]"><HouseScene labels {...props} className="size-full" /></div>;
 }
 
 function Waiting({ project, editor, onChange, onReveal }: { project: Project; editor: boolean; onChange(p: Project): void; onReveal(): void }) {
@@ -170,11 +173,14 @@ function AnswerHere({ project, person, onClose, onDone }: { project: Project; pe
   const [picks, setPicks] = useState<Pick[]>([]);
   const [heart, setHeart] = useState<Pick[]>([]);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   async function save() {
     setBusy(true);
+    setError(null);
     try {
       onDone(await api.answerHere(project.id, person.id, [...picks, ...heart.map((h) => ({ ...h, heart: true }))]));
-    } catch {
+    } catch (e) {
+      setError(errorMessage(e));
       setBusy(false);
     }
   }
@@ -188,7 +194,8 @@ function AnswerHere({ project, person, onClose, onDone }: { project: Project; pe
         <LampButton disabled={picks.length < 3} loading={busy} onClick={() => void save()}>{picks.length < 3 ? `${3 - picks.length} more` : "Turn my light on"}</LampButton>
         <button type="button" onClick={onClose} className="text-body text-dusk-ink-2 hover:text-dusk-ink">Back</button>
       </div>
-    </section>
+      {error && <p role="alert" className="mt-3 text-body text-lamp-soft">{error}</p>}
+      </section>
   );
 }
 
@@ -236,17 +243,22 @@ function Reveal({ project, onDone, onFail }: { project: Project; onDone(p: Proje
   return (
     <>
       <section aria-live="polite" className="relative z-10 mx-auto flex min-h-[46dvh] w-full max-w-[1120px] flex-col justify-end px-5 pt-[calc(var(--chrome-top,72px)+20px)] sm:px-8">
-        {!words && !error && <p className="font-display text-[clamp(1.75rem,4.5vw,2.75rem)] leading-[1.1] tracking-[-.025em] text-dusk-ink">{joinNames(people.map((p) => p.name))} answered alone.</p>}
+        {!words && !error && (
+          <p className="font-display text-[clamp(1.75rem,4.5vw,2.75rem)] leading-[1.1] tracking-[-.025em] text-dusk-ink">
+            {joinNames(people.map((p) => p.name))} answered alone.
+            {lit >= people.length && !result && <span className="ml-3 inline-block size-2.5 animate-breathe rounded-full bg-lamp" aria-label="Reading" />}
+          </p>
+        )}
         {error ? (
           <div><p className="text-body-lg text-dusk-ink">{error}</p><div className="mt-4"><LampButton onClick={onFail}>Back</LampButton></div></div>
         ) : (
           <AnimatePresence>
             {words && h && (
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}>
-                <p className="text-body-lg text-dusk-ink-2">{levelLine(h.level)}</p>
-                <h1 className="mt-1 font-display text-[clamp(3.2rem,11vw,6rem)] leading-[.98] tracking-[-.035em] text-lamp-soft">{joinWords(h.words)}</h1>
+                <h1 className={wordsClass}>{joinWords(h.words)}</h1>
+                {h.line && <p className="mt-3 max-w-[34rem] text-body-lg text-dusk-ink-2">{h.line}</p>}
                 <Threads heart={h} />
-                <div className="mt-6"><LampButton onClick={() => onDone(result!)}>See the home</LampButton></div>
+                <div className="mt-6"><LampButton onClick={() => onDone(result!)}>Look inside</LampButton></div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -285,9 +297,7 @@ function Threads({ heart }: { heart: NonNullable<Project["heart"]> }) {
   );
 }
 
-function levelLine(level: string): string {
-  return level === "all" ? "What you all share" : level === "most" ? "What most of you share" : "Together, you are";
-}
+const firstUp = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 
 function joinNames(names: string[]): string {
   return names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}` : names[0] ?? "";
@@ -298,7 +308,7 @@ function joinWords(words: string[]): string {
   return w.length > 1 ? `${w.slice(0, -1).join(", ")} and ${w[w.length - 1].toLowerCase()}` : w[0] ?? "";
 }
 
-function Home({ project, editor, onChange, onAgain }: { project: Project; editor: boolean; onChange(p: Project): void; onAgain(): void }) {
+function Home({ project, editor, inside, onChange, onAgain }: { project: Project; editor: boolean; inside: boolean; onChange(p: Project): void; onAgain(): void }) {
   const goTo = useViewNav();
   const st = useProject();
   const h = project.heart!;
@@ -306,6 +316,10 @@ function Home({ project, editor, onChange, onAgain }: { project: Project; editor
   const [building, setBuilding] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const designed = project.concepts.some((c) => c.from_taste);
+  const rooms = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (inside) rooms.current?.scrollIntoView();
+  }, [inside]);
   useEffect(() => {
     if (!editor || h.threads?.length) return;
     let on = true;
@@ -335,10 +349,10 @@ function Home({ project, editor, onChange, onAgain }: { project: Project; editor
     <>
       <section className="relative mx-auto flex min-h-[100dvh] w-full max-w-[1120px] flex-col px-5 pt-[calc(var(--chrome-top,72px)+24px)] sm:px-8">
         <div className="relative z-10">
-          <p className="text-body-lg text-dusk-ink-2">{levelLine(h.level)}</p>
-          <h1 className="mt-1 font-display text-[clamp(3.2rem,11vw,6rem)] leading-[.98] tracking-[-.035em] text-lamp-soft">{joinWords(h.words)}</h1>
+          <h1 className={wordsClass}>{joinWords(h.words)}</h1>
+          {h.line && <p className="mt-3 max-w-[34rem] text-body-lg text-dusk-ink-2">{h.line}</p>}
           <Threads heart={h} />
-          {editor && (
+          {(editor || designed) && (
             <div className="mt-6 flex flex-wrap items-center gap-5">
               {designed
                 ? <LampButton onClick={() => goTo("concepts")}>See the home <ArrowRight className="size-4" /></LampButton>
@@ -348,26 +362,26 @@ function Home({ project, editor, onChange, onAgain }: { project: Project; editor
           )}
           {error && <p role="alert" className="mt-3 text-body text-lamp-soft">{error}</p>}
         </div>
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[56dvh] sm:-mx-[20vw]">
-          <HouseScene windows={people.filter((p) => p.answered).map((p) => ({ id: p.id, name: p.name, lit: true }))} heart className="size-full" title="Every light is on, and the heart of the house is lit" />
+        <div className="pointer-events-none absolute bottom-0 left-1/2 h-[56dvh] w-[100vw] -translate-x-1/2">
+          <HouseScene windows={people.filter((p) => p.answered).map((p) => ({ id: p.id, name: p.name, lit: true }))} heart labels className="size-full" title="Every light is on, and the heart of the house is lit" />
         </div>
       </section>
 
-      <section className="relative bg-dusk-1 px-5 py-16 sm:px-8">
+      <section ref={rooms} className="relative scroll-mt-[var(--chrome-top,72px)] bg-dusk-1 px-5 py-16 sm:px-8">
         <div className="mx-auto w-full max-w-[1120px]">
           {h.room && <h2 className="font-display text-[2.2rem] leading-[1.05] tracking-[-.03em] text-dusk-ink sm:text-[3rem]">Everything opens onto {h.room.replace(/^(a|an|the)\s+/i, "the ")}.</h2>}
           <ul className="mt-8 flex flex-col">
             {h.people.filter((p) => p.room).map((p) => (
               <li key={p.id} className="grid gap-1 border-t border-dusk-line/60 py-4 sm:grid-cols-[1fr_1fr_1.4fr] sm:gap-6">
                 <span className="text-body-lg text-dusk-ink-2">{p.name}</span>
-                <span className="text-body-lg font-medium capitalize text-dusk-ink">{p.room}</span>
+                <span className="text-body-lg font-medium text-dusk-ink">{firstUp(p.room!)}</span>
                 {p.line && <span className="text-body text-dusk-ink-2">{p.line}</span>}
               </li>
             ))}
             {h.between.map((b) => (
               <li key={b.names.join()} className="grid gap-1 border-t border-dusk-line/60 py-4 sm:grid-cols-[1fr_1fr_1.4fr] sm:gap-6">
                 <span className="text-body-lg text-dusk-ink-2">{b.names.join(" and ")}</span>
-                <span className="text-body-lg font-medium capitalize text-dusk-ink">{b.space}</span>
+                <span className="text-body-lg font-medium text-dusk-ink">{firstUp(b.space)}</span>
                 <span />
               </li>
             ))}
@@ -380,6 +394,7 @@ function Home({ project, editor, onChange, onAgain }: { project: Project; editor
               </ul>
             </div>
           )}
+          {designed && <div className="mt-10"><LampButton onClick={() => goTo("concepts")}>See the home <ArrowRight className="size-4" /></LampButton></div>}
         </div>
       </section>
 

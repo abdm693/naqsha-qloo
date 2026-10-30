@@ -317,7 +317,7 @@ function Shell({ project, view }: { project: Project; view: ViewId }) {
   const keepHouse = houseKept && hasVersion(project) && view !== "brief";
 
   return (
-    <div className={cn("relative h-[100dvh] overflow-hidden", tone === "hud" ? "bg-hud" : "bg-canvas")} style={shellVars}>
+    <div data-dusk={view === "taste" || undefined} className={cn("relative h-[100dvh] overflow-hidden", tone === "hud" ? "bg-hud" : "bg-canvas")} style={shellVars}>
       {/* Top: title capsule · view switch · people. First in the DOM, so Tab reaches All homes, the title, the switch,
           Comments and Share before the view's own HUD. z-[31]: now that it comes first, it still paints over the view's z-30 layers exactly as it did when it came after them. */}
       {phone ? (
