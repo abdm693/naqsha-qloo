@@ -200,7 +200,7 @@ export function Dock(props: DockProps) {
           aria-label={next.label}
           className={cn(
             "group inline-flex h-[52px] items-center gap-2 rounded-[26px] bg-accent pl-5 pr-4 text-[15px] font-medium text-white shadow-e2 outline-none",
-            "transition-[background-color,transform,box-shadow] duration-[160ms] ease-out hover:bg-accent-press active:scale-[.97] focus-visible:shadow-[0_0_0_4px_rgb(39_71_245/.28)] disabled:opacity-50",
+            "transition-[background-color,transform,box-shadow] duration-[160ms] ease-out hover:bg-accent-press active:scale-[.97] focus-visible:shadow-[0_0_0_4px_rgb(107_42_94/.28)] disabled:opacity-50",
             phone && "h-11 rounded-full pl-4 pr-3 text-[14px]",
           )}
         >
@@ -235,7 +235,7 @@ export function Dock(props: DockProps) {
             aria-label="Ask Naqsha, go to or do"
             className={cn(
               "absolute inset-x-0 bottom-full mb-2 max-h-[min(420px,60dvh)] origin-bottom overflow-y-auto rounded-[20px] p-1.5 scrollbar-thin",
-              hud ? "bg-[rgb(24_24_27/.92)] text-hud-ink shadow-[inset_0_0_0_1px_rgb(255_255_255/.1),0_24px_60px_-20px_rgb(0_0_0/.6)] backdrop-blur-xl" : "bg-surface shadow-e3",
+              hud ? "bg-hud/92 text-hud-ink shadow-[inset_0_0_0_1px_rgb(255_255_255/.1),0_24px_60px_-20px_rgb(0_0_0/.6)] backdrop-blur-xl" : "bg-surface shadow-e3",
             )}
           >
             <PaletteList items={items} active={active} setActive={setActive} run={runItem} draft={draft} hud={hud} askLabel={askLabel} />
@@ -293,7 +293,7 @@ export function Dock(props: DockProps) {
                     title={conversation ? "Open the conversation (⌘J)" : undefined}
                     className={cn(
                       "flex max-w-full items-center gap-2 rounded-full py-1.5 pl-1.5 pr-3.5 text-left text-[14px] leading-5 outline-none transition-colors focus-visible:shadow-focus",
-                      hud ? "glass-hud text-hud-ink hover:bg-[rgb(24_24_27/.86)]" : "glass-light text-ink-2 hover:text-ink",
+                      hud ? "glass-hud text-hud-ink hover:bg-hud/86" : "glass-light text-ink-2 hover:text-ink",
                       phone && "min-w-0 flex-1 rounded-[20px] text-[13px] leading-[18px]",
                     )}
                   >

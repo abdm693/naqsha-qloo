@@ -21,6 +21,7 @@ import { BriefView } from "@/app/setup/BriefView";
 import { ConceptsView } from "@/app/concepts/ConceptsView";
 import { PlanView } from "@/app/plan/PlanView";
 import { RevisionsView } from "@/app/revisions/RevisionsView";
+import { TasteView } from "@/app/taste/TasteView";
 import { useAsk, useAskStore } from "./ask";
 import { buildCommands } from "./commands";
 import { ConversationSheet } from "./ConversationSheet";
@@ -40,6 +41,7 @@ const HouseView = lazy(() => import("@/app/explore/HouseView").then((m) => ({ de
 type ViewProps = { project: Project; onProjectChange(p: Project): void; active?: boolean };
 const VIEW_COMPONENT: Record<ViewId, ComponentType<ViewProps>> = {
   brief: BriefView,
+  taste: TasteView,
   concepts: ConceptsView,
   plan: PlanView,
   house: HouseView,
@@ -193,6 +195,9 @@ function Shell({ project, view }: { project: Project; view: ViewId }) {
     switch (view) {
       case "brief":
         return lastLine ?? "Tell me about the plot and who will live there. One message is enough.";
+      case "taste":
+        if (!project.taste) return "Tell me what each of you loves. I'll design the house around it.";
+        return "This is your taste, read with Qloo. Your concepts, rooms and garden come from it.";
       case "concepts":
         if (conceptsRunning) return null;
         if (!project.concepts.length) return "Your brief is ready. Shall I sketch four exteriors?";

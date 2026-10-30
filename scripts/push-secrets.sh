@@ -3,8 +3,8 @@
 # and lets the Cloud Run runtime service account read them. Prints names only, never values.
 set -e
 cd "$(dirname "$0")/.."
-export CLOUDSDK_ACTIVE_CONFIG_NAME=naqsha-nebius
-P=naqsha-nebius-424e
+export CLOUDSDK_ACTIVE_CONFIG_NAME=hack2skill
+P=project-d5fe6dd3-2b61-40b3-932
 for k in QLOO_API_KEY TAVILY_API_KEY; do
   name=${${k//_/-}:l}
   val=$(grep "^$k=" .env | cut -d= -f2-)

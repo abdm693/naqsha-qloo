@@ -36,19 +36,21 @@ export function Card({
   const interactive = !!(onClick || href);
   const Media = (
     <div
-      className="relative overflow-hidden rounded-card bg-surface-2 shadow-e1 transition-[box-shadow,transform] duration-[600ms] ease-out group-hover/card:-translate-y-0.5 group-hover/card:shadow-e2"
+      className="relative overflow-hidden rounded-card bg-surface-2 shadow-e1 transition-[box-shadow,transform] duration-[600ms] ease-out group-hover/card:-translate-y-1 group-hover/card:shadow-e2"
       style={{ aspectRatio: aspect }}
     >
       <div className="absolute inset-0 transition-transform duration-[600ms] ease-out group-hover/card:scale-[1.02] [&>img]:size-full [&>img]:object-cover">
         {media}
       </div>
+      {/* A hairline inside the frame keeps light images from bleeding into the canvas. */}
+      <div className="pointer-events-none absolute inset-0 rounded-card ring-1 ring-inset ring-[rgb(74_52_30/.06)]" aria-hidden />
       {badge && <div className="absolute left-3 top-3">{badge}</div>}
     </div>
   );
   const Text = (
     <div className="min-w-0 flex-1">
-      <h3 className="truncate text-[15px] font-semibold leading-[22px] tracking-[-.01em] text-ink">{title}</h3>
-      {caption && <p className="mt-0.5 truncate text-[13px] leading-[18px] text-ink-3">{caption}</p>}
+      <h3 className="truncate text-[16px] font-semibold leading-[22px] tracking-[-.01em] text-ink">{title}</h3>
+      {caption && <p className="mt-1 truncate text-[13px] leading-[18px] text-ink-3">{caption}</p>}
     </div>
   );
   return (
@@ -73,7 +75,7 @@ export function Card({
   );
 }
 
-/** A plain surface: white, radius 20, e1. For grouped content on the canvas. */
+/** A plain surface: warm white, radius 20, e1. For grouped content on the canvas. */
 export function Panel({ className, children, ...rest }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div className={cn("rounded-card bg-surface shadow-e1", className)} {...rest}>

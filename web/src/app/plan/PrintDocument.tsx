@@ -261,7 +261,7 @@ function FloorSheet({ plan, level, scale, project, sidebar, children }: { plan: 
             </tbody>
           </table>
           <div style={{ fontSize: mm(2.6), color: "#6E6E73", display: "flex", alignItems: "center", gap: "2mm" }}>
-            <span style={{ width: "6mm", borderTop: "0.3mm dashed #2747F5" }} /> Setback (building line)
+            <span style={{ width: "6mm", borderTop: "0.3mm dashed #6B2A5E" }} /> Setback (building line)
           </div>
           <div style={{ marginTop: "auto" }}>{children}</div>
         </FitColumn>

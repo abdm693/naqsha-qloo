@@ -125,7 +125,7 @@ export function Menu({
                 animate={{ opacity: 1, scale: 1, y: 0, transition: { duration: 0.16, ease: ease.out } }}
                 exit={{ opacity: 0, scale: 0.98, transition: { duration: 0.12, ease: ease.exit } }}
                 style={{ left: pos?.left ?? -9999, top: pos?.top ?? -9999, width, transformOrigin: `${align === "right" ? "right" : "left"} ${pos?.up ? "bottom" : "top"}` }}
-                className="fixed z-[85] rounded-[16px] bg-surface p-1.5 shadow-e3 outline-none"
+                className="fixed z-[85] rounded-[18px] bg-surface p-1.5 shadow-e3 outline-none"
               >
                 {items.map((it, i) => {
                   if ("separator" in it) return <div key={it.key ?? `sep-${i}`} className="mx-2 my-1.5 h-px bg-line" role="separator" />;

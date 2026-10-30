@@ -60,10 +60,10 @@ export const Composer = forwardRef<
   return (
     <div
       className={cn(
-        "nq-field flex min-h-[52px] items-end gap-1.5 rounded-[26px] p-2 transition-[box-shadow,border-color] duration-[160ms]",
+        "nq-field flex min-h-[52px] items-end gap-1.5 rounded-[26px] p-2 transition-[box-shadow,border-color] duration-200",
         hud
-          ? "glass-hud focus-within:shadow-[inset_0_0_0_1px_rgb(125_147_255/.6)]"
-          : "border border-line-strong bg-surface shadow-e1 focus-within:border-accent focus-within:shadow-focus",
+          ? "glass-hud focus-within:shadow-[inset_0_0_0_1px_rgb(242_184_219/.6)]"
+          : "border border-line-strong bg-surface shadow-e1 hover:border-ink-4/60 focus-within:border-accent focus-within:shadow-focus",
         disabled && "opacity-60",
         className,
       )}

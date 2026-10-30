@@ -21,7 +21,7 @@ from pydantic import BaseModel
 from starlette.middleware.gzip import GZipMiddleware
 
 from . import auth, busy, config, runs, sse
-from .agents import architect, concepts, importer, intake, jsfix, research, reviser, reviser_adk, views
+from .agents import architect, concepts, importer, intake, jsfix, research, reviser, reviser_adk, taste, views
 from .auth import Identity
 from .compliance import lda
 from .store import blobs, db
@@ -34,9 +34,9 @@ app = FastAPI(title="Naqsha API")
 app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=6)
 
 PUBLIC_FIELDS = ("id", "name", "created_at", "updated_at", "stage", "brief", "envelope", "concepts", "selected_concept_id",
-                 "versions", "current_version_id", "thumbnail_url", "brief_changed", "cloned_from", "imported")
+                 "versions", "current_version_id", "thumbnail_url", "brief_changed", "cloned_from", "imported", "taste")
 CLIENT_FIELDS = ("id", "name", "created_at", "updated_at", "stage", "concepts", "selected_concept_id", "versions",
-                 "current_version_id", "thumbnail_url")
+                 "current_version_id", "thumbnail_url", "taste")
 RANK = {"client": 1, "team": 2, "owner": 3}
 NEED = {"view": 1, "comment": 1, "edit": 2, "owner": 3}
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -562,6 +562,49 @@ async def messages(pid: str, me: Identity = Depends(auth.identity)):
 async def intake_turn(pid: str, body: IntakeBody, me: Identity = Depends(auth.identity)):
     p, _ = await access(pid, me, "edit")
     return sse.stream(intake.run_turn(p, body.message, body.action, body.chips))
+
+
+# --- taste (Qloo) ------------------------------------------------------------------------------------------------------
+class Favourite(BaseModel):
+    kind: str | None = None
+    name: str
+
+
+class TastePerson(BaseModel):
+    label: str = "You"
+    role: str | None = None   # e.g. parents, kids, everyone
+    favourites: list[Favourite] = []
+
+
+class TasteBody(BaseModel):
+    people: list[TastePerson]
+    location: str | None = None
+    notes: str | None = None
+
+
+@app.post("/api/projects/{pid}/taste")
+async def taste_run(pid: str, body: TasteBody, me: Identity = Depends(auth.identity)):
+    """The family's favourites and neighbourhood -> Qloo -> their style brief (streamed: step, favourites, profile, brief)."""
+    p, _ = await access(pid, me, "edit")
+    data = body.model_dump()
+    data["people"] = [{**x, "favourites": [f for f in x["favourites"] if f["name"].strip()][:12]} for x in data["people"]][:6]
+
+    async def gen():
+        brief = p.get("brief") or {}
+        async for ev in taste.run(brief, data):
+            if ev[0] == "brief":
+                style = ev[1]["style"]
+                saved = {"input": data, "profile": ev[1]["profile"], "style": style, "at": db.now()}
+                ext = style.get("exterior") or {}
+                new_brief = {**brief, "taste": data}
+                if ext.get("style"):
+                    new_brief["style"] = ext["style"]
+                    new_brief["style_notes"] = "; ".join(x for x in [", ".join(ext.get("materials") or []), ext.get("massing")] if x)
+                await db.update_project(pid, taste=saved, brief=new_brief, brief_changed=bool(p.get("versions")))
+                yield "taste", saved
+            else:
+                yield ev
+    return sse.stream(gen())
 
 
 # --- LDA --------------------------------------------------------------------------------------------------------------

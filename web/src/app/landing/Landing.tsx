@@ -1,11 +1,11 @@
 /**
- * The landing page (/): what Naqsha does for a family or a builder, in plain business language, with the
- * house-under-construction animation, and a separate Portal button into the app (/app).
+ * The landing page (/): what Naqsha does for a family or a builder, in plain language, with the
+ * house-under-construction animation, the taste section (Qloo), and a separate Portal button into the app (/app).
  */
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, useReducedMotion } from "motion/react";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import type { Project } from "@contracts/api-types";
 import { api, assetUrl } from "@/api/client";
 import { cn } from "@/app/lib/utils";
@@ -18,6 +18,7 @@ import { Construction } from "./Construction";
 
 // Hyphenated compounds use U+2011 (a non-breaking hyphen) so "approval‑ready" never splits across lines.
 const benefits = (counts: SampleCounts | null): { title: string; line: string }[] => [
+  { title: "Designed around your family's taste", line: "Share the films, music and places you love. Qloo's taste graph turns them into colours, materials and rooms that feel like yours." },
   { title: "Plot to a checked floor plan the same afternoon", line: "Tell Naqsha the plot and the family, and get dimensioned floor plans before the chai goes cold." },
   {
     title: "Checked against the bylaws, every time",
@@ -27,16 +28,34 @@ const benefits = (counts: SampleCounts | null): { title: string; line: string }[
       : "Every bylaw that applies to your plot (LDA in this prototype), and the livable rules: setbacks, coverage, height, stairs to the roof, railings at every drop.",
   },
   { title: "Start from your own drawing", line: "Have a naqsha from your architect, or a sketch on paper? Upload a photo of it. Naqsha reads every room and builds from your layout, changing only what the rules need." },
-  { title: "Rules for your city, looked up for you", line: "Outside Lahore, Naqsha searches the web for your authority's building rules and checks the design against them, with every source linked." },
-  { title: "See it from every angle", line: "Photos from the road, the street corner, the garden and the air, each made from the 3D model, so every picture shows the house on the plan." },
-  { title: "Walk your home before you build it", line: "Room by room, on any laptop or phone. Find the cramped bedroom while it costs nothing to fix." },
+  { title: "Rules for your city, looked up for you", line: "Outside Lahore, Naqsha searches the web with Tavily for your authority's building rules and checks the design against them, with every source linked." },
+  { title: "Walk your home before you build it", line: "Room by room, on any laptop or phone, with photos from the road, the garden and the air. Find the cramped bedroom while it costs nothing to fix." },
   { title: "Change it by asking", line: "Pin a note on a wall or type what you want. Naqsha returns the next version, still compliant, and answers every note in its thread." },
   { title: "Drawings your contractor can use", line: "Print every floor to scale with a title block, area schedule and compliance sheet, on A3 or A4, or save it as a PDF." },
 ];
 
+/** The taste section's example: what a family shares, what Qloo finds in it, and what changes in the house. */
+const TASTE = {
+  shares: [
+    { kind: "Films", value: "Joyland, Bol" },
+    { kind: "Music", value: "Coke Studio, Abida Parveen" },
+    { kind: "Places", value: "The walled city, Lahore Fort" },
+    { kind: "Neighbourhood", value: "Model Town" },
+  ],
+  finds: ["Craft and heritage over gloss", "Courtyards, shade and evening light", "Earthy colours: terracotta, teak, brass", "Rooms for gathering, music and long dinners"],
+  changes: ["A courtyard at the centre of the ground floor", "Jaali screens to shade the west façade", "Lime plaster, teak doors and brass fittings", "A bigger family lounge, a smaller drawing room"],
+};
+
+/** What this edition runs on. */
+const STACK: { name: string; line: string }[] = [
+  { name: "Qloo taste graph", line: "Finds what a family's favourite films, music and places say about the home they want." },
+  { name: "Google Gemini on Vertex AI", line: "Talks with the family, designs the plan and the 3D house, and revises it from their notes." },
+  { name: "Tavily", line: "Looks up the local building rules for plots outside Lahore, with every source linked." },
+];
+
 const STEPS: { label: string; time: string; title: string; line: string }[] = [
-  { label: "Brief", time: "2 min", title: "Tell Naqsha about the plot", line: "Size, which way it faces, who will live there. One message is enough; Naqsha asks only what it still needs." },
-  { label: "Concepts", time: "1 min", title: "Choose a direction", line: "Four exteriors by day and by night. Pick one, and the 3D model is built to match it, feature by feature." },
+  { label: "Brief", time: "3 min", title: "Tell Naqsha about the plot and the family", line: "Size, which way it faces, who will live there and what they love. Naqsha asks only what it still needs." },
+  { label: "Concepts", time: "1 min", title: "Choose a direction", line: "Exteriors by day and by night, shaped by your family's taste. Pick one, and the 3D model is built to match it." },
   { label: "Plan", time: "5 min", title: "See every floor, checked", line: "Dimensioned floors with doors and furniture, checked against LDA and livable rules as they are drawn. Print it for your contractor." },
   { label: "House", time: "5 min", title: "Walk it, change it, share it", line: "Walk through in 3D, pin notes for changes, and bring in your family, your architect or your client." },
 ];
@@ -51,7 +70,7 @@ export function Landing() {
   const [samples, setSamples] = useState<Project[] | null>(null);
 
   useEffect(() => {
-    document.title = "Naqsha · Walk through your home before the first brick";
+    document.title = "Naqsha · A home that feels like your family";
     const on = () => setScrolled(window.scrollY > 8);
     on();
     window.addEventListener("scroll", on, { passive: true });
@@ -82,7 +101,13 @@ export function Landing() {
   };
 
   return (
-    <div className="min-h-[100dvh] overflow-x-clip bg-canvas text-ink">
+    <div className="relative min-h-[100dvh] overflow-x-clip bg-canvas text-ink">
+      {/* A low, warm light across the top of the page, like late sun on a plastered wall. */}
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-[900px]"
+        style={{ background: "radial-gradient(60% 55% at 78% 8%, rgb(226 186 140 / .28), transparent 70%), radial-gradient(45% 40% at 8% 0%, rgb(236 214 190 / .35), transparent 70%)" }}
+        aria-hidden
+      />
       {/* Header */}
       <header
         className={cn(
@@ -95,6 +120,9 @@ export function Landing() {
             <Wordmark />
           </Link>
           <nav aria-label="Main" className="flex items-center gap-1 sm:gap-2">
+            <a href="#taste" className={cn(NAV_LINK, "hidden md:inline-flex")}>
+              Taste
+            </a>
             <a href="#how" className={cn(NAV_LINK, "hidden md:inline-flex")}>
               How it works
             </a>
@@ -109,7 +137,7 @@ export function Landing() {
         </div>
       </header>
 
-      <main>
+      <main className="relative">
         {/* Hero */}
         <section
           className="mx-auto grid max-w-[1280px] grid-cols-1 items-center gap-12 px-4 pt-28 sm:px-8 sm:pt-32 lg:min-h-[min(860px,100svh)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-16 lg:pb-8 lg:pt-28"
@@ -121,9 +149,9 @@ export function Landing() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: ease.out }}
-              className="max-w-[12ch] text-[clamp(2.75rem,5.6vw,5.75rem)] font-semibold leading-[.96] tracking-[-.045em] text-ink"
+              className="max-w-[11ch] font-display text-[clamp(3.25rem,6.6vw,6.5rem)] font-normal leading-[.95] tracking-[-.02em] text-ink"
             >
-              Walk through your home before the <span className="text-accent">first brick.</span>
+              A home that feels like <em className="text-accent">your family.</em>
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 10 }}
@@ -131,7 +159,7 @@ export function Landing() {
               transition={{ duration: 0.6, ease: ease.out, delay: 0.08 }}
               className="mt-6 max-w-[33rem] text-body-lg text-ink-2 sm:mt-8 sm:text-[19px] sm:leading-[30px]"
             >
-              Describe your plot and your family in plain words. Naqsha designs the home like an experienced architect, checks it against your authority's bylaws, and builds it in 3D you can walk through, in minutes.
+              Tell Naqsha about your plot and the people who will live there. It learns your family's taste with Qloo, then designs a bylaw‑checked floor plan and a 3D home you can walk through, built around it.
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -152,7 +180,7 @@ export function Landing() {
               transition={{ duration: 0.6, ease: ease.out, delay: 0.24 }}
               className="mt-8 flex flex-wrap gap-x-5 gap-y-2 text-[14px] text-ink-3 sm:mt-10"
             >
-              {["Talk it through or upload a drawing", "Bylaw‑checked", "Walk every room"].map((t) => (
+              {["Learns your taste with Qloo", "Bylaw‑checked", "Walk every room"].map((t) => (
                 <li key={t} className="flex items-center gap-2">
                   <span className="size-1.5 rounded-full bg-accent" aria-hidden />
                   {t}
@@ -169,8 +197,74 @@ export function Landing() {
           </motion.div>
         </section>
 
+        {/* Taste (Qloo): the one place on the landing that uses the taste gradient. */}
+        <section id="taste" className="mx-auto max-w-[1280px] scroll-mt-24 px-4 pt-24 sm:px-8 sm:pt-32" aria-labelledby="taste-title">
+          <div className="taste-wash relative overflow-hidden rounded-media px-5 py-14 shadow-e1 sm:px-12 sm:py-20">
+            <Reveal className="max-w-[46rem]">
+              <p className="inline-flex items-center gap-2 text-[13px] font-medium text-taste-ink">
+                <span className="taste-gradient size-2 rounded-full" aria-hidden />
+                Home is where the heart is
+              </p>
+              <h2 id="taste-title" className="mt-4 font-display text-[40px]/[44px] font-normal tracking-[-.015em] text-ink sm:text-display">
+                A house that knows <em className="taste-text pr-1">what you love.</em>
+              </h2>
+              <p className="mt-4 text-body-lg text-ink-2">
+                Two families on the same plot should not get the same house. Tell Naqsha the films you rewatch, the music in the car and the places you keep going back to. Qloo's taste graph finds what those choices have in common, and the design follows it.
+              </p>
+            </Reveal>
+            <ol className="mt-12 grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-5">
+              <TasteStep n={1} title="What your family shares">
+                <ul className="flex flex-col gap-2.5">
+                  {TASTE.shares.map((t) => (
+                    <li key={t.kind} className="flex items-baseline gap-3 rounded-[14px] bg-surface-2/70 px-3.5 py-2.5">
+                      <span className="w-24 shrink-0 text-[12px] font-medium text-ink-3">{t.kind}</span>
+                      <span className="min-w-0 text-[14px] leading-5 text-ink">{t.value}</span>
+                    </li>
+                  ))}
+                </ul>
+              </TasteStep>
+              <TasteStep n={2} title="What Qloo finds" featured>
+                <ul className="flex flex-col gap-3">
+                  {TASTE.finds.map((t) => (
+                    <li key={t} className="flex items-start gap-3 text-[15px] leading-[22px] text-ink">
+                      <span className="taste-gradient mt-[7px] size-2 shrink-0 rounded-full" aria-hidden />
+                      {t}
+                    </li>
+                  ))}
+                </ul>
+              </TasteStep>
+              <TasteStep n={3} title="How the house changes">
+                <ul className="flex flex-col gap-3">
+                  {TASTE.changes.map((t) => (
+                    <li key={t} className="flex items-start gap-3 text-[15px] leading-[22px] text-ink">
+                      <Check className="mt-[3px] size-4 shrink-0 text-accent" strokeWidth={2} aria-hidden />
+                      {t}
+                    </li>
+                  ))}
+                </ul>
+              </TasteStep>
+            </ol>
+            <p className="mt-6 max-w-[40rem] text-[13px] leading-5 text-ink-3">
+              An example family. Your own answers shape your own house, and every change is still checked against the bylaws.
+            </p>
+          </div>
+        </section>
+
+        {/* What it runs on */}
+        <section className="mx-auto max-w-[1280px] px-4 pt-16 sm:px-8 sm:pt-20" aria-labelledby="stack-title">
+          <h2 id="stack-title" className="text-[13px] font-medium text-ink-3">What it runs on</h2>
+          <ul className="mt-4 grid grid-cols-1 gap-px overflow-hidden rounded-card bg-line shadow-e1 sm:grid-cols-3">
+            {STACK.map((t) => (
+              <li key={t.name} className="bg-surface px-5 py-5 sm:px-6">
+                <p className="text-[15px] font-semibold tracking-[-.01em] text-ink">{t.name}</p>
+                <p className="mt-1 text-[14px] leading-[21px] text-ink-2">{t.line}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+
         {/* Benefits */}
-        <section className="mx-auto max-w-[1280px] px-4 pt-28 sm:px-8 sm:pt-36" aria-labelledby="benefits-title">
+        <section className="mx-auto max-w-[1280px] px-4 pt-24 sm:px-8 sm:pt-32" aria-labelledby="benefits-title">
           <SectionHead
             id="benefits-title"
             title="Everything between the plot and the contractor."
@@ -178,10 +272,13 @@ export function Landing() {
           />
           <ul className="mt-14 grid grid-cols-1 gap-x-10 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
             {benefits(counts).map((b, i) => (
-              <Reveal key={b.title} delay={(i % 3) * 0.06} as="li">
-                <div className="h-px w-10 bg-ink" aria-hidden />
+              <Reveal key={b.title} delay={(i % 4) * 0.06} as="li">
+                <div className="flex items-center gap-3" aria-hidden>
+                  <span className="font-display text-[22px] italic leading-none text-accent">{String(i + 1).padStart(2, "0")}</span>
+                  <span className="h-px flex-1 bg-line-strong" />
+                </div>
                 {/* Two lines reserved: a title that wraps never pushes its body below its neighbours'. */}
-                <h3 className="mt-5 text-heading text-ink sm:min-h-[2lh]">{b.title}</h3>
+                <h3 className="mt-4 text-heading text-ink sm:min-h-[2lh]">{b.title}</h3>
                 <p className="mt-2 text-[15px] leading-[24px] text-ink-2">{b.line}</p>
               </Reveal>
             ))}
@@ -190,13 +287,13 @@ export function Landing() {
 
         {/* How it works */}
         <section id="how" className="mx-auto max-w-[1280px] scroll-mt-24 px-4 pt-28 sm:px-8 sm:pt-36" aria-labelledby="how-title">
-          <div className="rounded-media bg-surface px-5 py-14 shadow-e1 sm:px-12 sm:py-20">
+          <div className="rounded-media bg-surface px-5 py-14 shadow-e2 sm:px-12 sm:py-20">
             <SectionHead id="how-title" title="How it works" line="Four views of one home, one conversation. You can stop at any point and come back." />
             <ol className="mt-14 grid grid-cols-1 gap-10 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
               {STEPS.map((s, i) => (
                 <Reveal key={s.label} delay={i * 0.08} as="li" className="relative">
                   <div className="flex items-center gap-3">
-                    <span className="text-[13px] font-semibold text-accent">{s.label}</span>
+                    <span className="inline-flex h-7 items-center rounded-full bg-accent-soft px-3 text-[13px] font-semibold text-accent">{s.label}</span>
                     <span className="h-px flex-1 bg-line" aria-hidden />
                     <span className="tabular text-[12px] font-medium text-ink-3">{s.time}</span>
                   </div>
@@ -223,7 +320,7 @@ export function Landing() {
               {[0, 1].map((i) => (
                 <li key={i} className="flex flex-col gap-3">
                   <div className="relative aspect-[4/3] overflow-hidden rounded-card bg-surface-2">
-                    <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/60 to-transparent" />
+                    <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-surface/70 to-transparent" />
                   </div>
                   <div className="h-4 w-2/3 rounded-full bg-surface-2" />
                   <div className="h-3 w-1/2 rounded-full bg-surface-2" />
@@ -245,7 +342,7 @@ export function Landing() {
                       className="group/s block w-full text-left outline-none disabled:cursor-progress"
                       aria-label={`Explore the sample home: ${sampleTitle(s.name)}`}
                     >
-                      <span className="relative block overflow-hidden rounded-card bg-surface-2 shadow-e1 transition-[box-shadow,transform] duration-[600ms] ease-out group-hover/s:-translate-y-0.5 group-hover/s:shadow-e2 group-focus-visible/s:shadow-focus">
+                      <span className="relative block overflow-hidden rounded-card bg-surface-2 shadow-e1 transition-[box-shadow,transform] duration-[600ms] ease-out group-hover/s:-translate-y-1 group-hover/s:shadow-e2 group-focus-visible/s:shadow-focus">
                         {img ? (
                           <img src={img} alt="" loading="lazy" className="aspect-[4/3] w-full object-cover transition-transform duration-[600ms] ease-out group-hover/s:scale-[1.02]" />
                         ) : (
@@ -258,8 +355,8 @@ export function Landing() {
                           </span>
                         )}
                       </span>
-                      <span className="mt-3 block px-0.5 text-[15px] font-semibold tracking-[-.01em] text-ink">{sampleTitle(s.name)}</span>
-                      <span className="block px-0.5 text-[13px] text-ink-3">{sampleCaption(s)}</span>
+                      <span className="mt-4 block px-0.5 font-display text-[24px] leading-[28px] text-ink">{sampleTitle(s.name)}</span>
+                      <span className="mt-1 block px-0.5 text-[13px] text-ink-3">{sampleCaption(s)}</span>
                     </button>
                   </Reveal>
                 );
@@ -274,16 +371,19 @@ export function Landing() {
 
         {/* For builders */}
         <section className="mx-auto max-w-[1280px] px-4 pt-28 sm:px-8 sm:pt-36" aria-labelledby="builders-title">
-          <div className="flex flex-col items-start gap-8 rounded-media bg-ink px-6 py-14 text-white sm:px-12 sm:py-20 lg:flex-row lg:items-end lg:justify-between">
+          <div
+            className="flex flex-col items-start gap-8 rounded-media bg-ink px-6 py-14 text-white shadow-e3 sm:px-12 sm:py-20 lg:flex-row lg:items-end lg:justify-between"
+            style={{ backgroundImage: "radial-gradient(70% 90% at 100% 0%, rgb(107 42 94 / .45), transparent 65%)" }}
+          >
             <div className="max-w-[40rem]">
-              <h2 id="builders-title" className="text-[32px]/[38px] font-semibold tracking-[-.03em] sm:text-display">
+              <h2 id="builders-title" className="font-display text-[36px]/[40px] font-normal tracking-[-.015em] sm:text-display">
                 For builders and architects: win the client in the first meeting.
               </h2>
-              <p className="mt-4 text-body-lg text-white/70">
+              <p className="mt-4 text-body-lg text-white/75">
                 Arrive with a laptop. Leave with a walkable design the family has already commented on, and a link they can share with everyone who has a say.
               </p>
             </div>
-            <Link to="/app" className={buttonClass("secondary", "lg", "border-transparent bg-white text-ink hover:bg-white/90")}>
+            <Link to="/app" className={buttonClass("secondary", "lg", "border-transparent bg-surface text-ink hover:bg-surface-2")}>
               Portal
               <ArrowRight className="size-4" strokeWidth={2} />
             </Link>
@@ -296,16 +396,17 @@ export function Landing() {
         <div className="flex flex-col gap-8 border-t border-line pt-10 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <Wordmark />
-            <p className="mt-3 max-w-xs text-[14px] leading-[22px] text-ink-3">Homes designed with you, checked against your city's rules, and ready to walk.</p>
+            <p className="mt-3 max-w-xs text-[14px] leading-[22px] text-ink-3">Homes designed around your family, checked against your city's rules, and ready to walk.</p>
           </div>
           <nav aria-label="Footer" className="grid grid-cols-2 gap-x-12 text-[14px]">
             <Link to="/app" className="inline-flex min-h-11 items-center text-ink-2 hover:text-ink sm:min-h-8">Portal</Link>
+            <a href="#taste" className="inline-flex min-h-11 items-center text-ink-2 hover:text-ink sm:min-h-8">Taste</a>
             <a href="#how" className="inline-flex min-h-11 items-center text-ink-2 hover:text-ink sm:min-h-8">How it works</a>
             <a href="#samples" className="inline-flex min-h-11 items-center text-ink-2 hover:text-ink sm:min-h-8">Samples</a>
             <Link to="/app/signin" className="inline-flex min-h-11 items-center text-ink-2 hover:text-ink sm:min-h-8">Sign in</Link>
           </nav>
         </div>
-        <p className="mt-10 text-[13px] text-ink-3">© 2026 Naqsha · Made in Lahore · Designed by NVIDIA Nemotron on Nebius Token Factory · Open source (AGPL‑3.0)</p>
+        <p className="mt-10 text-[13px] text-ink-3">© 2026 Naqsha · Made in Lahore · Taste from Qloo · Designed with Google Gemini on Vertex AI · Local rules found with Tavily · Open source (AGPL‑3.0)</p>
       </footer>
     </div>
   );
@@ -357,7 +458,7 @@ function HeroMedia({ counts }: { counts: SampleCounts | null }) {
               )}
               style={{
                 backgroundImage:
-                  "linear-gradient(rgb(17 17 19 / .045) 1px, transparent 1px), linear-gradient(90deg, rgb(17 17 19 / .045) 1px, transparent 1px)",
+                  "linear-gradient(rgb(74 52 30 / .05) 1px, transparent 1px), linear-gradient(90deg, rgb(74 52 30 / .05) 1px, transparent 1px)",
                 backgroundSize: "24px 24px",
               }}
               aria-hidden={stage !== "draw"}
@@ -366,11 +467,11 @@ function HeroMedia({ counts }: { counts: SampleCounts | null }) {
             </div>
           </>
         )}
-        <div className="pointer-events-none absolute inset-0 rounded-media ring-1 ring-inset ring-black/5" aria-hidden />
+        <div className="pointer-events-none absolute inset-0 rounded-media ring-1 ring-inset ring-[rgb(74_52_30/.08)]" aria-hidden />
       </div>
       <figcaption
         className={cn(
-          "absolute left-4 top-4 flex items-center gap-2 rounded-full bg-white/85 px-3 py-1.5 text-[13px] font-medium text-ink shadow-e1 backdrop-blur transition-opacity duration-700 sm:left-5 sm:top-5",
+          "absolute left-4 top-4 flex items-center gap-2 rounded-full bg-surface/85 px-3 py-1.5 text-[13px] font-medium text-ink shadow-e1 backdrop-blur transition-opacity duration-700 sm:left-5 sm:top-5",
           stage === "build" ? "opacity-100" : "opacity-0",
         )}
       >
@@ -381,10 +482,33 @@ function HeroMedia({ counts }: { counts: SampleCounts | null }) {
   );
 }
 
+/** One step of the taste section: a numbered card. The middle one ("What Qloo finds") wears the taste ring. */
+function TasteStep({ n, title, featured, children }: { n: number; title: string; featured?: boolean; children: ReactNode }) {
+  return (
+    <Reveal as="li" delay={(n - 1) * 0.08} className="relative">
+      {n > 1 && (
+        <span
+          className="absolute left-1/2 top-0 z-[1] grid size-7 -translate-x-1/2 -translate-y-[22px] place-items-center rounded-full bg-surface text-ink-3 shadow-e1 lg:left-0 lg:top-1/2 lg:-translate-x-[24px] lg:-translate-y-1/2"
+          aria-hidden
+        >
+          <ArrowRight className="size-3.5 rotate-90 lg:rotate-0" strokeWidth={2} />
+        </span>
+      )}
+      <div className={cn("h-full rounded-card p-6 sm:p-7", featured ? "taste-ring taste-glow" : "bg-surface/85 shadow-e1 backdrop-blur-sm")}>
+        <p className="flex items-center gap-2.5">
+          <span className={cn("grid size-6 place-items-center rounded-full text-[12px] font-semibold", featured ? "bg-taste-3 text-white" : "bg-surface-2 text-ink-2")}>{n}</span>
+          <span className="text-[13px] font-semibold text-ink-2">{title}</span>
+        </p>
+        <div className="mt-5">{children}</div>
+      </div>
+    </Reveal>
+  );
+}
+
 function SectionHead({ id, title, line }: { id: string; title: string; line: string }) {
   return (
     <Reveal className="max-w-[44rem]">
-      <h2 id={id} className="text-[32px]/[38px] font-semibold tracking-[-.03em] text-ink sm:text-display">{title}</h2>
+      <h2 id={id} className="font-display text-[40px]/[44px] font-normal tracking-[-.015em] text-ink sm:text-display">{title}</h2>
       <p className="mt-4 text-body-lg text-ink-2">{line}</p>
     </Reveal>
   );

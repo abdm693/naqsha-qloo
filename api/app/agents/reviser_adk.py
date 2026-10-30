@@ -12,18 +12,18 @@ from __future__ import annotations
 import asyncio
 import copy
 import json
-from typing import AsyncIterator
+from typing import AsyncIterator, Optional
 
 from google.adk import Agent, Runner
 
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
-from .. import config, llm
+from .. import config, llm, qloo
 from ..compliance import lda
 from ..gemini import RETRY
 from ..store import db
-from .architect import BUILD_SYSTEM, CONTRACTS, _read, prepare
+from .architect import BUILD_SYSTEM, CONTRACTS, _read, prepare, taste_text
 from .reviser import (ANSWER_RULES, apply_ops, comment_brief, context_text, finalize, merge_sections, new_failures, reading_line,
                       snapshot_parts, solar_text)
 
@@ -41,6 +41,9 @@ Work quickly and in as few steps as possible, calling independent tools together
    "rejected" or "partial", say which rule in plain words, and offer an alternative.
 3. Visual changes (materials, colours, furniture, facade, lighting) use write_section with the FULL new code; call
    sdk_reference once before writing code. If a room changed size, rewrite its furnish_<room_id> section too.
+   When a note asks for a feel or names something they love ("more like Istanbul", "cosier, like our favourite cafe"), call
+   qloo_taste first and design that change from the tags it returns. THE FAMILY'S TASTE (when given) is their Qloo style
+   brief: keep every change in that language unless the note asks otherwise.
 4. Finish with ONE finish call: the list of changes and one friendly resolution (one or two sentences) per comment.
 Make the smallest change that satisfies each note and keep everything else identical. The `structure` section rebuilds walls,
 openings, stairs and slabs from the plan automatically; only rewrite it to change structural materials.
@@ -66,6 +69,7 @@ class Workspace:
         self.changes: list[dict] = []
         self.plan_changed = False
         self.finished = False
+        self.qloo: list[dict] = []  # what the taste tool looked up, shown with the revision
         self.events: list[tuple[str, dict]] = []  # SSE events produced by tools, drained by the runner loop
 
     def room_name(self, rid: str) -> str:
@@ -200,8 +204,30 @@ class Workspace:
             ws.finished = True
             return {"ok": True}
 
+        async def qloo_taste(name: str, kind: Optional[str] = None) -> dict:
+            """Ask Qloo's taste graph what something the family names feels like, when a note asks for a feel ("more like
+            Istanbul", "like a Wes Anderson film", "cosier, like our favourite cafe"). Use the tags it returns as the
+            design language for that change, and mention them in the resolution.
+
+            Args:
+              name: What they named: a place, film, show, artist, restaurant or brand.
+              kind: film, show, artist, book, destination, restaurant or brand, if clear.
+            """
+            try:
+                hits = await qloo.search(name, kind, take=1)
+                if not hits:
+                    return {"found": False}
+                e = hits[0]
+                feel = await qloo.taste_tags([e["id"]], qloo.FEEL_TAGS, take=10)
+                tags = await qloo.taste_tags([e["id"]], take=10)
+                ws.qloo.append({"name": e["name"], "tags": [t["name"] for t in feel + tags][:12]})
+                return {"found": True, "name": e["name"], "type": e.get("type"), "own_tags": [t["name"] for t in e.get("tags") or []][:12],
+                        "feel_tags": [t["name"] for t in feel], "taste_tags": [t["name"] for t in tags]}
+            except qloo.QlooError as err:
+                return {"found": False, "error": str(err)[:160]}
+
         return [get_rooms, list_sections, read_sections, sdk_reference, check_plan_ops, apply_plan_ops, write_section,
-                remove_section, finish]
+                remove_section, qloo_taste, finish]
 
 
 STALL_S = 600.0  # one agent step (a model call plus its tools) that takes longer than this has stalled
@@ -247,7 +273,9 @@ async def revise(project: dict, version: dict, comments: list[dict], instruction
     text = (f"THE BYLAWS HERE ARE {name}'s ({auth}); when a rule blocks a request, name {auth}, never another authority.\n"
             f"{auth} ENVELOPE: {json.dumps({k: env.get(k) for k in ('setbacks_ft', 'max_coverage_pct', 'max_height_ft', 'max_storeys', 'buildable_rect')})}\n"
             f"BRIEF: {json.dumps({k: brief.get(k) for k in ('storeys', 'bedrooms', 'floors', 'preferences', 'style', 'water_tank', 'solar') if brief.get(k)})}\n"
-            f"ROOMS: {json.dumps([{k: r[k] for k in ('id', 'name', 'type', 'level', 'rect')} for r in ws.plan['rooms']], separators=(',', ':'))}\n"
+            + (f"THE FAMILY'S TASTE (Qloo style brief): {taste_text((project.get('taste') or {}).get('style'))}\n"
+               if (project.get("taste") or {}).get("style") else "")
+            + f"ROOMS: {json.dumps([{k: r[k] for k in ('id', 'name', 'type', 'level', 'rect')} for r in ws.plan['rooms']], separators=(',', ':'))}\n"
             f"SECTIONS: {', '.join(s['name'] for s in ws.sections)}\n"
             + solar_text(ws.plan) + "\n" + await context_text(pid, version)
             + (f"WALKTHROUGH COMMENTS:\n{json.dumps(comment_brief(comments), indent=1)}\n\n" if comments else "")

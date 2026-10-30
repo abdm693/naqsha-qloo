@@ -24,7 +24,7 @@ const INK = "#111113";
 const INK2 = "#46464B";
 const INK3 = "#6E6E73";
 const LINE = "#CFCFC8";
-const ACCENT = "#2747F5";
+const ACCENT = "#6B2A5E";
 const PAPER = "#FFFFFF";
 const TONE: Record<HighlightTone, string> = { accent: ACCENT, fail: "#C8281E", warn: "#A35A00", pass: "#0E7A55" };
 const HUE = ["#0D7C72", "#6A4FD6", "#C23F78", "#A8641A", "#4F6378", "#2F7A3A"];
@@ -237,7 +237,7 @@ export const PlanSheet = memo(function PlanSheet({
       ))}
       {hovered && (() => {
         const r = geo.rooms.find((x) => x.id === hovered);
-        return r ? <rect {...rect(r.rect)} fill="rgb(39 71 245 / 0.06)" stroke={ACCENT} strokeWidth={1.5} vectorEffect="non-scaling-stroke" pointerEvents="none" /> : null;
+        return r ? <rect {...rect(r.rect)} fill="rgb(107 42 94 / 0.06)" stroke={ACCENT} strokeWidth={1.5} vectorEffect="non-scaling-stroke" pointerEvents="none" /> : null;
       })()}
 
       {/* Issues and highlights */}
@@ -246,7 +246,7 @@ export const PlanSheet = memo(function PlanSheet({
         {geo.rooms.filter((r) => hl.has(r.id)).map((r) => (
           <rect key={`hl-${r.id}`} {...rect(r.rect)} fill={TONE[tone]} opacity={0.12} className="fp-pulse" />
         ))}
-        {geo.rooms.filter((r) => chg.has(r.id)).map((r) => <rect key={`chg-${r.id}`} {...rect(r.rect)} fill="rgb(39 71 245 / 0.07)" />)}
+        {geo.rooms.filter((r) => chg.has(r.id)).map((r) => <rect key={`chg-${r.id}`} {...rect(r.rect)} fill="rgb(107 42 94 / 0.07)" />)}
       </g>
 
       {/* Stairs (on the roof they are drawn again after the stair tower, see below) */}
@@ -411,13 +411,13 @@ export function PlanDefs({ ppf }: { ppf: number }) {
         <path d="M0 0V1.4" stroke="rgb(17 17 19 / 0.07)" strokeWidth={0.8 / ppf} />
       </pattern>
       <pattern id="fp-setback" width="1.6" height="1.6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-        <path d="M0 0V1.6" stroke="rgb(39 71 245 / 0.07)" strokeWidth={0.8 / ppf} />
+        <path d="M0 0V1.6" stroke="rgb(107 42 94 / 0.07)" strokeWidth={0.8 / ppf} />
       </pattern>
       <pattern id="fp-issue" width="1.1" height="1.1" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
         <path d="M0 0V1.1" stroke="rgb(200 40 30 / 0.3)" strokeWidth={1 / ppf} />
       </pattern>
       <pattern id="fp-solar" width="3.4" height="5.6" patternUnits="userSpaceOnUse">
-        <rect x="0.15" y="0.15" width="3.1" height="5.3" fill="rgb(39 71 245 / 0.10)" stroke="rgb(39 71 245 / 0.55)" strokeWidth={0.8 / ppf} />
+        <rect x="0.15" y="0.15" width="3.1" height="5.3" fill="rgb(107 42 94 / 0.10)" stroke="rgb(107 42 94 / 0.55)" strokeWidth={0.8 / ppf} />
       </pattern>
       <marker id="fp-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
         <path d="M0 1L9 5L0 9Z" fill={INK} />
@@ -593,7 +593,7 @@ function RoofExtras({ plan, Y }: { plan: BuildingPlan; Y: (y: number) => number;
   return (
     <g>
       {solar?.rect && (
-        <rect {...{ x: solar.rect.x, y: Y(solar.rect.y + solar.rect.d), width: solar.rect.w, height: solar.rect.d }} fill={solar.mode === "panels" ? "url(#fp-solar)" : "rgb(39 71 245 / 0.04)"} stroke={ACCENT} strokeWidth={1} strokeDasharray={solar.mode === "panels" ? undefined : "5 4"} vectorEffect="non-scaling-stroke" />
+        <rect {...{ x: solar.rect.x, y: Y(solar.rect.y + solar.rect.d), width: solar.rect.w, height: solar.rect.d }} fill={solar.mode === "panels" ? "url(#fp-solar)" : "rgb(107 42 94 / 0.04)"} stroke={ACCENT} strokeWidth={1} strokeDasharray={solar.mode === "panels" ? undefined : "5 4"} vectorEffect="non-scaling-stroke" />
       )}
       {m && (
         <g>

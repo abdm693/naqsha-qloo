@@ -85,8 +85,12 @@ export interface Concept {
   summary?: string;
   /** Drawn FROM the designed house (its elevation and floor plan, or the family's uploaded drawing). */
   from_design?: boolean;
-  /** The concept read as a build specification (Nemotron VL): what the 3D model must reproduce. */
+  /** The concept read as a build specification (Gemini): what the 3D model must reproduce. */
   spec?: ConceptSpec;
+  /** A direction from the family's Qloo taste: why it suits them, and the evidence ids behind it. */
+  from_taste?: boolean;
+  why?: string;
+  because?: string[];
 }
 
 export interface ConceptFeature { id: string; what: string; where?: string; material?: string; colour?: string; importance?: "high" | "medium" | "low" }
@@ -193,7 +197,45 @@ export interface Project {
   thumbnail_url: string | null;
   /** Set when the project started from an uploaded floor plan. */
   imported?: ImportedDrawing | null;
+  /** The family's taste, read with Qloo, and the style brief it led to. */
+  taste?: Taste | null;
 }
+
+// ---- taste (Qloo) ----------------------------------------------------------------------------------------------------
+export type FavouriteKind = "destination" | "film" | "show" | "artist" | "restaurant" | "brand" | "book" | "podcast";
+export interface Favourite { kind?: FavouriteKind | string; name: string }
+export interface TastePerson { label: string; role?: string | null; favourites: Favourite[] }
+export interface TasteInput { people: TastePerson[]; location?: string | null; notes?: string | null }
+
+/** One piece of Qloo evidence the style brief cites: E… entity, T… tag, P… place. */
+export interface Evidence { eid: string; name: string; type?: string; image?: string; address?: string; via?: string[]; from?: string[]; affinity?: number }
+export interface TasteTag { eid: string; name: string; type?: string; affinity?: number | null; from?: string[] }
+export interface FoundFavourite { eid: string; who: string; asked: string; name: string; type?: string; image?: string }
+export interface TasteProfile {
+  family: TasteTag[];
+  feel: TasteTag[];
+  people: { label: string; role?: string | null; tags: TasteTag[] }[];
+  destinations: { eid: string; name: string; image?: string; affinity?: number }[];
+  brands: { eid: string; name: string; image?: string; adjectives?: unknown }[];
+  area?: { location: string; tags: TasteTag[]; places: { eid: string; name: string; address?: string; image?: string; tags: string[] }[] };
+}
+export interface Swatch { name: string; hex: string }
+export interface StyleBrief {
+  headline: string;
+  story: string;
+  family_tags?: { name: string; id?: string }[];
+  people?: { label: string; signature: string; tags?: string[]; room?: string; because?: string[] }[];
+  exterior?: { style: string; massing?: string; materials?: string[]; palette?: Swatch[]; details?: string[]; because?: string[] };
+  interiors?: { mood?: string; palette?: Swatch[]; materials?: string[]; lighting?: string; furniture?: string; objects?: string; because?: string[] };
+  rooms?: { room: string; for?: string; mood?: string; palette?: string[]; ideas?: string[]; because?: string[] }[];
+  landscape?: { idea?: string; plants?: string[]; because?: string[] };
+  neighbourhood?: { reading?: string; response?: string; because?: string[] };
+  takes?: { title: string; direction: string; why?: string; because?: string[] }[];
+  decisions?: { decision: string; reason?: string; because?: string[] }[];
+  shop?: { id: string; why?: string }[];
+  evidence: Record<string, Evidence>;
+}
+export interface Taste { input: TasteInput; profile: TasteProfile; style: StyleBrief; at: string }
 
 export type Vec3 = [number, number, number];
 
@@ -267,6 +309,11 @@ export interface SSEEvents {
   match: { match: ConceptMatch };
   changes: { changes: Change[] };
   comment: { comment: Comment };
+  /** The taste agent: a step it is on (and the Qloo tool it is calling). */
+  step: { id: string; message: string; tool?: string };
+  favourites: { found: FoundFavourite[]; missing: { who: string; asked: string }[] };
+  profile: TasteProfile;
+  taste: Taste;
   ping: Record<string, never>;
   done: Record<string, unknown>;
   error: { message: string; recoverable?: boolean };

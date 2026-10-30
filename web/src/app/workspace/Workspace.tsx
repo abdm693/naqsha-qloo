@@ -60,8 +60,14 @@ export function Workspace() {
     }
   }, []);
 
+  // The header is clear over the warm light at the top and turns to glass once the page scrolls.
+  const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
     document.title = "Your homes · Naqsha";
+    const on = () => setScrolled(window.scrollY > 8);
+    on();
+    window.addEventListener("scroll", on, { passive: true });
+    return () => window.removeEventListener("scroll", on);
   }, []);
   useEffect(() => {
     void load();
@@ -153,8 +159,14 @@ export function Workspace() {
   const list = active === "mine" ? mine : active === "shared" ? shared : samples ?? [];
 
   return (
-    <div className="min-h-[100dvh] bg-canvas">
-      <header className="sticky top-0 z-20 bg-canvas/85 backdrop-blur-md">
+    <div className="relative min-h-[100dvh] overflow-x-clip bg-canvas">
+      {/* The same warm light as the landing, behind the greeting. */}
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-[560px]"
+        style={{ background: "radial-gradient(55% 60% at 85% 0%, rgb(226 186 140 / .24), transparent 70%), radial-gradient(40% 50% at 0% 0%, rgb(236 214 190 / .30), transparent 70%)" }}
+        aria-hidden
+      />
+      <header className={cn("sticky top-0 z-20 transition-[background-color,box-shadow,backdrop-filter] duration-300", scrolled ? "glass-light" : "bg-transparent")}>
         <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-between gap-3 px-4 sm:px-8">
           <Link to="/" aria-label="Naqsha home" className="rounded-[8px] outline-none focus-visible:shadow-focus">
             <Wordmark />
@@ -167,14 +179,14 @@ export function Workspace() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1280px] px-4 pb-24 sm:px-8">
+      <main className="relative mx-auto max-w-[1280px] px-4 pb-24 sm:px-8">
         {/* Start a home in one message */}
         {/* One left edge: the heading, the composer, the tabs and the grid all start at the container's gutter. */}
         <section className="max-w-[720px] pb-10 pt-10 sm:pb-14 sm:pt-16" aria-labelledby="start-heading">
-          <h1 id="start-heading" className="text-[32px]/[38px] font-semibold tracking-[-.03em] text-ink sm:text-display">
+          <h1 id="start-heading" className="font-display text-[44px]/[48px] font-normal tracking-[-.015em] text-ink sm:text-[64px]/[68px]">
             {user?.name ? `Salaam, ${user.name.split(" ")[0]}.` : mine.length || shared.length ? "Your homes" : "Start a home"}
           </h1>
-          <p className="mt-2 text-body-lg text-ink-2">Describe your plot to start. One message is enough.</p>
+          <p className="mt-3 text-body-lg text-ink-2">Describe your plot and your family to start. One message is enough.</p>
           <form onSubmit={submit} className="mt-6">
             <Composer
               value={text}
@@ -204,7 +216,7 @@ export function Workspace() {
         </section>
 
         {/* Tabs */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pb-6 pt-8">
           <Segmented<Tab>
             label="Homes"
             value={active}
@@ -227,7 +239,7 @@ export function Workspace() {
         </div>
 
         {error ? (
-          <div className="grid place-items-center rounded-card bg-surface px-6 py-16 text-center shadow-e1">
+          <div className="grid place-items-center rounded-panel bg-surface px-6 py-16 text-center shadow-e1">
             <p className="text-heading text-ink">Your homes didn't load</p>
             <p className="mt-1.5 max-w-sm text-[15px] text-ink-2">{error}</p>
             <Button className="mt-5" icon={<RefreshCw className="size-4" strokeWidth={1.75} />} onClick={() => void load()}>Try again</Button>
@@ -300,7 +312,7 @@ function Thumb({ p }: { p: Project }) {
   const [failed, setFailed] = useState(false);
   if (url && !failed) return <img src={url} alt="" loading="lazy" onError={() => setFailed(true)} />;
   return (
-    <div className="grid size-full place-items-center bg-surface p-8">
+    <div className="grid size-full place-items-center bg-surface p-8" style={{ backgroundImage: "linear-gradient(rgb(74 52 30 / .04) 1px, transparent 1px), linear-gradient(90deg, rgb(74 52 30 / .04) 1px, transparent 1px)", backgroundSize: "20px 20px" }}>
       <PlotSketch envelope={p.envelope} width={p.brief?.plot?.width_ft} depth={p.brief?.plot?.depth_ft} />
     </div>
   );
@@ -382,8 +394,8 @@ function SampleCard({ sample: s, opening, onOpen }: { sample: Project; opening: 
 
 function Empty({ title, line }: { title: string; line: string }) {
   return (
-    <div className="rounded-card bg-surface px-6 py-14 text-center shadow-e1">
-      <p className="text-heading text-ink">{title}</p>
+    <div className="rounded-panel bg-surface px-6 py-14 text-center shadow-e1">
+      <p className="font-display text-[28px] leading-[32px] text-ink">{title}</p>
       <p className="mx-auto mt-1.5 max-w-sm text-[15px] leading-[22px] text-ink-2">{line}</p>
     </div>
   );
@@ -395,7 +407,7 @@ function SkeletonGrid() {
       {Array.from({ length: 3 }, (_, i) => (
         <li key={i} className="flex flex-col gap-3">
           <div className="relative aspect-[4/3] overflow-hidden rounded-card bg-surface-2">
-            <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/60 to-transparent" />
+            <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-surface/70 to-transparent" />
           </div>
           <div className="h-4 w-2/3 rounded-full bg-surface-2" />
           <div className="h-3 w-1/2 rounded-full bg-surface-2" />

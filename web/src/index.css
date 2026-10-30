@@ -1,41 +1,60 @@
 @import "tailwindcss";
 
 /*
- * Naqsha design tokens (docs/design/DESIGN.md §2, "Calm").
- * Limestone canvas, white surfaces, one cobalt accent for "next move" or "selected".
+ * Naqsha design tokens (docs/design/DESIGN.md §2), "Warm" edition.
+ * Home is where the heart is: the app should feel like a lived-in room, not a drafting table. Warm ivory canvas,
+ * warm white surfaces, warm greys for ink and lines, and one deep accent for "next move" or "selected".
+ * Big headings use a serif display face (Instrument Serif); all UI text stays Geist.
  * The app is light only; anything over 3D or photos uses glass-hud.
  */
 @theme {
   --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-display: "Instrument Serif", ui-serif, Georgia, "Times New Roman", serif;
   --font-urdu: "Noto Nastaliq Urdu", serif;
 
-  --color-canvas: #F6F6F3;      /* page (limestone) */
-  --color-surface: #FFFFFF;     /* cards, sheets */
-  --color-surface-2: #EEEEEA;   /* hover, tracks, chips */
-  --color-surface-3: #E5E5E0;   /* pressed */
-  --color-line: #E4E4DF;
-  --color-line-strong: #CFCFC8;
-  --color-ink: #111113;         /* 17.4:1 */
-  --color-ink-2: #46464B;       /* 8.7:1 */
-  --color-ink-3: #6E6E73;       /* 4.7:1, lowest text */
-  --color-ink-4: #A1A1A6;       /* placeholder/disabled only */
+  --color-canvas: #F8F4ED;      /* page (warm ivory) */
+  --color-surface: #FFFDF9;     /* cards, sheets (warm white) */
+  --color-surface-2: #F2ECE3;   /* hover, tracks, chips */
+  --color-surface-3: #E9E1D5;   /* pressed */
+  --color-line: #E9E1D6;
+  --color-line-strong: #D6CBBC;
+  --color-ink: #1E1915;         /* 17.2:1 on surface */
+  --color-ink-2: #4A4039;       /* 9.9:1 */
+  --color-ink-3: #6E6359;       /* 5.8:1 on surface, 5.0:1 on surface-2: lowest text */
+  --color-ink-4: #A89D91;       /* placeholder/disabled only */
 
-  --color-accent: #2747F5;      /* 6.35:1 on white */
-  --color-accent-press: #1F3BD6;
-  --color-accent-soft: #EDF0FF;
-  --color-accent-line: #B9C5FF;
+  /*
+   * The accent is jamun: a deep, red-leaning plum (the fruit of a Lahore summer). It is warm and confident, and
+   * it stays clear of the compliance hues: a clay or terracotta accent would sit next to warn (amber) and fail
+   * (red), so a "next move" button could read as a warning. White on it is 9.9:1.
+   */
+  --color-accent: #6B2A5E;
+  --color-accent-press: #56214B;
+  --color-accent-soft: #F6EBF2;
+  --color-accent-line: #DDBDD2;
 
-  --color-pass: #0E7A55;  --color-pass-soft: #E3F3EC;   /* compliance only */
-  --color-warn: #A35A00;  --color-warn-soft: #FFF3DD;
-  --color-fail: #C8281E;  --color-fail-soft: #FDECEA;
+  /* Compliance only. Text on surface and on its own soft fill is at least 5:1 (WCAG AA). */
+  --color-pass: #16704C;  --color-pass-soft: #E6F2EA;
+  --color-warn: #93520A;  --color-warn-soft: #FBEFD9;
+  --color-fail: #B42A1F;  --color-fail-soft: #FBE9E5;
 
-  --color-hud: #18181B;  --color-hud-ink: #F5F5F7;
-  /* 4.7:1 over glass-hud (.75) on the brightest sky; #A3A3AD was ~2:1 there. */
-  --color-hud-ink-2: #C9C9D1;  --color-hud-accent: #7D93FF;
+  /*
+   * Taste (Qloo): saffron, pomegranate, jamun. Reserved for what the family's taste brings into the house, so it
+   * stays special: use the taste-* utilities below, sparingly, never as a general decoration.
+   */
+  --color-taste-1: #EE9F2E;     /* saffron */
+  --color-taste-2: #DD4F72;     /* pomegranate */
+  --color-taste-3: #7E3A8C;     /* jamun */
+  --color-taste-ink: #7A2E57;   /* text on taste-soft: 7.4:1 */
+  --color-taste-soft: #FCEFE8;
 
-  --color-plan-bed: #EEF1FE;  --color-plan-wet: #E6F1F5;  --color-plan-living: #F2F2EF;
-  --color-plan-service: #ECECE8;  --color-plan-outdoor: #E8F1E9;
+  --color-hud: #1B1714;  --color-hud-ink: #F7F2EC;
+  /* 4.7:1 over glass-hud (.75) on the brightest sky. */
+  --color-hud-ink-2: #D3C9BF;  --color-hud-accent: #F2B8DB;
+
+  --color-plan-bed: #F1ECF5;  --color-plan-wet: #E6F0F2;  --color-plan-living: #F4F0E9;
+  --color-plan-service: #EDE7DE;  --color-plan-outdoor: #E8F0E3;
 
   --color-author-1: #0D7C72;  --color-author-2: #6A4FD6;  --color-author-3: #C23F78;
   --color-author-4: #A8641A;  --color-author-5: #4F6378;  --color-author-6: #2F7A3A;
@@ -43,17 +62,19 @@
   --radius-chip: 10px;  --radius-control: 12px;  --radius-card: 20px;
   --radius-panel: 28px; --radius-media: 32px;
 
-  --shadow-e1: 0 0 0 1px rgb(17 17 19 / .06), 0 1px 2px rgb(17 17 19 / .04);
-  --shadow-e2: 0 0 0 1px rgb(17 17 19 / .05), 0 12px 32px -12px rgb(17 17 19 / .18);
-  --shadow-e3: 0 0 0 1px rgb(17 17 19 / .05), 0 32px 80px -24px rgb(17 17 19 / .30);
-  --shadow-focus: 0 0 0 4px rgb(39 71 245 / .20);
+  /* Warm, layered shadows: a hairline, a contact shadow and a soft spread, all tinted brown. */
+  --shadow-e1: 0 0 0 1px rgb(74 52 30 / .07), 0 1px 2px rgb(74 52 30 / .05), 0 6px 16px -10px rgb(74 52 30 / .10);
+  --shadow-e2: 0 0 0 1px rgb(74 52 30 / .06), 0 2px 4px rgb(74 52 30 / .04), 0 18px 40px -16px rgb(74 52 30 / .22);
+  --shadow-e3: 0 0 0 1px rgb(74 52 30 / .06), 0 4px 10px rgb(74 52 30 / .05), 0 36px 80px -28px rgb(74 52 30 / .34);
+  --shadow-focus: 0 0 0 4px rgb(107 42 94 / .20);
 
-  --text-hero: clamp(3rem, 7.5vw, 7rem); --text-hero--line-height: .95;
-  --text-hero--letter-spacing: -.045em;  --text-hero--font-weight: 600;
-  --text-display: 3rem;    --text-display--line-height: 3.25rem;
-  --text-display--letter-spacing: -.03em; --text-display--font-weight: 600;
-  --text-title: 1.75rem;   --text-title--line-height: 2.125rem;
-  --text-title--letter-spacing: -.02em;  --text-title--font-weight: 600;
+  /* hero, display and title are set in the serif (see the base layer); it has one weight, so they are 400. */
+  --text-hero: clamp(3.25rem, 7vw, 6.75rem); --text-hero--line-height: .98;
+  --text-hero--letter-spacing: -.02em;  --text-hero--font-weight: 400;
+  --text-display: 3.25rem;  --text-display--line-height: 3.5rem;
+  --text-display--letter-spacing: -.015em; --text-display--font-weight: 400;
+  --text-title: 2rem;       --text-title--line-height: 2.375rem;
+  --text-title--letter-spacing: -.01em;  --text-title--font-weight: 400;
   --text-heading: 1.25rem; --text-heading--line-height: 1.625rem;
   --text-heading--letter-spacing: -.01em; --text-heading--font-weight: 600;
   --text-body-lg: 1.0625rem; --text-body-lg--line-height: 1.625rem;
@@ -75,7 +96,7 @@
 :root {
   --dur-press: 120ms; --dur-fast: 160ms; --dur-base: 240ms;
   --dur-panel: 320ms; --dur-slow: 600ms;   /* use as duration-(--dur-panel) */
-  --scrim: rgb(17 17 19 / .32);
+  --scrim: rgb(30 22 16 / .34);
   /* motion spring everywhere: { type: "spring", stiffness: 380, damping: 34 } */
 
   /* Floating chrome inset: 12px, 16px from 1024px. The project shell sets --dock-h for toasts. */
@@ -87,10 +108,35 @@
   :root { --chrome: 16px; }
 }
 
-@utility glass-light { background: rgb(255 255 255 / .72); backdrop-filter: blur(20px) saturate(1.8);
-  box-shadow: 0 0 0 1px rgb(17 17 19 / .06), 0 8px 24px -12px rgb(17 17 19 / .16); }
-@utility glass-hud { background: rgb(24 24 27 / .75); backdrop-filter: blur(24px) saturate(1.6);
+@utility glass-light { background: rgb(255 253 249 / .76); backdrop-filter: blur(20px) saturate(1.6);
+  box-shadow: 0 0 0 1px rgb(74 52 30 / .07), 0 10px 28px -14px rgb(74 52 30 / .20); }
+@utility glass-hud { background: rgb(27 23 20 / .75); backdrop-filter: blur(24px) saturate(1.6);
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / .10); color: var(--color-hud-ink); }
+
+/*
+ * Taste (Qloo) treatments. Use them only where the family's taste shows up: a taste card, a "from your taste" tag,
+ * the one landing section. taste-gradient: a saffron → pomegranate → jamun fill (white text on it passes AA from
+ * the middle on; keep text on the darker two-thirds). taste-text: the same gradient clipped to large text.
+ * taste-ring: a 1px gradient border around a surface. taste-glow: a soft coloured halo. taste-wash: a pale tint.
+ */
+@utility taste-gradient {
+  background-image: linear-gradient(120deg, var(--color-taste-1) 0%, var(--color-taste-2) 52%, var(--color-taste-3) 100%);
+}
+@utility taste-text {
+  background-image: linear-gradient(100deg, #C2690E 0%, var(--color-taste-2) 50%, var(--color-taste-3) 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+@utility taste-ring {
+  border: 1px solid transparent;
+  background: linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    linear-gradient(120deg, var(--color-taste-1), var(--color-taste-2), var(--color-taste-3)) border-box;
+}
+@utility taste-glow {
+  box-shadow: 0 0 0 1px rgb(221 79 114 / .16), 0 10px 30px -12px rgb(238 159 46 / .45), 0 24px 60px -24px rgb(126 58 140 / .45);
+}
+@utility taste-wash {
+  background-image: linear-gradient(120deg, #FDF2E3 0%, #FBE8EC 55%, #F3E8F4 100%);
+}
 
 /* A 44px hit area for small controls on touch screens and phones (the visual size stays). */
 @utility hit-44 {
@@ -117,6 +163,8 @@
     -webkit-tap-highlight-color: transparent;
   }
   ::selection { background: var(--color-accent-soft); color: var(--color-ink); }
+  /* The display serif for hero, display and title (any breakpoint variant). Geist stays the UI face. */
+  [class*="text-hero"], [class*="text-display"], [class*="text-title"] { font-family: var(--font-display); }
   :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
   button { cursor: pointer; }
   button:disabled { cursor: not-allowed; }
@@ -154,7 +202,7 @@
 .code-view .tk-com { color: #8E8E96; font-style: italic; }
 .code-view .tk-str { color: #A8D5B5; }
 .code-view .tk-num { color: #F5B38A; }
-.code-view .tk-key { color: #B9C5FF; }
+.code-view .tk-key { color: #E7C3DC; }
 .code-view .tk-fn { color: #8FCBEA; }
 
 /* A blinking caret for streamed text. */
@@ -181,7 +229,7 @@
 .glass-hud :focus-visible,
 .nq-house :focus-visible:not(canvas) {
   outline: none;
-  box-shadow: 0 0 0 2px #18181B, 0 0 0 4px #7D93FF;
+  box-shadow: 0 0 0 2px #1B1714, 0 0 0 4px #F2B8DB;
 }
 /*
  * A text field inside a rounded wrapper (the dock's Ask, the room finder) draws no square ring of its own: the
@@ -194,7 +242,7 @@
 .glass-hud.nq-field:has(:is(input, textarea):focus-visible),
 .glass-hud .nq-field:has(:is(input, textarea):focus-visible),
 .nq-house .nq-field:has(:is(input, textarea):focus-visible) {
-  box-shadow: 0 0 0 2px #18181B, 0 0 0 4px #7D93FF;
+  box-shadow: 0 0 0 2px #1B1714, 0 0 0 4px #F2B8DB;
 }
 
 /*

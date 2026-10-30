@@ -109,10 +109,18 @@ def _roof_sentence(brief: dict) -> str:
     return ", ".join(parts) + "."
 
 
-def concept_prompt(brief: dict, take: dict | None = None, instruction: str | None = None) -> str:
+def taste_language(style: dict | None) -> str:
+    """The family's exterior from their Qloo style brief, as image-model words (materials, palette, details)."""
+    ext = (style or {}).get("exterior") or {}
+    bits = [", ".join(ext.get("materials") or []), ", ".join(c.get("name", "") for c in ext.get("palette") or [] if isinstance(c, dict)),
+            "; ".join(ext.get("details") or [])]
+    return "; ".join(b for b in bits if b)
+
+
+def concept_prompt(brief: dict, take: dict | None = None, instruction: str | None = None, taste: dict | None = None) -> str:
     p = brief.get("plot") or {}
     style = brief.get("style") or "Modern Contemporary"
-    hints = STYLE_HINTS.get(style, brief.get("style_notes") or "")
+    hints = taste_language(taste) or STYLE_HINTS.get(style, brief.get("style_notes") or "")
     storeys = {1: "single-storey", 2: "double-storey", 3: "triple-storey"}.get(brief.get("storeys") or 2, "double-storey")
     where = brief.get("scheme") or {"DHA": "DHA Lahore", "BAHRIA": "Bahria Town Lahore"}.get(brief.get("authority"), "a Lahore housing society")
     porch = next((s for s in brief.get("spaces", []) if s.startswith("car_porch")), "car_porch:1")
@@ -298,8 +306,12 @@ async def generate(project: dict, count: int = 4, instruction: str | None = None
                          f"Variation {i + 1} of {count}: make it visibly different from the others.",
                          {"title": f"{base.get('title') or 'Remix'} · {i + 1}", "direction": instruction or ""}))
     else:
-        for take in await design_takes(brief, count, instruction):
-            jobs.append((concept_prompt(brief, take, instruction), take))
+        style = (project.get("taste") or {}).get("style")
+        takes = [plain_take(t) | {k: t.get(k) for k in ("why", "because")} for t in (style or {}).get("takes") or []]
+        if instruction or len(takes) < count:  # a typed direction, or no taste pass yet: the generic takes
+            takes = await design_takes(brief, count, instruction)
+        for take in takes[:count]:
+            jobs.append((concept_prompt(brief, take, instruction, style), take))
     refs = [] if base else await design_refs(project)
     for i, (pr, _) in enumerate(jobs):
         yield "concept.started", {"index": i, "prompt": pr, "from_design": bool(refs)}
@@ -313,6 +325,8 @@ async def generate(project: dict, count: int = 4, instruction: str | None = None
                 c["from_design"] = True
             if take:
                 c.update(title=take["title"], summary=take.get("direction", ""))
+                if take.get("why"):  # a direction from the family's taste: why it suits them, and the Qloo evidence
+                    c.update(why=take["why"], because=take.get("because") or [], from_taste=True)
             if base:
                 c.update(parent_id=base["id"], instruction=instruction)
             return i, c, None

@@ -810,7 +810,18 @@ WebSocket, import(), eval, Function, document, window or storage. Prefer clarity
 of each section saying what it builds."""
 
 
-def _build_prompt(plan: dict, brief: dict, spec: dict | None = None) -> str:
+def taste_text(style: dict | None) -> str:
+    """The interiors and rooms from the family's Qloo style brief, for the 3D build (palette hexes, materials, moods)."""
+    if not style:
+        return ""
+    keep = {"interiors": style.get("interiors"), "rooms": style.get("rooms"), "landscape": style.get("landscape"),
+            "exterior_palette": (style.get("exterior") or {}).get("palette")}
+    strip = lambda x: ({k: strip(v) for k, v in x.items() if k != "because"} if isinstance(x, dict)
+                       else [strip(v) for v in x] if isinstance(x, list) else x)
+    return json.dumps(strip({k: v for k, v in keep.items() if v}))
+
+
+def _build_prompt(plan: dict, brief: dict, spec: dict | None = None, style: dict | None = None) -> str:
     example = _read(CONTRACTS / "fixtures" / "design-10-marla.js")
     engine_notes = _read(CONTRACTS / "engine-notes.md")
     keys = ("style", "style_notes", "budget", "notes", "spaces", "floors", "water_tank", "solar", "preferences")
@@ -822,6 +833,10 @@ def _build_prompt(plan: dict, brief: dict, spec: dict | None = None) -> str:
         f"FAMILY BRIEF: {json.dumps({k: brief.get(k) for k in keys if brief.get(k) not in (None, '', [], {})})}\n\n"
         + (f"CONCEPT SPECIFICATION (the exterior the family chose, read from its image; build every feature):\n"
            f"{concepts.spec_text(spec)}\n\n" if spec else "")
+        + (f"THE FAMILY'S TASTE (from Qloo's taste graph): build the interiors from it. Use these palettes and materials in "
+           f"structure floors, interior_* accent walls and ceilings, and furnish_* pieces and colours; give each room listed here "
+           f"its own mood and palette (a person's room follows that person). Shelves of books, a record or music corner, art and "
+           f"textiles where it says so. The landscape follows its idea and plants.\n{taste_text(style)}\n\n" if style else "")
         + "Write design.js now."
     )
 
@@ -866,7 +881,7 @@ class SectionStream:
 
 async def write_design(project: dict, plan: dict, extra_instruction: str | None = None) -> AsyncIterator[tuple[str, dict]]:
     spec = await _concept_spec(project)
-    text = _build_prompt(plan, project.get("brief") or {}, spec) + (f"\n\nADDITIONAL INSTRUCTIONS:\n{extra_instruction}" if extra_instruction else "")
+    text = _build_prompt(plan, project.get("brief") or {}, spec, (project.get("taste") or {}).get("style")) + (f"\n\nADDITIONAL INSTRUCTIONS:\n{extra_instruction}" if extra_instruction else "")
     contents = [types.Content(role="user", parts=[types.Part.from_text(text=text)])]
     cfg = types.GenerateContentConfig(system_instruction=BUILD_SYSTEM, max_output_tokens=65536)
     yield "stage", {"stage": "build", "message": "Building the 3D model…"}

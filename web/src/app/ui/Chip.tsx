@@ -12,7 +12,7 @@ import { cn } from "@/app/lib/utils";
 
 const chipBase =
   "hit-44 relative inline-flex shrink-0 select-none items-center gap-1.5 rounded-chip border text-left text-[13px] font-medium leading-none outline-none " +
-  "transition-[background-color,border-color,color,box-shadow,transform] duration-[160ms] ease-out active:scale-[.97] " +
+  "transition-[background-color,border-color,color,box-shadow,transform] duration-200 ease-out active:scale-[.97] " +
   "focus-visible:border-accent focus-visible:shadow-focus disabled:pointer-events-none disabled:opacity-45";
 
 export function Chip({
@@ -52,7 +52,7 @@ export function Chip({
         size === "md" ? "min-h-8 px-3 py-1.5" : "min-h-7 px-2.5 py-1 text-[12px]",
         selected
           ? "border-accent-line bg-accent-soft text-accent"
-          : "border-transparent bg-surface-2 text-ink hover:bg-surface-3",
+          : "border-transparent bg-surface-2 text-ink hover:border-line-strong hover:bg-surface-3",
         className,
       )}
     >
@@ -95,7 +95,7 @@ export function SuggestionChip({
         chipBase,
         "min-h-8 px-3 py-1.5",
         tone === "light"
-          ? "border-line-strong bg-surface text-ink hover:border-ink-4 hover:bg-canvas"
+          ? "border-line-strong bg-surface text-ink hover:border-ink-4/70 hover:bg-[#FBF7F1]"
           : "border-white/12 bg-white/8 text-hud-ink hover:bg-white/14",
         className,
       )}

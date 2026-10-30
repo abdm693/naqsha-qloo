@@ -2611,7 +2611,7 @@ export class ViewerController {
     try {
       this.renderNow();
       const pinNdc = o.pin ? projectToNdc(o.pin, cam) : null;
-      url = grabCanvas(gl.domElement, { width: o.width, height: o.height, pinNdc, maxAspect: o.maxAspect, pinColor: "#2747F5", type: o.type, quality: 0.9 });
+      url = grabCanvas(gl.domElement, { width: o.width, height: o.height, pinNdc, maxAspect: o.maxAspect, pinColor: "#6B2A5E", type: o.type, quality: 0.9 });
     } finally {
       if (this.pinsGroup) this.pinsGroup.visible = pinsVisible;
       this.setOutline(outlined);

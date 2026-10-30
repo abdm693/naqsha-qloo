@@ -74,10 +74,20 @@ export function useDefaultNext(view: ViewId, project: Project | null): NextMove 
     switch (view) {
       case "brief":
         if (project.stage === "setup" || conceptsRunning) return null;
+        if (!project.taste) return { label: "Add your taste", run: () => to("taste") };
         return {
           label: "Show me concepts",
           run: () => {
             if (!project.concepts.length) void st.generateConcepts();
+            to("concepts");
+          },
+        };
+      case "taste":
+        if (!project.taste || conceptsRunning) return null;
+        return {
+          label: project.concepts.some((c) => c.from_taste) ? "See our concepts" : "Design from our taste",
+          run: () => {
+            if (!project.concepts.some((c) => c.from_taste)) void st.generateConcepts();
             to("concepts");
           },
         };

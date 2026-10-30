@@ -94,7 +94,7 @@ export function Dialog({
               {(title || description) && (
                 <div className={cn("mb-5", showClose && dismissible && "pr-8")}>
                   {title && (
-                    <h2 id={titleId} className="text-heading text-ink">
+                    <h2 id={titleId} className="font-display text-[28px] font-normal leading-[32px] tracking-[-.01em] text-ink">
                       {title}
                     </h2>
                   )}

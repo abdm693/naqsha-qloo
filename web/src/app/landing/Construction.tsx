@@ -214,13 +214,13 @@ function Chip({ children, dark }: { children: ReactNode; dark?: boolean }) {
 // ── The drawing ─────────────────────────────────────────────────────────────────────────────────────
 
 const INK = "var(--color-ink)";
-const FAINT = "rgb(17 17 19 / .14)";
-const HIDDEN = "rgb(17 17 19 / .35)";
+const FAINT = "rgb(60 44 30 / .14)";
+const HIDDEN = "rgb(60 44 30 / .35)";
 const ACCENT = "var(--color-accent)";
 const TEAK = "#D8B48C";
-const STONE = "#E2E1DC";
+const STONE = "#E6DFD4";
 const GLASS = "#DCE5EE";
-const PLASTER = "#FFFFFF";
+const PLASTER = "#FFFDF9";
 const LAWN = "#DDEBDD";
 
 type Rect = [number, number, number, number]; // x0, y0, x1, y1
@@ -242,7 +242,7 @@ function Panel({ r, fill, t, battens, stone }: { r: Rect; fill: string; t: numbe
         </g>
       )}
       {stone && (
-        <g stroke="rgb(17 17 19 / .10)" strokeWidth={0.6} style={a("fade", t + 0.4, 0.3)}>
+        <g stroke="rgb(30 25 21 / .10)" strokeWidth={0.6} style={a("fade", t + 0.4, 0.3)}>
           {Array.from({ length: Math.floor(h / 9) }, (_, i) => (
             <line key={i} x1={x0} y1={y0 + 8 + i * 9} x2={x1} y2={y0 + 8 + i * 9} />
           ))}
@@ -281,14 +281,14 @@ const POSTER_RECTS: Rect[] = [
 function Poster() {
   return (
     <g fill="none">
-      <line x1="0" y1={GROUND} x2={W} y2={GROUND} stroke="rgb(17 17 19 / .55)" strokeWidth={1.2} />
-      <g stroke="rgb(17 17 19 / .4)" strokeWidth={0.8}>
+      <line x1="0" y1={GROUND} x2={W} y2={GROUND} stroke="rgb(30 25 21 / .55)" strokeWidth={1.2} />
+      <g stroke="rgb(30 25 21 / .4)" strokeWidth={0.8}>
         <line x1="172" y1="404" x2="172" y2="428" />
         <line x1="852" y1="404" x2="852" y2="428" />
         <line x1="172" y1="424" x2="852" y2="424" strokeWidth={0.6} />
       </g>
       <path d="M172 412V24H852V412" stroke={ACCENT} strokeOpacity={0.45} strokeWidth={1.2} strokeDasharray="6 5" />
-      <g stroke="rgb(17 17 19 / .32)" strokeWidth={0.8}>
+      <g stroke="rgb(30 25 21 / .32)" strokeWidth={0.8}>
         {POSTER_RECTS.map(([x0, y0, x1, y1], i) => (
           <rect key={i} x={x0} y={y0} width={x1 - x0} height={y1 - y0} />
         ))}
@@ -307,21 +307,21 @@ function Drawing({ phone }: { phone?: boolean }) {
     <>
       <defs>
         <pattern id="nqc-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-          <line x1="0" y1="0" x2="0" y2="6" stroke="rgb(17 17 19 / .28)" strokeWidth="0.8" />
+          <line x1="0" y1="0" x2="0" y2="6" stroke="rgb(30 25 21 / .28)" strokeWidth="0.8" />
         </pattern>
         <linearGradient id="nqc-glass" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#EEF3F8" />
           <stop offset="1" stopColor={GLASS} />
         </linearGradient>
         <linearGradient id="nqc-sky" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#FFFFFF" />
-          <stop offset="1" stopColor="#F6F6F3" />
+          <stop offset="0" stopColor="#FFFDF9" />
+          <stop offset="1" stopColor="#F8F4ED" />
         </linearGradient>
       </defs>
       <rect x="0" y="0" width={W} height={H} fill="url(#nqc-sky)" />
 
       {/* Street and ground */}
-      <rect x="0" y="442" width={W} height={H - 442} fill="#F1F1EE" style={a("fade", 0.1, 0.6)} />
+      <rect x="0" y="442" width={W} height={H - 442} fill="#F2ECE3" style={a("fade", 0.1, 0.6)} />
       <line x1="0" y1="458" x2={W} y2="458" stroke={FAINT} strokeWidth={0.8} style={a("fade", 0.2, 0.6)} />
       <line x1="0" y1={GROUND} x2={W} y2={GROUND} stroke={INK} strokeWidth={1.2} pathLength={1} strokeDasharray={1} style={a("draw", T.ground, 0.6)} />
       {/* Plot lines and the 35′ dimension */}
@@ -357,14 +357,14 @@ function Drawing({ phone }: { phone?: boolean }) {
         ))}
         <rect x="786" y="263" width="10" height="141" className="nqc-origin-b" style={a("rise", T.columns + 0.4, 0.7)} />
       </g>
-      <g fill="rgb(17 17 19 / .62)" fontSize={levelFont} fontFamily="Geist Mono, ui-monospace, monospace" fontWeight="500">
+      <g fill="rgb(30 25 21 / .62)" fontSize={levelFont} fontFamily="Geist Mono, ui-monospace, monospace" fontWeight="500">
         {[
           [404, "+0′", 2.1],
           [260, "+11′", 2.5],
           [104, "+21′", 2.9],
         ].map(([y, label, t]) => (
           <g key={label as string} style={a("fade", t as number, 0.3)}>
-            <line x1={levelX} y1={y as number} x2="166" y2={y as number} stroke="rgb(17 17 19 / .45)" strokeWidth={phone ? 1 : 0.6} />
+            <line x1={levelX} y1={y as number} x2="166" y2={y as number} stroke="rgb(30 25 21 / .45)" strokeWidth={phone ? 1 : 0.6} />
             <text x={levelX} y={(y as number) - (phone ? 6 : 4)}>{label}</text>
           </g>
         ))}
@@ -373,18 +373,18 @@ function Drawing({ phone }: { phone?: boolean }) {
       {/* Crane: the tower draws, the jib swings to 35°, then it leaves */}
       <g className="nqc-crane" style={a("fade", T.columns, 0.3)}>
         <g style={{ animation: `nqc-leave 0.6s cubic-bezier(.4,0,1,1) ${T.glaze}s both` }}>
-          <g stroke="rgb(17 17 19 / .55)" strokeWidth={0.7} fill="none">
+          <g stroke="rgb(30 25 21 / .55)" strokeWidth={0.7} fill="none">
             <path d="M862 412V30M874 412V30" pathLength={1} strokeDasharray={1} style={a("draw", T.columns, 0.5)} />
             <path d="M862 400L874 380L862 360L874 340L862 320L874 300L862 280L874 260L862 240L874 220L862 200L874 180L862 160L874 140L862 120L874 100L862 80L874 60L862 40" strokeWidth={0.5} style={a("fade", T.columns + 0.3, 0.4)} />
           </g>
           {/* The jib slews 35° out of the elevation plane, so it foreshortens (cos 35° ≈ .82) about the mast. */}
           <g className="nqc-jib" style={{ animation: `nqc-swing 0.8s cubic-bezier(.65,0,.35,1) ${T.columns + 0.4}s both` }}>
-            <line x1="560" y1="30" x2="874" y2="30" stroke="rgb(17 17 19 / .6)" strokeWidth={0.9} />
-            <path d="M560 30L600 22H874" fill="none" stroke="rgb(17 17 19 / .35)" strokeWidth={0.5} />
-            <line x1="640" y1="30" x2="640" y2="70" stroke="rgb(17 17 19 / .4)" strokeWidth={0.5} />
-            <rect x="630" y="70" width="20" height="5" fill="rgb(17 17 19 / .5)" />
+            <line x1="560" y1="30" x2="874" y2="30" stroke="rgb(30 25 21 / .6)" strokeWidth={0.9} />
+            <path d="M560 30L600 22H874" fill="none" stroke="rgb(30 25 21 / .35)" strokeWidth={0.5} />
+            <line x1="640" y1="30" x2="640" y2="70" stroke="rgb(30 25 21 / .4)" strokeWidth={0.5} />
+            <rect x="630" y="70" width="20" height="5" fill="rgb(30 25 21 / .5)" />
           </g>
-          <line x1="874" y1="30" x2="900" y2="30" stroke="rgb(17 17 19 / .6)" strokeWidth={0.9} style={a("fade", T.columns + 0.3, 0.3)} />
+          <line x1="874" y1="30" x2="900" y2="30" stroke="rgb(30 25 21 / .6)" strokeWidth={0.9} style={a("fade", T.columns + 0.3, 0.3)} />
         </g>
       </g>
 
@@ -451,7 +451,7 @@ function Drawing({ phone }: { phone?: boolean }) {
       </g>
       <g className="nqc-origin-b" style={a("pop", T.roof + 0.55, 0.55)}>
         <rect x="598" y="22" width="50" height="15" rx="2" fill={STONE} stroke={INK} strokeWidth={0.8} />
-        <line x1="602" y1="27" x2="644" y2="27" stroke="rgb(17 17 19 / .25)" strokeWidth={0.5} />
+        <line x1="602" y1="27" x2="644" y2="27" stroke="rgb(30 25 21 / .25)" strokeWidth={0.5} />
       </g>
 
       {/* Windows glaze */}
@@ -466,14 +466,14 @@ function Drawing({ phone }: { phone?: boolean }) {
       <g style={a("fade", 4.8, 0.4)}>
         <rect x="70" y="330" width="447" height="80" fill={PLASTER} stroke={INK} strokeWidth={0.9} />
         <rect x="70" y="330" width="197" height="80" fill="url(#nqc-hatch)" opacity={0.5} />
-        <line x1="267" y1="352" x2="517" y2="352" stroke="rgb(17 17 19 / .25)" strokeWidth={0.6} />
+        <line x1="267" y1="352" x2="517" y2="352" stroke="rgb(30 25 21 / .25)" strokeWidth={0.6} />
         <rect x="517" y="326" width="24" height="84" fill={STONE} stroke={INK} strokeWidth={0.9} />
         <rect x="822" y="326" width="28" height="84" fill={STONE} stroke={INK} strokeWidth={0.9} />
         <rect x="524" y="318" width="10" height="8" fill={PLASTER} stroke={INK} strokeWidth={0.7} />
         <rect x="831" y="318" width="10" height="8" fill={PLASTER} stroke={INK} strokeWidth={0.7} />
       </g>
       <g stroke="#2B2B30" strokeWidth={1.3} style={a("fade", 5.0, 0.4)}>
-        <rect x="541" y="334" width="281" height="70" fill="rgb(17 17 19 / .06)" strokeWidth={1} />
+        <rect x="541" y="334" width="281" height="70" fill="rgb(30 25 21 / .06)" strokeWidth={1} />
         {Array.from({ length: 34 }, (_, i) => (
           <line key={i} x1={546 + i * 8.2} y1="336" x2={546 + i * 8.2} y2="402" strokeWidth={0.9} />
         ))}

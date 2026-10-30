@@ -2,11 +2,11 @@ import { useId } from "react";
 import type { Envelope } from "@contracts/api-types";
 import { cn } from "@/app/lib/utils";
 
-/** "Naqsha" in Geist 600 at -0.03em, then نقشہ in Nastaliq at 70% opacity (DESIGN.md §3). */
+/** "Naqsha" in the display serif, then نقشہ in Nastaliq at 70% opacity (DESIGN.md §3). */
 export function Wordmark({ className, compact, tone = "ink" }: { className?: string; compact?: boolean; tone?: "ink" | "white" }) {
   return (
     <span className={cn("inline-flex items-baseline gap-2 leading-none", tone === "white" ? "text-white" : "text-ink", className)}>
-      <span className="text-[20px] font-semibold tracking-[-.03em]">Naqsha</span>
+      <span className="font-display text-[26px] leading-none tracking-[-.01em]">Naqsha</span>
       {!compact && (
         <span lang="ur" dir="rtl" className="font-urdu text-[15px] opacity-70" aria-hidden>
           نقشہ

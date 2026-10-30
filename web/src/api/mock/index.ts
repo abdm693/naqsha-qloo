@@ -15,6 +15,7 @@ import { envelopeFor, recheck } from "./lda";
 import { nightOf } from "./night";
 import { conceptsScript, designScript } from "./scripts";
 import { reviseScript } from "./revise";
+import { tasteScript } from "./taste";
 import { ensureSamples, seedIfEmpty } from "./seed";
 import { ev, play, type Step } from "./stream";
 
@@ -287,6 +288,21 @@ export const mockApi: Api = {
   // ── Concepts ──────────────────────────────────────────────────────────────────────────────────────
   generateConcepts(pid, body, handlers, opts) {
     return play(conceptsScript(pid, body), handlers, opts?.signal);
+  },
+
+  readTaste(pid, body, handlers, opts) {
+    async function* script(): AsyncGenerator<Step> {
+      const p = editable(pid);
+      for await (const step of tasteScript(body)) {
+        if (typeof step !== "number" && step.event === "taste") {
+          p.taste = step.data as Project["taste"];
+          touch(p);
+          save();
+        }
+        yield step;
+      }
+    }
+    return play(script(), handlers, opts?.signal);
   },
 
   conceptsNight(pid, body, handlers, opts) {

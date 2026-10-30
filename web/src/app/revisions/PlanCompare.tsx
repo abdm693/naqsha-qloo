@@ -152,7 +152,7 @@ export function PlanCompare({
               <PlanSheet plan={after} levelId={level} ppf={ppf || 1} changed={changed} deltas={deltas} labels={labels} />
             </g>
           )}
-          {before && wipe > 0 && wipe < 100 && <line x1={cutX} y1={B.y} x2={cutX} y2={B.y + B.h} stroke="#2747F5" strokeWidth={1.5} vectorEffect="non-scaling-stroke" />}
+          {before && wipe > 0 && wipe < 100 && <line x1={cutX} y1={B.y} x2={cutX} y2={B.y + B.h} stroke="#6B2A5E" strokeWidth={1.5} vectorEffect="non-scaling-stroke" />}
         </svg>
       </div>
       {keys.length > 0 && (

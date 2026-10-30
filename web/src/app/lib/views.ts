@@ -6,17 +6,18 @@
  */
 import type { Project, Role, Stage } from "@contracts/api-types";
 
-export type ViewId = "brief" | "concepts" | "plan" | "house" | "revisions";
+export type ViewId = "brief" | "taste" | "concepts" | "plan" | "house" | "revisions";
 export type SwitchViewId = Exclude<ViewId, "revisions">;
 
 export const VIEWS: { id: SwitchViewId; label: string }[] = [
   { id: "brief", label: "Brief" },
+  { id: "taste", label: "Taste" },
   { id: "concepts", label: "Concepts" },
   { id: "plan", label: "Plan" },
   { id: "house", label: "House" },
 ];
 
-export const VIEW_IDS: ViewId[] = ["brief", "concepts", "plan", "house", "revisions"];
+export const VIEW_IDS: ViewId[] = ["brief", "taste", "concepts", "plan", "house", "revisions"];
 
 export function isViewId(v: string | undefined): v is ViewId {
   return !!v && (VIEW_IDS as string[]).includes(v);
@@ -52,6 +53,8 @@ export function viewAvailable(p: Project, view: ViewId): boolean {
   switch (view) {
     case "brief":
       return !client;
+    case "taste":
+      return !client || !!p.taste;
     case "concepts":
       return !client && (i >= stageIndex("concepts") || p.concepts.length > 0);
     case "plan":

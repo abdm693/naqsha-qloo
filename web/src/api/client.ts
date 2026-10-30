@@ -20,6 +20,7 @@ import type {
   Project,
   Role,
   Version,
+  TasteInput,
 } from "@contracts/api-types";
 import type { Authority, BuildingPlan, ComplianceReport } from "@contracts/plan";
 import { openSSE, StreamError, type SSEHandlers, type StreamOptions } from "./sse";
@@ -96,6 +97,8 @@ export interface Api {
 
   // Concepts
   generateConcepts(pid: string, body: ConceptsBody, handlers: SSEHandlers, opts?: StreamOptions): Promise<void>;
+  /** Read the family's taste with Qloo and write their style brief: step, favourites, profile, then taste. */
+  readTaste(pid: string, body: TasteInput, handlers: SSEHandlers, opts?: StreamOptions): Promise<void>;
   /** Night versions of concepts (same camera), streamed as `concept` events with night_url filled in. */
   conceptsNight(pid: string, body: { ids?: string[] }, handlers: SSEHandlers, opts?: StreamOptions): Promise<void>;
   selectConcept(pid: string, cid: string): Promise<Project>;
@@ -254,6 +257,7 @@ const realApi: Api = {
   checkPlan: (plan) => http("POST", "/lda/check", { plan }),
 
   generateConcepts: (pid, body, handlers, opts) => stream(`${p(pid)}/concepts`, body, handlers, opts),
+  readTaste: (pid, body, handlers, opts) => stream(`${p(pid)}/taste`, body, handlers, { idleTimeoutMs: 120_000, ...opts }),
   conceptsNight: (pid, body, handlers, opts) => stream(`${p(pid)}/concepts/night`, body, handlers, { idleTimeoutMs: 120_000, ...opts }),
   selectConcept: (pid, cid) => http("POST", `${p(pid)}/concepts/${e(cid)}/select`),
 

@@ -16,8 +16,8 @@ import { cn } from "@/app/lib/utils";
  */
 
 const field =
-  "w-full rounded-control border bg-surface text-[15px] text-ink outline-none transition-[border-color,box-shadow] duration-[160ms] ease-out " +
-  "placeholder:text-ink-4 hover:border-ink-4 focus:border-accent focus:shadow-focus disabled:cursor-not-allowed disabled:bg-surface-2 disabled:text-ink-3";
+  "w-full rounded-control border bg-surface text-[15px] text-ink outline-none transition-[border-color,box-shadow] duration-200 ease-out " +
+  "shadow-[0_1px_2px_rgb(74_52_30/.04)] placeholder:text-ink-4 hover:border-ink-4/70 focus:border-accent focus:shadow-focus disabled:cursor-not-allowed disabled:bg-surface-2 disabled:text-ink-3";
 
 interface FieldProps {
   /** A visible label above the field. */
@@ -78,7 +78,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
             "h-11 px-3.5",
             leading && "pl-10",
             trailing && "pr-11",
-            error ? "border-fail hover:border-fail focus:border-fail focus:shadow-[0_0_0_4px_rgb(200_40_30/.14)]" : "border-line-strong",
+            error ? "border-fail hover:border-fail focus:border-fail focus:shadow-[0_0_0_4px_rgb(180_42_31/.14)]" : "border-line-strong",
             className,
           )}
           {...rest}

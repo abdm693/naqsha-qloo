@@ -4,15 +4,31 @@
     {
       "name": "api",
       "runtimeExecutable": "zsh",
-      "runtimeArgs": ["scripts/dev-api.sh"],
+      "runtimeArgs": [
+        "scripts/dev-api.sh"
+      ],
       "port": 8080
     },
     {
       "name": "web",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["vite", "--port", "5173", "--strictPort"],
+      "runtimeArgs": [
+        "vite",
+        "--port",
+        "5173",
+        "--strictPort"
+      ],
       "cwd": "web",
       "port": 5173
+    },
+    {
+      "name": "web-mock",
+      "runtimeExecutable": "zsh",
+      "runtimeArgs": [
+        "-c",
+        "cd web && VITE_MOCK=1 npx vite --port 5174 --strictPort"
+      ],
+      "port": 5174
     }
   ]
 }

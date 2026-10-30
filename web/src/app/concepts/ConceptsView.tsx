@@ -8,9 +8,10 @@ import { createContext, useCallback, useContext, useEffect, useLayoutEffect, use
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowLeft, ArrowRight, ImageOff, RotateCw, X } from "lucide-react";
-import type { Concept, Project } from "@contracts/api-types";
+import type { Evidence, Concept, Project } from "@contracts/api-types";
 import { api, assetUrl } from "@/api/client";
 import { FACING_LABEL } from "@/api/domain";
+import { Because } from "@/app/taste/TasteView";
 import { cn } from "@/app/lib/utils";
 import { usePhone } from "@/app/lib/hooks";
 import { useAskContext } from "@/app/shell/ask";
@@ -306,6 +307,7 @@ export function ConceptsView({ project, onProjectChange }: { project: Project; o
       <AnimatePresence>
         {open && (
           <Lightbox
+            evidence={project.taste?.style?.evidence ?? {}}
             l={open}
             light={light}
             nightShown={nightShown}
@@ -439,6 +441,12 @@ function Tile({ l, light, nightShown, nightFailed, chosen, onOpen, small }: { l:
         )}
         {light === "night" && nightFailed && <span className="shrink-0 text-[12.5px] text-ink-3">Night view unavailable</span>}
       </figcaption>
+      {!small && l.concept.from_taste && l.concept.why && (
+        <p className="mt-1 inline-flex items-center gap-1.5 px-0.5 text-[12.5px] font-medium text-ink-2">
+          <span className="size-1.5 rounded-full" style={{ backgroundImage: "linear-gradient(120deg, var(--color-taste-1, #E8A33D), var(--color-taste-2, #D9486B), var(--color-taste-3, #6B3FA0))" }} />
+          {l.concept.why}
+        </p>
+      )}
       {!small && l.concept.summary && <p className="mt-0.5 line-clamp-2 px-0.5 text-[13px] leading-[18px] text-ink-3">{l.concept.summary}</p>}
     </motion.figure>
   );
@@ -474,6 +482,7 @@ function PendingTile({ slot, label, onRetry, small }: { slot: ConceptSlot; label
 }
 
 function Lightbox({
+  evidence,
   l,
   light,
   nightShown,
@@ -488,6 +497,7 @@ function Lightbox({
   onChoose,
   onRemix,
 }: {
+  evidence: Record<string, Evidence>;
   l: Labelled;
   light: Light;
   nightShown: boolean;
@@ -567,6 +577,7 @@ function Lightbox({
           ) : l.concept.summary ? (
             <p className="max-w-[760px] text-[13px] leading-[18px] text-ink-3">{tidy(l.concept.summary.trim())}</p>
           ) : null}
+          {l.concept.from_taste && <Because ids={l.concept.because} ev={evidence} />}
         </div>
         <div className="flex shrink-0 items-center justify-end gap-2">
           <Segmented

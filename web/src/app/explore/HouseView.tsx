@@ -486,7 +486,7 @@ export function HouseView({ project, onProjectChange, active = true }: { project
       {openComments.length > 0 &&
         (phone && tight ? (
           // A dot on the narrowest phones; the count is in the button's name and the Comments sheet.
-          <span aria-hidden className={cn("absolute right-2 top-2 size-2 rounded-full ring-2 ring-[rgb(24_24_27)]", commentMode ? "bg-white" : "bg-hud-accent")} />
+          <span aria-hidden className={cn("absolute right-2 top-2 size-2 rounded-full ring-2 ring-hud", commentMode ? "bg-white" : "bg-hud-accent")} />
         ) : (
           <span className="grid min-w-5 place-items-center rounded-full bg-white/15 px-1.5 font-mono text-[11px] tabular-nums">{openComments.length}</span>
         ))}
@@ -793,7 +793,7 @@ export function HouseView({ project, onProjectChange, active = true }: { project
 
 /** Make room for the toolbars inside the viewer's own HUD (viewer classes; harmless if they change). */
 const HUD_CSS = `
-.nq-house .nq-glass { background: rgb(24 24 27 / 0.75); }
+.nq-house .nq-glass { background: rgb(27 23 20 / 0.75); }
 .nq-house .nq-mini-north, .nq-house .nq-mini-caption, .nq-house .nq-build-meta, .nq-house .nq-kbd { font-size: 12px; }
 .nq-house .nq-mini-floor { position: relative; min-width: 28px; min-height: 26px; font-size: 12px; }
 @media (pointer: coarse), (max-width: 639px) { .nq-house .nq-mini-floor::after { content: ""; position: absolute; inset: min(0px, calc((100% - 44px) / 2)); } }

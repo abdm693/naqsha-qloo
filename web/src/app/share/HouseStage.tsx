@@ -203,7 +203,7 @@ export function HouseStage({
           aria-expanded={navOpen}
           aria-label={phone ? (current ? `Rooms: ${sentenceCase(current.name)}` : "Rooms") : "Rooms (M)"}
           title="Rooms (M)"
-          className={cn("glass-hud pointer-events-auto inline-flex h-11 max-w-[220px] items-center gap-2 rounded-full text-[13px] font-medium outline-none hover:bg-[rgb(24_24_27/.86)]", phone ? "w-11 justify-center" : "px-4")}
+          className={cn("glass-hud pointer-events-auto inline-flex h-11 max-w-[220px] items-center gap-2 rounded-full text-[13px] font-medium outline-none hover:bg-hud/86", phone ? "w-11 justify-center" : "px-4")}
         >
           {phone ? (
             <DoorOpen className="size-[18px]" strokeWidth={1.75} />
@@ -226,7 +226,7 @@ export function HouseStage({
             className={cn(
               "pointer-events-auto inline-flex h-11 items-center gap-2 rounded-full text-[13px] font-medium outline-none transition-colors focus-visible:shadow-focus",
               phone ? "w-11 justify-center" : "px-4",
-              commentMode ? "bg-accent text-white shadow-e2" : "glass-hud hover:bg-[rgb(24_24_27/.86)]",
+              commentMode ? "bg-accent text-white shadow-e2" : "glass-hud hover:bg-hud/86",
             )}
           >
             <MessageSquarePlus className={phone ? "size-[18px]" : "size-4"} strokeWidth={1.75} />

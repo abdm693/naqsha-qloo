@@ -61,7 +61,7 @@ function usePins(ctrl: ViewerController, comments: Comment[] | undefined): PinDa
       hue: authorHue(c),
       author: c.author?.name,
     }));
-    if (draft) list.push({ id: DRAFT, n: "+", anchor: draft, status: "open", hue: "#2747F5", draft: true });
+    if (draft) list.push({ id: DRAFT, n: "+", anchor: draft, status: "open", hue: "#6B2A5E", draft: true });
     return list;
   }, [comments, draft]);
 }

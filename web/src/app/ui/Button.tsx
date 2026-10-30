@@ -10,17 +10,20 @@ import { Tooltip } from "./Tooltip";
  */
 const base =
   "group hit-44 relative inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-full border font-medium " +
-  "transition-[background-color,border-color,color,box-shadow,transform,opacity] duration-[160ms] ease-out " +
+  "transition-[background-color,border-color,color,box-shadow,transform,opacity] duration-200 ease-out " +
   "active:scale-[.97] active:duration-[120ms] outline-none focus-visible:border-accent focus-visible:shadow-focus " +
   "disabled:pointer-events-none disabled:opacity-45 aria-busy:pointer-events-none";
 
 const variants = {
-  primary: "border-transparent bg-accent text-white hover:bg-accent-press focus-visible:border-accent-press",
-  secondary: "border-line-strong bg-surface text-ink hover:border-ink-4 hover:bg-canvas",
+  // Filled buttons carry a faint top highlight and a warm contact shadow, so they sit on the page like a pressed tile.
+  primary:
+    "border-transparent bg-accent text-white shadow-[inset_0_1px_0_rgb(255_255_255/.14),0_1px_2px_rgb(60_20_50/.20),0_8px_20px_-10px_rgb(107_42_94/.55)] " +
+    "hover:bg-accent-press hover:shadow-[inset_0_1px_0_rgb(255_255_255/.12),0_1px_2px_rgb(60_20_50/.24),0_12px_26px_-12px_rgb(107_42_94/.65)] focus-visible:border-accent-press",
+  secondary: "border-line-strong bg-surface text-ink shadow-[0_1px_2px_rgb(74_52_30/.06)] hover:border-ink-4/70 hover:bg-[#FBF7F1]",
   quiet: "border-transparent bg-transparent text-ink-2 hover:bg-surface-2 hover:text-ink",
-  ink: "border-transparent bg-ink text-white hover:bg-ink-2",
-  hud: "glass-hud border-transparent hover:bg-[rgb(24_24_27/.86)] focus-visible:border-hud-accent",
-  danger: "border-transparent bg-fail text-white hover:bg-[#A9211A]",
+  ink: "border-transparent bg-ink text-white shadow-[inset_0_1px_0_rgb(255_255_255/.10),0_1px_2px_rgb(30_22_16/.25)] hover:bg-[#2E2621]",
+  hud: "glass-hud border-transparent hover:bg-hud/86 focus-visible:border-hud-accent",
+  danger: "border-transparent bg-fail text-white hover:bg-[#981F16]",
 } as const;
 
 const button = cva(base, {
@@ -76,9 +79,9 @@ const iconButton = cva(
     variants: {
       variant: {
         quiet: "border-transparent text-ink-2 hover:bg-surface-2 hover:text-ink",
-        secondary: "border-line-strong bg-surface text-ink hover:bg-canvas",
+        secondary: "border-line-strong bg-surface text-ink hover:bg-[#FBF7F1]",
         primary: "border-transparent bg-accent text-white hover:bg-accent-press",
-        hud: "glass-hud border-transparent hover:bg-[rgb(24_24_27/.86)] focus-visible:border-hud-accent",
+        hud: "glass-hud border-transparent hover:bg-hud/86 focus-visible:border-hud-accent",
         "hud-quiet": "border-transparent text-hud-ink-2 hover:bg-white/10 hover:text-hud-ink",
       },
       size: { xs: "size-7", sm: "size-8", md: "size-10", lg: "size-11" },

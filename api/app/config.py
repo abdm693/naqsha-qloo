@@ -1,7 +1,7 @@
 """Runtime configuration (env vars, with defaults for this project)."""
 import os
 
-PROJECT = os.environ.get("GOOGLE_CLOUD_PROJECT", "naqsha-nebius-424e")
+PROJECT = os.environ.get("GOOGLE_CLOUD_PROJECT", "project-d5fe6dd3-2b61-40b3-932")
 # Naqsha x Qloo keeps its data apart: its own Firestore database and bucket in the same GCP project.
 FIRESTORE_DB = os.environ.get("FIRESTORE_DB", "qloo")
 LOCATION = os.environ.get("GOOGLE_CLOUD_LOCATION", "global")  # newest Gemini image models are served only from "global"

@@ -1,6 +1,6 @@
 /*
  * HouseViewer overlays. Self-contained, but on the app's design tokens (docs/design/DESIGN.md) when they exist:
- * HUD = glass-hud over 3D (rgb(24 24 27 / .58), blur 24, inset hairline), Geist, cobalt accent for "selected".
+ * HUD = glass-hud over 3D (rgb(27 23 20 / .58), blur 24, inset hairline), Geist, the HUD accent for "selected".
  */
 .nq-viewer {
   --nq-hud: var(--color-hud, #18181b);
@@ -47,7 +47,7 @@
   position: absolute; inset: 0; pointer-events: none; z-index: 30;
 }
 .nq-glass {
-  background: rgb(24 24 27 / 0.58);
+  background: rgb(27 23 20 / 0.58);
   -webkit-backdrop-filter: blur(24px) saturate(1.6);
   backdrop-filter: blur(24px) saturate(1.6);
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1), 0 8px 24px -12px rgb(0 0 0 / 0.35);
@@ -165,7 +165,7 @@
   font: 500 15px/1 var(--font-sans, "Geist", ui-sans-serif, system-ui, sans-serif);
   animation: nq-rise 360ms var(--nq-ease) both; transition: transform 120ms var(--nq-ease), background-color 160ms;
 }
-.nq-prompt-main:hover:not(:disabled) { background: rgb(24 24 27 / 0.7); }
+.nq-prompt-main:hover:not(:disabled) { background: rgb(27 23 20 / 0.7); }
 .nq-prompt-main:active:not(:disabled) { transform: scale(0.97); }
 .nq-prompt-main:disabled { cursor: inherit; pointer-events: none; }
 .nq-prompt-main svg { color: var(--nq-ink-2); }
@@ -209,8 +209,8 @@ button.nq-mini-which:hover { color: var(--nq-ink); background: rgb(255 255 255 /
 .nq-mini-room[data-kind="wet"] { fill: rgb(150 190 210 / 0.12); }
 .nq-mini-room[data-kind="out"] { fill: rgb(150 200 150 / 0.06); stroke: rgb(255 255 255 / 0.2); stroke-dasharray: 0.8 0.6; }
 .nq-mini-room[data-hover="1"] { fill: rgb(255 255 255 / 0.24); }
-.nq-mini-room[data-to="1"] { fill: rgb(125 147 255 / 0.22); stroke: var(--nq-hud-accent); }
-.nq-mini-room[data-here="1"] { fill: rgb(125 147 255 / 0.32); stroke: var(--nq-hud-accent); stroke-width: 0.5; }
+.nq-mini-room[data-to="1"] { fill: color-mix(in srgb, var(--nq-hud-accent) 22%, transparent); stroke: var(--nq-hud-accent); }
+.nq-mini-room[data-here="1"] { fill: color-mix(in srgb, var(--nq-hud-accent) 32%, transparent); stroke: var(--nq-hud-accent); stroke-width: 0.5; }
 .nq-mini-door { fill: rgb(255 255 255 / 0.9); }
 .nq-mini-stair rect { fill: rgb(255 255 255 / 0.05); stroke: rgb(255 255 255 / 0.35); stroke-width: 0.25; }
 .nq-mini-stair line { stroke: rgb(255 255 255 / 0.3); stroke-width: 0.18; }
@@ -220,7 +220,7 @@ button.nq-mini-which:hover { color: var(--nq-ink); background: rgb(255 255 255 /
   fill: none; stroke: var(--nq-hud-accent); stroke-width: 0.75; stroke-linecap: round; stroke-linejoin: round;
   stroke-dasharray: 1; stroke-dashoffset: 1; animation: nq-route 300ms var(--nq-ease) forwards;
 }
-.nq-mini-halo { fill: rgb(125 147 255 / 0.28); }
+.nq-mini-halo { fill: color-mix(in srgb, var(--nq-hud-accent) 28%, transparent); }
 .nq-mini-me { fill: #fff; stroke: var(--nq-hud-accent); stroke-width: 0.4; stroke-linejoin: round; }
 .nq-mini-caption { display: flex; justify-content: space-between; gap: 8px; margin: 6px 2px 0; font-size: 12px; color: var(--nq-ink-2); min-height: 16px; }
 .nq-mini-caption b { font-weight: 500; color: var(--nq-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -299,7 +299,7 @@ button.nq-mini-which:hover { color: var(--nq-ink); background: rgb(255 255 255 /
 .nq-pin[data-flash="1"] .nq-pin-drop { animation: nq-ripple 0.9s ease-out 2; }
 .nq-pin-tip {
   position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%) translateY(4px); width: max-content; max-width: 240px;
-  padding: 8px 10px; border-radius: 12px; background: rgb(24 24 27 / 0.9); color: #fff;
+  padding: 8px 10px; border-radius: 12px; background: rgb(27 23 20 / 0.9); color: #fff;
   font: 400 12px/1.4 var(--font-sans, "Geist", ui-sans-serif, system-ui, sans-serif);
   text-align: left; white-space: normal; opacity: 0; pointer-events: none; transition: opacity 160ms ease, transform 160ms var(--nq-ease);
 }
