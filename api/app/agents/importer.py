@@ -1,6 +1,6 @@
 """Start from the family's own drawing: an uploaded floor plan (a scan, a photo of a sketch, an architect's PDF page).
 
-1. Nemotron 3.5 Super VL reads each sheet like an architect transcribing it: the floor, the plot outline, every room with
+1. Gemini 3.8 Flash reads each sheet like an architect transcribing it: the floor, the plot outline, every room with
    its label, type, written size and its box on the sheet, the doors and the windows.
 2. The boxes are turned into plot feet deterministically (road side down, origin at the plot's front-left corner), snapped
    to the written sizes where the drawing gives them.

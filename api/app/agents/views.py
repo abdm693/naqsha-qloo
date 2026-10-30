@@ -5,8 +5,8 @@ above) and the image model turns each capture into a photograph, keeping the geo
 materials and colours from the chosen concept. Because each photo starts from the model, every angle shows the same house,
 the one on the plan.
 
-Match: Nemotron 3.5 Super VL compares the 3D model's front view with the concept image, feature by feature (the concept's
-build specification). Features that are missing or wrong go back to Nemotron 3 Ultra, which rewrites only the facade sections
+Match: Gemini 3.8 Flash compares the 3D model's front view with the concept image, feature by feature (the concept's
+build specification). Features that are missing or wrong go back to Gemini 4 Argon, which rewrites only the facade sections
 that should carry them; the browser rebuilds those sections and the check can run again.
 """
 from __future__ import annotations
@@ -168,7 +168,7 @@ about 60 lines. Never use fetch, XMLHttpRequest, WebSocket, import(), eval, Func
 
 
 async def refit(project: dict, version: dict, result: dict) -> list[dict]:
-    """New facade sections for the features the match found missing or partial (Nemotron 3 Ultra). [] when nothing to do."""
+    """New facade sections for the features the match found missing or partial (Gemini 4 Argon). [] when nothing to do."""
     from .architect import CONTRACTS, SectionStream, _read
     todo = [f for f in result.get("features") or [] if f["status"] != "present" and f.get("importance") != "low"]
     if not todo:

@@ -421,7 +421,7 @@ List 12 to 20 features, the ones that define the look first."""
 
 
 async def spec_of(pid: str, concept: dict) -> dict | None:
-    """The concept image read as a build specification (Nemotron 3.5 Super VL). Cached on the concept."""
+    """The concept image read as a build specification (Gemini 3.8 Flash). Cached on the concept."""
     if concept.get("spec"):
         return concept["spec"]
     got = await blobs.get(concept["url"].removeprefix("/api/assets/"))

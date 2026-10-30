@@ -1,4 +1,4 @@
-"""The conversational setup agent (Google ADK, Nemotron 3 Super on Nebius Token Factory).
+"""The conversational setup agent (Google ADK, Gemini 3.8 Flash on Vertex AI).
 
 One long message can fill the whole brief: the agent records everything it heard with update_brief (deterministic merge:
 notes and preferences are appended, never overwritten), answers any direct question from the LDA facts it is given, then
@@ -387,9 +387,10 @@ async def agent_turn(project: dict, brief: dict, before: dict, history: list[dic
         brief = intake.merge_brief(brief, widget_patch, [], spaces_mode="replace")
     said = " ".join([str(m.get("text") or "") for m in history if m.get("role") == "user"] + [user_text or ""])
     turn = Turn(brief, before, said)
-    agent = Agent(name="naqsha_setup", model=llm.adk_model(config.MODEL_SETUP, think=False), instruction=INSTRUCTION,
+    agent = Agent(name="naqsha_setup", model=llm.adk_model(config.MODEL_SETUP), instruction=INSTRUCTION,
                   tools=turn.tools(), generate_content_config=types.GenerateContentConfig(
-                      temperature=0.4, max_output_tokens=2048))
+                      temperature=0.4, max_output_tokens=2048,
+                      thinking_config=types.ThinkingConfig(thinking_level="LOW")))
     sessions = InMemorySessionService()
     runner = Runner(app_name=APP, agent=agent, session_service=sessions)
     session = await sessions.create_session(app_name=APP, user_id=pid)

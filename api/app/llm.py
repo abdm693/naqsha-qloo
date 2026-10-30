@@ -1,8 +1,7 @@
-"""Text and vision models on Nebius Token Factory (NVIDIA Nemotron, OpenAI-compatible API).
+"""Text and vision models: Gemini on Vertex AI, through Vertex's OpenAI-compatible chat endpoint.
 
-Callers keep building prompts with google-genai `Content`/`Part` objects (the image models are still Gemini), and this module
-turns them into chat messages for Token Factory. A request that carries images goes to the vision model (Nemotron 3.5
-Super VL) when the chosen model is text-only.
+Callers build prompts with google-genai `Content`/`Part` objects, and this module turns them into chat messages. One
+message format serves the plain calls and the tool-using agents (the plan fixer); every Gemini model sees images.
 
 Robust JSON generation: streaming with a degeneration guard (e.g. `35.0000000…` loops), output caps, timeouts and retries.
 """
@@ -13,8 +12,8 @@ import base64
 import json
 import logging
 import re
+import time
 from dataclasses import dataclass
-from functools import lru_cache
 from typing import AsyncIterator
 
 from google.genai import types
@@ -26,9 +25,26 @@ log = logging.getLogger("naqsha.llm")
 NUM_RULE = "Write numbers with at most 2 decimal places (e.g. 35 or 52.5, never 35.000000)."
 
 
-@lru_cache(maxsize=1)
-def nebius() -> AsyncOpenAI:
-    return AsyncOpenAI(base_url=config.NEBIUS_BASE_URL, api_key=config.NEBIUS_API_KEY, max_retries=4, timeout=600)
+_creds = None
+_client: AsyncOpenAI | None = None
+
+
+def client() -> AsyncOpenAI:
+    """The Vertex OpenAI-compatible client, rebuilt when the access token is close to expiring."""
+    global _creds, _client
+    import google.auth
+    import google.auth.transport.requests
+    if _creds is None:
+        _creds, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
+    if _client is None or not _creds.valid or (_creds.expiry and (_creds.expiry.timestamp() - time.time()) < 300):
+        _creds.refresh(google.auth.transport.requests.Request())
+        _client = AsyncOpenAI(base_url=f"https://aiplatform.googleapis.com/v1/projects/{config.PROJECT}/locations/{config.LOCATION}"
+                                       "/endpoints/openapi", api_key=_creds.token, max_retries=4, timeout=600)
+    return _client
+
+
+def model_id(model: str) -> str:
+    return model if "/" in model else f"google/{model}"
 
 
 # ---- genai contents -> chat messages ---------------------------------------------------------------------------------
@@ -71,14 +87,8 @@ def to_messages(contents, system: str | None) -> list[dict]:
     return msgs
 
 
-def has_images(msgs: list[dict]) -> bool:
-    return any(isinstance(m["content"], list) and any(x["type"] == "image_url" for x in m["content"]) for m in msgs)
-
-
 def route(model: str, msgs: list[dict]) -> str:
-    """A text-only model can't see images: such a request goes to the vision model."""
-    if has_images(msgs) and model not in config.VISION_MODELS:
-        return config.MODEL_VISION
+    """Every Gemini model reads images, so the chosen model always serves the request."""
     return model
 
 
@@ -105,12 +115,11 @@ def _request(model: str, contents, cfg, system: str | None = None, max_tokens: i
     system = system or _system_text(_cfg_get(cfg, "system_instruction"))
     msgs = to_messages(contents, system)
     model = route(model, msgs)
-    req: dict = {"model": model, "messages": msgs, "max_tokens": max_tokens or _cfg_get(cfg, "max_output_tokens", 16384)}
+    req: dict = {"model": model_id(model), "messages": msgs, "max_tokens": max_tokens or _cfg_get(cfg, "max_output_tokens", 16384)}
     if json_mode if json_mode is not None else _cfg_get(cfg, "response_mime_type") == "application/json":
         req["response_format"] = {"type": "json_object"}
     think = (not _thinking_off(cfg)) if thinking is None else thinking
-    if not think:
-        req["extra_body"] = {"chat_template_kwargs": {"enable_thinking": False}}
+    req["reasoning_effort"] = "high" if think else "low"
     return req
 
 
@@ -158,12 +167,12 @@ BUSY = (404, 429, 500, 502, 503, 504)
 async def _create(req: dict, **kw):
     """One request; a model that is busy (after the client's own retries) is swapped for its fallback once."""
     try:
-        return await nebius().chat.completions.create(**req, **kw)
+        return await client().chat.completions.create(**req, **kw)
     except APIStatusError as e:
-        alt = config.FALLBACKS.get(req["model"])
+        alt = config.FALLBACKS.get(req["model"].removeprefix("google/"))
         if alt and e.status_code in BUSY:
             log.warning("%s unavailable (%s); falling back to %s", req["model"], e.status_code, alt)
-            return await nebius().chat.completions.create(**{**req, "model": alt}, **kw)
+            return await client().chat.completions.create(**{**req, "model": model_id(alt)}, **kw)
         raise
 
 
@@ -226,12 +235,11 @@ async def stream_json(model: str, contents, system: str, max_tokens: int, attemp
     raise RuntimeError(f"model output unusable after {attempts} attempts: {last_err}")
 
 
-def adk_model(model: str, think: bool = True):
-    """A Token Factory model for a Google ADK agent (through LiteLLM's OpenAI-compatible provider). `think=False` turns
-    Nemotron's reasoning off for quick conversational turns."""
-    from google.adk.models.lite_llm import LiteLlm
-    extra = {} if think else {"extra_body": {"chat_template_kwargs": {"enable_thinking": False}}}
-    return LiteLlm(model=f"openai/{model}", api_base=config.NEBIUS_BASE_URL, api_key=config.NEBIUS_API_KEY, num_retries=4, **extra)
+def adk_model(model: str):
+    """A Gemini model for a Google ADK agent (native Vertex AI, with backoff on shared-quota 429s)."""
+    from google.adk.models import Gemini
+    from .gemini import RETRY
+    return Gemini(model=model, retry_options=RETRY)
 
 
 async def describe_images(parts: list, ask: str) -> str:

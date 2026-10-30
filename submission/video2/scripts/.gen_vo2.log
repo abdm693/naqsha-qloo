@@ -1,5 +1,0 @@
-  judge: transient error (ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'Resource exhausted. ), retry in 10s
-vo07 take 1: 12.92s speech 12.67/16.12 sim 1.000 naqsha None pass True []
-== vo07: take 1 pass=True 12.89s
-vo09 take 1:  9.72s speech 9.42/12.38 sim 1.000 naqsha None pass True []
-== vo09: take 1 pass=True 9.67s

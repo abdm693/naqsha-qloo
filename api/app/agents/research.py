@@ -1,11 +1,11 @@
-"""Bylaw research for places Naqsha has no rule pack for (Tavily web search + Nemotron).
+"""Bylaw research for places Naqsha has no rule pack for (Tavily web search + Gemini).
 
 Naqsha ships one hand-verified rule pack: the LDA regulations for Lahore. For any other city or authority (CDA Islamabad,
 SBCA Karachi, RDA Rawalpindi, FDA Faisalabad, Dubai Municipality…) the setup agent calls `research`:
 
 1. Tavily searches the web for the authority's residential building regulations (setbacks, ground coverage, FAR, height and
    storeys by plot size) and extracts the most relevant pages, official ones first.
-2. Nemotron 3 Ultra reads those pages and writes a rule pack: the same numbers the LDA pack holds for a house, band by plot
+2. Gemini 4 Argon reads those pages and writes a rule pack: the same numbers the LDA pack holds for a house, band by plot
    size, each band citing the pages it came from. Anything the pages don't state stays on the LDA baseline and says so.
 3. The pack is cached in Firestore (one document per authority) and registered with the rules engine, so the envelope,
    the plan checks and the fix loop use it like the LDA pack.
@@ -169,7 +169,7 @@ async def research(city: str, authority: str, force: bool = False) -> dict | Non
         if s.get("id") in by_id:
             s["url"], s["fetched"] = by_id[s["id"]]["url"], True
     pack.update(key=key, requested={"city": city, "authority": authority}, seconds=round(time.monotonic() - t0, 1), _at=time.time(),
-                researched_with="Tavily search + extract; Nemotron 3 Ultra on Nebius Token Factory")
+                researched_with="Tavily search + extract; Gemini 4 Argon on Vertex AI")
     await db.save_rulepack(key, pack)
     lda.register_pack(authority, pack)
     log.info("researched %s in %.0fs: %d bands, %d sources", authority, pack["seconds"], len(pack["bands"]), len(pack["sources"]))

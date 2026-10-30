@@ -24,7 +24,7 @@ from .. import config
 
 @lru_cache(maxsize=1)
 def fs() -> firestore.AsyncClient:
-    return firestore.AsyncClient(project=config.PROJECT)
+    return firestore.AsyncClient(project=config.PROJECT, database=config.FIRESTORE_DB)
 
 
 def now() -> str:

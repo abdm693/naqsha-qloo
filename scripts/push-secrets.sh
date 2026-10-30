@@ -1,11 +1,11 @@
 #!/bin/zsh
-# Copies NEBIUS_API_KEY and TAVILY_API_KEY from the local .env into Secret Manager in the Naqsha Nebius GCP project,
+# Copies QLOO_API_KEY and TAVILY_API_KEY from the local .env into Secret Manager in the GCP project,
 # and lets the Cloud Run runtime service account read them. Prints names only, never values.
 set -e
 cd "$(dirname "$0")/.."
 export CLOUDSDK_ACTIVE_CONFIG_NAME=naqsha-nebius
 P=naqsha-nebius-424e
-for k in NEBIUS_API_KEY TAVILY_API_KEY; do
+for k in QLOO_API_KEY TAVILY_API_KEY; do
   name=${${k//_/-}:l}
   val=$(grep "^$k=" .env | cut -d= -f2-)
   [[ -z $val ]] && { print "$k missing from .env"; exit 1; }

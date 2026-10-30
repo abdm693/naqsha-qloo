@@ -1,4 +1,4 @@
-"""The Nebius edition's new pieces, without model calls: the Token Factory message adapter, researched rule packs,
+"""Core pieces, without model calls: the chat message adapter, researched rule packs,
 drawing import geometry, the daylight repair and the setup tool's argument cleaning."""
 import copy
 import json
@@ -14,14 +14,13 @@ from app.compliance import lda, planning
 FIX = Path(__file__).parent / "fixtures"
 
 
-def test_genai_contents_become_chat_messages_and_images_go_to_the_vision_model():
+def test_genai_contents_become_chat_messages():
     img = types.Part.from_bytes(data=b"\x89PNG", mime_type="image/png")
     msgs = llm.to_messages([types.Content(role="user", parts=[img, types.Part.from_text(text="look")]),
                             types.Content(role="model", parts=[types.Part.from_text(text="{}")]), "again"], "be brief")
     assert [m["role"] for m in msgs] == ["system", "user", "assistant", "user"]
     assert msgs[1]["content"][0]["type"] == "image_url" and msgs[3]["content"] == "again"
-    assert llm.route(config.MODEL_ULTRA, msgs) == config.MODEL_VISION
-    assert llm.route(config.MODEL_ULTRA, msgs[2:]) == config.MODEL_ULTRA
+    assert llm.model_id(config.MODEL_ARGON) == "google/gemini-4-argon"
 
 
 def test_json_is_read_past_reasoning_and_fences():

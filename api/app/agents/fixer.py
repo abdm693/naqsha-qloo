@@ -1,4 +1,4 @@
-"""The plan fixer: Nemotron repairs a drafted plan with tools, against the rules engine, edit by edit.
+"""The plan fixer: Gemini (Argon) repairs a drafted plan with tools, against the rules engine, edit by edit.
 
 Rewriting a whole 20k-token plan to fix three problems tends to break five others. Instead the fixer sees the checker's
 failures (with fix hints) and the rooms involved, and proposes small edits (move or resize a room, move or add a door or
@@ -106,9 +106,9 @@ async def fix(plan: dict, brief: dict, prepare, budget_s: float | None = None, m
     while steps < max_steps and time.monotonic() - t0 < budget_s and not state["rep"]["ok"]:
         steps += 1
         try:
-            resp = await asyncio.wait_for(llm.nebius().chat.completions.create(
-                model=config.MODEL_FIXER, messages=msgs, tools=TOOLS, tool_choice="auto", max_tokens=8192,
-                extra_body={"chat_template_kwargs": {"enable_thinking": config.FIXER_THINK}}),
+            resp = await asyncio.wait_for(llm.client().chat.completions.create(
+                model=llm.model_id(config.MODEL_FIXER), messages=msgs, tools=TOOLS, tool_choice="auto", max_tokens=8192,
+                reasoning_effort="high" if config.FIXER_THINK else "low"),
                 timeout=min(150.0, max(20.0, budget_s - (time.monotonic() - t0))))
         except Exception as e:  # a slow or failed call: try again while there is time (three in a row ends the run)
             log.warning("fixer step %d failed: %r", steps, e)

@@ -306,7 +306,7 @@ async def make_plan(project: dict) -> AsyncIterator[tuple[str, dict]]:
         text=_plan_prompt(brief, env, concepts.spec_text(spec) or None, project.get("imported")))])
     contents = [first]
     history: list = []
-    # 1. a quick full draft (Nemotron 3 Ultra, reasoning off: about half a minute)
+    # 1. a quick full draft (Gemini 4 Argon, low reasoning: about half a minute)
     n = max(1, config.PLAN_DRAFTS)
     yield "stage", {"stage": "plan", "message": "Laying out the floors…" if n == 1 else f"Laying out the floors ({n} drafts in parallel)…"}
 
@@ -338,7 +338,7 @@ async def make_plan(project: dict) -> AsyncIterator[tuple[str, dict]]:
                     "fail": fails, "failed": [c["id"] for c in report["checks"] if c["status"] == "fail"], "repairs": repairs})
     yield "compliance", {"report": report, "attempt": 1}
     at = 1
-    # 2. the fixer agent: Nemotron edits the draft with tools, each edit dry-run against the rules and kept only if it helps
+    # 2. the fixer agent: Argon edits the draft with tools, each edit dry-run against the rules and kept only if it helps
     if not report["ok"]:
         yield "stage", {"stage": "fix", "message": f"Fixing {fails} problem{'s' if fails != 1 else ''}, one checked edit at a time…"}
         # a second fixer works on the runner-up draft at the same time; the better plan wins (the screen follows the first)

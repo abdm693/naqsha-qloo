@@ -818,7 +818,7 @@ class DrawingBody(BaseModel):
 
 @app.post("/api/projects/{pid}/drawing")
 async def upload_drawing(pid: str, body: DrawingBody, me: Identity = Depends(auth.identity)):
-    """Read an uploaded floor plan (Nemotron VL), derive the brief from it and keep the transcribed layout, so the design
+    """Read an uploaded floor plan (Gemini), derive the brief from it and keep the transcribed layout, so the design
     is built from the family's drawing."""
     p, role = await access(pid, me, "edit")
     imgs = []

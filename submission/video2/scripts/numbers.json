@@ -1,2 +1,0 @@
-{"lda_pass": 34, "lda_total": 34, "match_before": 86, "match_after": 93, "rooms_read": 27, "floors_read": 2, "fix_start": 34,
- "_note": "Facts shown and spoken in the film; they come from the recorded run (submission/capture/out). Update when the footage is re-recorded, then re-voice (gen_vo.py) and rebuild. rooms_read/floors_read come from the drawing run (the 'read' step). fix_start = the count the fixers start from (the plan's status card 'Fixing N issues')."}
