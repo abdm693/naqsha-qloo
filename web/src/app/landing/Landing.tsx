@@ -82,6 +82,49 @@ const FAMILIES = [
   },
 ];
 
+/** The hero's right side: four real families, each house drawn from their taste, with its measured taste fit. */
+const CITY_ORDER = ["lahore", "austin", "dubai", "toronto"];
+function HeroFamilies({ samples, opening, onOpen }: { samples: Project[]; opening: string | null; onOpen(id: string): void }) {
+  const list = samples
+    .filter((x) => x.taste)
+    .sort((a, b) => CITY_ORDER.indexOf(String(a.brief?.city ?? "").toLowerCase()) - CITY_ORDER.indexOf(String(b.brief?.city ?? "").toLowerCase()))
+    .slice(0, 4);
+  return (
+    <ul className="grid grid-cols-2 gap-3 sm:gap-4" aria-label="Four families, four homes">
+      {list.map((p) => {
+        const c = p.concepts.find((x) => x.id === p.selected_concept_id) ?? p.concepts.find((x) => x.from_taste);
+        const fit = c?.taste_fit?.score;
+        const base = p.taste?.baseline?.taste_fit?.score;
+        return (
+          <li key={p.id}>
+            <button type="button" onClick={() => onOpen(p.id)} disabled={!!opening}
+              aria-label={`Open ${sampleTitle(p.name)}: ${p.taste?.style.headline}`}
+              className="group block w-full overflow-hidden rounded-card bg-surface text-left shadow-e2 transition hover:-translate-y-0.5 hover:shadow-e3 focus-visible:shadow-focus disabled:opacity-80">
+              <div className="relative aspect-[4/3] overflow-hidden bg-surface-2">
+                {c && <img src={assetUrl(c.url, { w: 640 })} alt="" className="size-full object-cover transition duration-500 group-hover:scale-[1.03]" />}
+                {typeof fit === "number" && (
+                  <span className="taste-gradient absolute left-2.5 top-2.5 rounded-full px-2.5 py-1 text-[12px] font-semibold text-white shadow-e2">
+                    Taste fit {fit}%{typeof base === "number" ? ` · ${base}% without` : ""}
+                  </span>
+                )}
+                {opening === p.id && <span className="absolute inset-0 grid place-items-center bg-ink/30 text-[13px] font-medium text-white">Opening…</span>}
+              </div>
+              <div className="px-3.5 pb-3.5 pt-3">
+                <div className="text-[11.5px] font-semibold uppercase tracking-[.08em] text-ink-3">{[p.brief?.city, p.brief?.city && countryOf(p.brief.city)].filter(Boolean).join(", ")}</div>
+                <div className="mt-1 line-clamp-2 font-display text-[16px] leading-[20px] text-ink">{p.taste?.style.headline}</div>
+              </div>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function countryOf(city: string): string {
+  return ({ lahore: "Pakistan", austin: "United States", dubai: "UAE", toronto: "Canada" } as Record<string, string>)[city.toLowerCase()] ?? "";
+}
+
 /** What this edition runs on. */
 const STACK: { name: string; line: string }[] = [
   { name: "Qloo taste graph", line: "Finds what a family's favourite films, music and places say about the home they want." },
@@ -230,7 +273,11 @@ export function Landing() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.9, ease: ease.out, delay: 0.1 }}
           >
-            <HeroMedia counts={counts} />
+            {samples && samples.filter((x) => x.taste).length >= 3 ? (
+              <HeroFamilies samples={samples} opening={opening} onOpen={(id) => void sample(id)} />
+            ) : (
+              <HeroMedia counts={counts} />
+            )}
           </motion.div>
         </section>
 
@@ -243,7 +290,7 @@ export function Landing() {
                 Home is where the heart is
               </p>
               <h2 id="taste-title" className="mt-4 font-display text-[40px]/[44px] tracking-[-.035em] text-ink sm:text-display">
-                A house that knows <em className="taste-text pr-1">what you love.</em>
+                A house that knows <span className="taste-text pr-1">what you love.</span>
               </h2>
               <p className="mt-4 text-body-lg text-ink-2">
                 Two families on the same plot should not get the same house. Tell Naqsha the films you rewatch, the music in the car and the places you keep going back to. Qloo's taste graph finds what those choices have in common, and the design follows it.

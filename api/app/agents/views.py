@@ -18,7 +18,7 @@ from typing import AsyncIterator
 
 from google.genai import types
 
-from .. import config, llm
+from .. import config, llm, locale
 from ..store import blobs, db
 from . import concepts
 
@@ -33,18 +33,23 @@ ANGLES = {
 }
 
 
-def photo_prompt(angle: str, has_concept: bool) -> str:
+def photo_prompt(angle: str, has_concept: bool, brief: dict | None = None) -> str:
     where = ANGLES.get(angle, "")
+    place = locale.place(brief or {})
     return ("Turn this 3D architectural model view into a photorealistic photograph "
             f"({where}). This is an image-to-image edit of the FIRST image: the output must line up with it pixel for pixel. "
             "Keep the camera exactly where it is: the same height, angle, viewpoint, lens and framing, with the house in the "
             "same place and at the same size in the frame (an aerial view stays high and steep; a raised view stays raised). "
             "Keep EXACTLY the same building geometry, storeys, openings, balconies, porch and roof features: this is the real "
             "design and nothing may move, appear or disappear. "
-            + ("Take the materials, colours, textures and detailing from the attached concept photograph of the same house. "
-               if has_concept else "Upgrade materials to realistic ones of the same colours. ")
-            + "Real-world lighting, soft shadows, realistic glass reflections, planting and sky. Neighbouring houses stay plain "
-            "and muted. No people, no text, no numbers, no signs, no watermarks.")
+            + "Every surface keeps the colour and material the 3D model gives it: a timber panel stays timber in the same place, "
+            "dark cladding stays dark, a screen stays a screen; never swap, move or invent finishes. "
+            + ("Use the attached concept photograph only for how real those materials look (texture, grain, finish), not for "
+               "where they go. " if has_concept else "Make each material realistic in the same colour. ")
+            + f"Real-world lighting, soft shadows, realistic glass reflections, planting and sky. The house is in {place}: "
+            "the street, kerbs, pavement, power lines, trees, planting, light and the neighbouring houses look the way they do "
+            "there (keep the neighbours' positions and sizes from the model, render them as local houses, plainer and muted "
+            "beside this one). No people, no text, no numbers, no signs, no watermarks.")
 
 
 async def _concept_image(project: dict) -> tuple[bytes, str] | None:
@@ -70,7 +75,11 @@ async def photos(project: dict, version: dict, shots: list[dict]) -> AsyncIterat
                 if ref:
                     contents += ["Concept photograph of the same house (materials and colours):",
                                  types.Part.from_bytes(data=ref[0], mime_type=ref[1])]
-                contents.append(photo_prompt(shot["angle"], bool(ref)))
+                if anchor.get("front") and shot["angle"] != "front":
+                    contents += ["The finished front photograph of this same house (match every material, colour and detail "
+                                 "to it exactly; only the camera differs):",
+                                 types.Part.from_bytes(data=anchor["front"][0], mime_type=anchor["front"][1])]
+                contents.append(photo_prompt(shot["angle"], bool(ref), project.get("brief") or {}))
                 resp = await concepts._image_call(contents, aspect="16:9")
                 got = concepts._image_bytes(resp)
                 if not got:
@@ -82,7 +91,19 @@ async def photos(project: dict, version: dict, shots: list[dict]) -> AsyncIterat
                 log.exception("photo %s failed", shot.get("angle"))
                 return i, None, str(e)
 
-    tasks = [asyncio.create_task(one(i, s)) for i, s in enumerate(shots)]
+    # The front photograph is made first; the other angles get it as a reference, so all four show the same house with the
+    # same finishes in the same places (independent edits drifted: timber on the left in one, on the right in another).
+    first = next((i for i, s in enumerate(shots) if s["angle"] == "front"), None)
+    anchor: dict = {}
+    if first is not None:
+        res = await one(first, shots[first])
+        if res[1]:
+            got = await blobs.get(res[1]["url"].removeprefix("/api/assets/"))
+            if got:
+                anchor["front"] = got
+    rest = [i for i in range(len(shots)) if i != first]
+    tasks = ([asyncio.create_task(asyncio.sleep(0, result=res))] if first is not None else []) + \
+            [asyncio.create_task(one(i, shots[i])) for i in rest]
     made: list[dict] = []
     order = list(ANGLES)
     views: list[dict] = []

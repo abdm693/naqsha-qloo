@@ -395,7 +395,38 @@ tags. Keep the family's overall interiors in mind so the house still reads as on
 furniture, lighting, objects"], "because": ["evidence ids that drove it"]}. Cite only ids you are given."""
 
 
-def room_prompt(style: dict, room: dict, brief: dict) -> str:
+async def room_refs(project: dict, room: dict) -> list:
+    """Pictures that ground a room: the family's chosen exterior (so the interior belongs to the same house) and Qloo's
+    photos of places the room's person loves (their favourite café, restaurant or gallery: the mood, not the layout)."""
+    import httpx
+    from google.genai import types as gtypes
+    from ..store import blobs
+    out: list = []
+    chosen = next((c for c in project.get("concepts") or [] if c.get("id") == project.get("selected_concept_id")), None)
+    if chosen:
+        got = await blobs.get(chosen["url"].removeprefix("/api/assets/"))
+        if got:
+            out += ["The exterior of this same house (its materials and character continue inside):",
+                    gtypes.Part.from_bytes(data=got[0], mime_type=got[1])]
+    t = project.get("taste") or {}
+    who = room.get("for") or "everyone"
+    favs = [f for f in (t.get("profile") or {}).get("favourites") or [] if f.get("image") and (who == "everyone" or f.get("who") == who)
+            and str(f.get("type") or "").endswith(("place", "destination"))]
+    places = [x for x in ((t.get("profile") or {}).get("area") or {}).get("makers") or [] if x.get("image")]
+    picks = (favs + places)[:2]
+    async with httpx.AsyncClient(timeout=10, follow_redirects=True) as c:
+        for f in picks:
+            try:
+                r = await c.get(f["image"])
+                if r.status_code == 200 and r.headers.get("content-type", "").startswith("image/") and len(r.content) < 4_000_000:
+                    out += [f"A place they love, {f['name']} (mood and materials only; do not copy its layout or signage):",
+                            gtypes.Part.from_bytes(data=r.content, mime_type=r.headers["content-type"].split(";")[0])]
+            except Exception:
+                continue
+    return out
+
+
+def room_prompt(style: dict, room: dict, brief: dict, grounded: bool = False) -> str:
     inter = style.get("interiors") or {}
     where = ", ".join(x for x in (brief.get("scheme"), brief.get("city")) if x) or "the family's city"
     name = str(room.get("room") or "room").replace("_", " ")
@@ -403,8 +434,11 @@ def room_prompt(style: dict, room: dict, brief: dict) -> str:
             f"Colour palette: {', '.join(room.get('palette') or [c.get('hex', '') for c in inter.get('palette') or []])}. "
             f"Ideas: {'; '.join(room.get('ideas') or [])}. Materials: {', '.join(inter.get('materials') or [])}. "
             f"Lighting: {inter.get('lighting') or 'warm, natural daylight'}. Furniture: {inter.get('furniture') or ''}. "
-            "Eye-level architectural interior photography, wide lens, realistic proportions and materials, lived-in but tidy. "
-            "No people. No text, letters, numbers, logos or watermarks anywhere.")
+            + ("Ground it in the reference pictures above: the same house's materials, and the feel of the places they love. "
+               if grounded else "")
+            + "Eye-level architectural interior photography, wide lens, realistic proportions and materials, lived-in but tidy. "
+            "Furniture, fittings and windows as homes in that place have them. No people. No text, letters, numbers, logos or "
+            "watermarks anywhere.")
 
 
 async def restyle_room(taste: dict, room: dict, follows: str) -> dict:

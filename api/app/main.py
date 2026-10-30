@@ -629,7 +629,8 @@ async def taste_room(pid: str, index: int, body: RoomBody, me: Identity = Depend
     if body.follows and body.follows != room.get("for"):
         room = await taste.restyle_room(t, room, body.follows)
     if body.image:
-        resp = await concepts._image_call([taste.room_prompt(t["style"], room, p.get("brief") or {})], aspect="4:3")
+        refs = await taste.room_refs(p, room)
+        resp = await concepts._image_call(refs + [taste.room_prompt(t["style"], room, p.get("brief") or {}, bool(refs))], aspect="4:3")
         got = concepts._image_bytes(resp)
         if not got:
             raise HTTPException(502, "The image model returned no image. Try again.")

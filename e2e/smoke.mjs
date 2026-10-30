@@ -53,7 +53,7 @@ await check("sample", async (p) => {
 await check("taste", async (p) => {
   await p.getByRole("radio", { name: "Taste" }).or(p.getByRole("tab", { name: "Taste" })).first().click();
   await p.getByText("Taste by Qloo").first().waitFor({ timeout: 30000 });
-  await p.getByText(/A room for each of you/).first().waitFor({ timeout: 30000 });
+  await p.getByText(/Inside: a room for each of you/).first().waitFor({ timeout: 30000 });
   await p.getByText("Because").first().waitFor({ timeout: 30000 });
   await p.goBack();
   await p.waitForURL(/\/house/, { timeout: 30000 });

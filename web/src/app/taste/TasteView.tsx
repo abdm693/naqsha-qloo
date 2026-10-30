@@ -408,6 +408,19 @@ function Profile({ taste, project, editor, onEdit, onProjectChange }: { taste: T
 
       <Impact taste={taste} project={project} />
 
+      {/* Rooms */}
+      {!!s.rooms?.length && (
+        <section>
+          <SectionTitle title="Inside: a room for each of you" sub="Each room follows one person's taste. Switch whose, and picture it again." />
+          <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {s.rooms.map((r, i) => (
+              <RoomCard key={i} index={i} room={r} people={(s.people || []).map((x) => x.label)} ev={ev} project={project} editor={editor} onProjectChange={onProjectChange} />
+            ))}
+          </div>
+        </section>
+      )}
+
+
       {/* Each person */}
       {!!s.people?.length && (
         <section>
@@ -462,18 +475,6 @@ function Profile({ taste, project, editor, onEdit, onProjectChange }: { taste: T
             lines={[...(s.interiors.materials || []), s.interiors.lighting, s.interiors.furniture, s.interiors.objects]} because={s.interiors.because} ev={ev} />
         )}
       </section>
-
-      {/* Rooms */}
-      {!!s.rooms?.length && (
-        <section>
-          <SectionTitle title="A room for each of you" sub="Choose whose taste each room follows, then picture it" />
-          <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {s.rooms.map((r, i) => (
-              <RoomCard key={i} index={i} room={r} people={(s.people || []).map((x) => x.label)} ev={ev} project={project} editor={editor} onProjectChange={onProjectChange} />
-            ))}
-          </div>
-        </section>
-      )}
 
       {/* Wider taste: destinations and brands */}
       {(p.destinations.length > 0 || p.brands.length > 0) && (
