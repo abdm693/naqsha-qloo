@@ -188,6 +188,32 @@ async def _create(req: dict, **kw):
             delay *= 2
 
 
+async def native_stream(model: str, contents, config_, start_timeout: float = 420.0) -> AsyncIterator[Chunk]:
+    """Gemini's native streaming (google-genai, Vertex AI) for the longest generation, the 3D model as code: thinking
+    models stream it reliably there. Same timeouts and Chunk(text) shape as guarded_stream."""
+    from .gemini import client as genai_client
+    try:
+        stream = await asyncio.wait_for(genai_client().aio.models.generate_content_stream(model=model, contents=contents, config=config_),
+                                        timeout=start_timeout)
+    except asyncio.TimeoutError as e:
+        raise Stalled("the model didn't start answering") from e
+    it = stream.__aiter__()
+    first = True
+    while True:
+        try:
+            ch = await asyncio.wait_for(it.__anext__(), timeout=FIRST_CHUNK_TIMEOUT if first else IDLE_TIMEOUT)
+        except StopAsyncIteration:
+            return
+        except asyncio.TimeoutError as e:
+            raise Stalled("the model stopped answering") from e
+        first = False
+        try:
+            text = ch.text or ""
+        except Exception:
+            text = ""
+        yield Chunk(text)
+
+
 async def chat(**req):
     """A non-streamed chat completion (tool calls included) with the same backoff and fallback as every other call."""
     return await _create(req)
