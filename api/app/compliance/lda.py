@@ -458,7 +458,9 @@ def counts(report: dict) -> dict:
 def status_line(report: dict) -> str:
     """"36/36 LDA · 10/12 livable · 2 architect's notes": the version rail, the samples and the landing all quote this."""
     c = counts(report)
-    line = f"{c['lda']['pass']}/{c['lda']['total']} LDA · {c['livable']['pass']}/{c['livable']['total']} livable"
+    auth = str(report.get("authority") or "LDA").upper()
+    label = "LDA" if auth in ("LDA", "DHA", "BAHRIA", "OTHER") else "local rules"  # researched packs: the city's own rules
+    line = f"{c['lda']['pass']}/{c['lda']['total']} {label} · {c['livable']['pass']}/{c['livable']['total']} livable"
     if c["review"]:
         line += f" · {c['review']} architect's note{'s' if c['review'] != 1 else ''}"
     return line
