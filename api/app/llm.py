@@ -39,7 +39,7 @@ def client() -> AsyncOpenAI:
     if _client is None or not _creds.valid or (_creds.expiry and (_creds.expiry.timestamp() - time.time()) < 300):
         _creds.refresh(google.auth.transport.requests.Request())
         _client = AsyncOpenAI(base_url=f"https://aiplatform.googleapis.com/v1/projects/{config.PROJECT}/locations/{config.LOCATION}"
-                                       "/endpoints/openapi", api_key=_creds.token, max_retries=4, timeout=600)
+                                       "/endpoints/openapi", api_key=_creds.token, max_retries=1, timeout=600)
     return _client
 
 
@@ -152,7 +152,7 @@ def parse_json(text: str):
         raise
 
 
-START_TIMEOUT = 180.0   # waiting for the stream to open (includes the client's own retries)
+START_TIMEOUT = 300.0   # waiting for the stream to open (includes backoff on a busy model)
 FIRST_CHUNK_TIMEOUT = 240.0
 IDLE_TIMEOUT = 90.0     # between chunks once tokens are flowing (reasoning tokens count)
 
@@ -165,22 +165,40 @@ BUSY = (404, 429, 500, 502, 503, 504)
 
 
 async def _create(req: dict, **kw):
-    """One request; a model that is busy (after the client's own retries) is swapped for its fallback once."""
-    try:
-        return await client().chat.completions.create(**req, **kw)
-    except APIStatusError as e:
-        alt = config.FALLBACKS.get(req["model"].removeprefix("google/"))
-        if alt and e.status_code in BUSY:
-            log.warning("%s unavailable (%s); falling back to %s", req["model"], e.status_code, alt)
-            return await client().chat.completions.create(**{**req, "model": model_id(alt)}, **kw)
-        raise
+    """One request. Shared-quota 429s and 5xx are waited out with exponential backoff (the app shows "busy, retrying in N s");
+    after a few tries a busy model is swapped for its fallback."""
+    from . import busy
+    import random
+    delay, model = 4.0, req["model"]
+    for attempt in range(7):
+        try:
+            return await client().chat.completions.create(**{**req, "model": model}, **kw)
+        except APIStatusError as e:
+            if e.status_code not in BUSY or attempt == 6:
+                raise
+            alt = config.FALLBACKS.get(model.removeprefix("google/"))
+            if attempt == 3 and alt:
+                log.warning("%s still busy (%s); falling back to %s", model, e.status_code, alt)
+                model = model_id(alt)
+                continue
+            wait = min(60.0, delay) + random.uniform(0, 1.5)
+            busy.notify(wait, "model busy")
+            log.warning("%s busy (%s); retrying in %.0fs", model, e.status_code, wait)
+            await asyncio.sleep(wait)
+            delay *= 2
 
 
-async def guarded_stream(model: str, contents, config_=None, **kw) -> AsyncIterator[Chunk]:
-    """A streamed completion with timeouts, so a stalled stream is retried instead of hanging a run. Yields Chunk(text)."""
+async def chat(**req):
+    """A non-streamed chat completion (tool calls included) with the same backoff and fallback as every other call."""
+    return await _create(req)
+
+
+async def guarded_stream(model: str, contents, config_=None, start_timeout: float | None = None, **kw) -> AsyncIterator[Chunk]:
+    """A streamed completion with timeouts, so a stalled stream is retried instead of hanging a run. Yields Chunk(text).
+    With reasoning on, Vertex sends the first chunk only after the model has thought: long builds pass a longer start_timeout."""
     req = _request(model, contents, config_, **kw)
     try:
-        stream = await asyncio.wait_for(_create(req, stream=True), timeout=START_TIMEOUT)
+        stream = await asyncio.wait_for(_create(req, stream=True), timeout=start_timeout or START_TIMEOUT)
     except asyncio.TimeoutError as e:
         raise Stalled("the model didn't start answering") from e
     it = stream.__aiter__()

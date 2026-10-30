@@ -106,7 +106,7 @@ async def fix(plan: dict, brief: dict, prepare, budget_s: float | None = None, m
     while steps < max_steps and time.monotonic() - t0 < budget_s and not state["rep"]["ok"]:
         steps += 1
         try:
-            resp = await asyncio.wait_for(llm.client().chat.completions.create(
+            resp = await asyncio.wait_for(llm.chat(
                 model=llm.model_id(config.MODEL_FIXER), messages=msgs, tools=TOOLS, tool_choice="auto", max_tokens=8192,
                 reasoning_effort="high" if config.FIXER_THINK else "low"),
                 timeout=min(150.0, max(20.0, budget_s - (time.monotonic() - t0))))

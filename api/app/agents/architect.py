@@ -887,7 +887,7 @@ async def write_design(project: dict, plan: dict, extra_instruction: str | None 
     yield "stage", {"stage": "build", "message": "Building the 3D model…"}
     parser, total = SectionStream(), 0
     try:
-        async for chunk in llm.guarded_stream(config.MODEL_ARCHITECT, contents, cfg):
+        async for chunk in llm.guarded_stream(config.MODEL_ARCHITECT, contents, cfg, start_timeout=480):
             if not chunk.text:
                 continue
             total += len(chunk.text)

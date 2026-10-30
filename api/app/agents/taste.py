@@ -229,7 +229,7 @@ async def explore(brief: dict, taste: dict, ev: Evidence, max_steps: int = 5) ->
         if time.monotonic() - t0 > 75 or calls >= 4:
             break
         try:
-            resp = await asyncio.wait_for(llm.client().chat.completions.create(
+            resp = await asyncio.wait_for(llm.chat(
                 model=llm.model_id(config.MODEL_TASTE), messages=msgs, tools=TOOLS, tool_choice="auto", max_tokens=2048,
                 reasoning_effort="low"), timeout=60)
         except Exception as e:
