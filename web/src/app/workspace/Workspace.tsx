@@ -185,33 +185,23 @@ export function Workspace() {
         {/* One left edge: the heading, the composer, the tabs and the grid all start at the container's gutter. */}
         <section className="max-w-[720px] pb-10 pt-10 sm:pb-14 sm:pt-16" aria-labelledby="start-heading">
           <h1 id="start-heading" className="font-display text-[44px]/[48px] tracking-[-.035em] text-ink sm:text-[64px]/[68px]">
-            {user?.name ? `Salaam, ${user.name.split(" ")[0]}.` : mine.length || shared.length ? "Your homes" : "Start a home"}
+            Where's home?
           </h1>
-          <p className="mt-3 text-body-lg text-ink-2">Describe your plot and your family to start. One message is enough.</p>
           <form onSubmit={submit} className="mt-6">
             <Composer
               value={text}
               onChange={setText}
               onSubmit={() => submit()}
-              placeholder={phone ? "Plot, city, who lives there" : "A 50 × 120 ft lot in Austin, or 10 marla in Lahore: tell me the plot and the family"}
-              label="Describe your plot"
+              placeholder={phone ? "Where, and anything else" : "Where you'll build, and anything else you'd like me to know"}
+              label="Tell Naqsha about your home"
               busy={creating}
               className="shadow-e2"
             />
           </form>
           <p className="mt-3 text-[13px] text-ink-3">
-            Or{" "}
-            <button type="button" onClick={() => void create()} className="hit-44 relative font-medium text-ink-2 underline-offset-4 outline-none hover:text-ink hover:underline focus-visible:underline" disabled={creating}>
-              start with questions
-            </button>
-            {" "}and Naqsha will ask one at a time.
-          </p>
-          <p className="mt-1 text-[13px] text-ink-3">
-            Have a floor plan already?{" "}
             <button type="button" onClick={drawing.pick} className="hit-44 relative font-medium text-ink-2 underline-offset-4 outline-none hover:text-ink hover:underline focus-visible:underline" disabled={creating}>
               Start from your drawing
             </button>
-            {" "}and the design keeps its layout.
           </p>
           {drawing.input}
         </section>
@@ -259,7 +249,7 @@ export function Workspace() {
             {/* The composer above starts a home: no dashed "New home" tile repeating it. */}
             {active === "mine" && !list.length && (
               <li className="col-span-full">
-                <Empty title="No homes yet" line="Describe your plot above to start one, or open a sample to walk a finished home." />
+                <Empty title="No homes yet" line="Tell me where above, or open a sample to walk a finished home." />
               </li>
             )}
             {list.map((p) => (

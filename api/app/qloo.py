@@ -50,7 +50,8 @@ UNHELPFUL = {"seductive", "sexy", "marriage", "motivated", "professional", "ethn
              "athletic", "athletes", "sporty", "weddings", "freedom", "dynamic", "ethnic", "ethnic diversity", "culturally aware",
              "affluent", "wealthy", "world traveler", "global perspective", "business travelers", "seasonal residents", "remote",
              "volcanoes", "coral reefs", "canyons", "scuba diving", "hot springs", "camping", "sensual", "developing", "volcanic landscapes",
-             "geisha performances", "flamenco shows", "caves", "digital", "editorial", "informative", "utility"}
+             "geisha performances", "flamenco shows", "caves", "digital", "editorial", "informative", "utility", "functional", "practical",
+             "convenience", "affordability", "performance", "performance oriented", "innovative", "cutting-edge"}
 BRAND_GENRES = ["urn:tag:genre:brand:fashion", "urn:tag:genre:brand:retail"]   # textiles and objects, not cars
 MAKER_TAGS = ["urn:tag:category:place:art_gallery", "urn:tag:category:place:furniture_store", "urn:tag:genre:place:furniture_store",
               "urn:tag:category:place:interior_designer", "urn:tag:category:place:home_goods_store", "urn:tag:category:place:handicraft"]

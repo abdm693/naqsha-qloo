@@ -1,6 +1,6 @@
 // End-to-end checks of the deployed app as a guest, with Playwright (Chromium). Each check prints PASS/FAIL and leaves a
 // screenshot in e2e/out/. Usage: node smoke.mjs [base_url] [check ...]
-// checks: landing sample taste match photos drawing rules family
+// checks: landing sample taste match photos drawing rules family link
 import { chromium } from "playwright";
 import fs from "node:fs";
 
@@ -33,17 +33,17 @@ page.on("pageerror", (e) => errors.push(e.message));
 
 await check("landing", async (p) => {
   await p.goto(BASE + "/");
-  await p.getByRole("heading", { level: 1 }).waitFor();
-  for (const t of ["Start from your own drawing", "Rules for your city", "your family"]) {
-    await p.getByText(t, { exact: false }).first().waitFor({ timeout: 10000 });
-  }
+  await p.getByRole("heading", { level: 1, name: /Home is where the heart is/ }).waitFor();
+  await p.getByRole("button", { name: "Start your home" }).first().waitFor({ timeout: 10000 });
+  await p.getByText("Four families, four homes").waitFor({ timeout: 10000 });
+  if (await p.getByText(/Qloo/).count()) throw new Error("the app names Qloo");
 }, page);
 
 await check("sample", async (p) => {
   await p.goto(BASE + "/");
-  await p.getByRole("button", { name: "Explore a sample home" }).click();
+  await p.getByRole("button", { name: /See a family's home/ }).click();
   await p.waitForURL(/\/taste/, { timeout: 60000 });
-  await p.getByText("Naqsha Taste").first().waitFor({ timeout: 60000 });
+  await p.getByText(/What (you all|most of you) share|Together, you are/).first().waitFor({ timeout: 60000 });
   await p.getByRole("radio", { name: "House" }).first().click();
   await p.waitForURL(/\/house/, { timeout: 30000 });
   await p.getByText(/LDA|CDA|local rules/).first().waitFor({ timeout: 60000 });
@@ -51,15 +51,11 @@ await check("sample", async (p) => {
 }, page);
 
 await check("taste", async (p) => {
-  await p.getByRole("radio", { name: "Taste" }).or(p.getByRole("tab", { name: "Taste" })).first().click();
-  await p.getByText("Naqsha Taste").first().waitFor({ timeout: 30000 });
+  await p.getByRole("radio", { name: "Heart" }).or(p.getByRole("tab", { name: "Heart" })).first().click();
+  await p.getByText(/What (you all|most of you) share|Together, you are/).first().waitFor({ timeout: 30000 });
   await p.getByText(/Inside: a room for each of you/).first().waitFor({ timeout: 30000 });
   await p.getByText(/How much of you is in it/).first().waitFor({ timeout: 30000 });
-  // the neighbourhood: the plot pinned on its map among the places around it
-  await p.getByText("Where you'll live").first().waitFor({ timeout: 30000 });
-  await p.locator(".nbh-pin").first().waitFor({ timeout: 60000 });
   if (await p.getByText(/Qloo/).count()) throw new Error("the app names Qloo");
-  await p.getByText("Because").first().waitFor({ timeout: 30000 });
   await p.goBack();
   await p.waitForURL(/\/house/, { timeout: 30000 });
 }, page);
@@ -99,25 +95,47 @@ await check("rules", async (p) => {
 }, page);
 
 await check("family", async (p) => {
-  // a new family: one message, then their favourites, read with Qloo into a style brief
+  // a new family: one message; who's home; each answers from real things; the heart is revealed; a private link works
   await p.goto(BASE + "/app");
   const box = p.getByRole("textbox").first();
-  await box.fill("10 marla mid-row plot in DHA Phase 6 Lahore, facing north. Two storeys, four bedrooms, parents downstairs.");
+  await box.fill("A family of three in Leslieville, Toronto. Two storeys, a home office.");
   await box.press("Enter");
-  // once the brief has a place, the neighbourhood is read on its own; then straight to Taste
-  await p.getByText("DHA Phase 6").first().waitFor({ timeout: 120000 });
-  await p.getByText("Your neighbourhood").first().waitFor({ timeout: 120000 });
-  await p.getByRole("radio", { name: "Taste" }).first().click();
-  const cards = p.locator("section").filter({ has: p.locator('input[aria-label="Who"]') });
-  const add = async (card, field, value) => {
-    const inp = cards.nth(card).locator(`xpath=.//div[normalize-space()="${field}"]/following-sibling::div[1]//input`).first();
-    await inp.fill(value); await inp.press("Enter");
+  await p.getByText("Leslieville").first().waitFor({ timeout: 120000 });
+  await p.getByRole("radio", { name: "Heart" }).first().click();
+  await p.getByRole("heading", { name: "Who's home?" }).waitFor({ timeout: 30000 });
+  await p.getByLabel("Person 1").fill("Maya");
+  await p.getByLabel("Person 2").fill("Dev");
+  await p.getByRole("button", { name: "Light the house" }).click();
+  await p.getByRole("heading", { name: /Send everyone their light/ }).waitFor({ timeout: 30000 });
+  const answer = async (row, things) => {
+    await p.getByRole("button", { name: "Answer here" }).first().click();
+    await p.getByRole("heading", { name: new RegExp(`${row}, what do you love`) }).waitFor({ timeout: 10000 });
+    const field = p.getByRole("combobox").first();
+    for (const t of things) {
+      await field.fill(t);
+      await p.getByRole("option").first().waitFor({ timeout: 15000 });
+      await field.press("Enter");
+    }
+    await p.getByRole("button", { name: "Turn my light on" }).click();
   };
-  await add(0, "Places you loved", "Istanbul"); await add(0, "Music", "Abida Parveen"); await add(0, "Films and shows", "Coke Studio");
-  await add(1, "Places you loved", "Kyoto"); await add(1, "Films and shows", "Spirited Away");
-  await p.getByRole("button", { name: /Read our taste/ }).first().click();
-  await p.getByText(/Your favourites/i).first().waitFor({ timeout: 60000 });
-  await p.getByText(/What your taste decided/).first().waitFor({ timeout: 300000 });
+  await answer("Maya", ["Abida Parveen", "Istanbul", "Spirited Away"]);
+  await p.getByText(/1 of 2 lights on/).waitFor({ timeout: 15000 });
+  await answer("Dev", ["Coldplay", "Kyoto", "Parasite"]);
+  await p.getByRole("heading", { name: /Everyone's home/ }).waitFor({ timeout: 15000 });
+  await p.getByRole("button", { name: "See what you share" }).click();
+  await p.getByRole("button", { name: "See your home" }).click({ timeout: 90000 });
+  await p.getByRole("button", { name: /Build our home around it/ }).waitFor({ timeout: 15000 });
+}, page);
+
+await check("link", async (p) => {
+  // the private link opens without any account and sees only its own name
+  const fresh = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const q = await fresh.newPage();
+  const pid = p.url().split("/p/")[1].split("/")[0];
+  const fam = await p.evaluate(async (id) => (await (await fetch(`/api/projects/${id}`, { headers: { "X-Naqsha-User": Object.values(localStorage).find((v) => /^[0-9a-f-]{36}$/.test(v)) || "" } })).json()).family, pid);
+  await q.goto(`${BASE}/h/${fam.people[0].token}`);
+  await q.getByRole("heading", { name: /light's on/i }).waitFor({ timeout: 30000 });
+  await fresh.close();
 }, page);
 
 console.log(errors.length ? `page errors: ${errors.slice(0, 5).join(" | ")}` : "no page errors");
