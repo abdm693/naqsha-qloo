@@ -433,8 +433,9 @@ async def restyle_room(taste: dict, room: dict, follows: str) -> dict:
 # ---- measured impact: how much of the family's taste a picture of the house shows ---------------------------------------
 FIT_SYSTEM = """You check a photograph of a house against a family's taste checklist. For each item answer:
 "present" (clearly visible), "partial" (hinted, or only part of it), "missing" (it would be visible from this view but
-isn't), or "na" (inside the house or otherwise not judgeable from this view). Be strict: generic modern details don't
-count as a family's specific choice. JSON only: {"items": [{"id": "…", "status": "present|partial|missing|na", "note": "≤8 words"}]}"""
+isn't), or "na" (inside the house or otherwise not judgeable from this view). Be strict: an item counts as present only
+when the specific thing named is there (that material, that colour, that screen or motif, that feature). Generic modern
+details that merely resemble it (any brick, any timber, any light render) are "partial" at most, often "missing". JSON only: {"items": [{"id": "…", "status": "present|partial|missing|na", "note": "≤8 words"}]}"""
 
 
 def fit_items(style: dict) -> list[dict]:

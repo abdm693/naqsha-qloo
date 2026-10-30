@@ -314,7 +314,8 @@ async def generate(project: dict, count: int = 4, instruction: str | None = None
         for take in takes[:count]:
             jobs.append((concept_prompt(brief, take, instruction, style), take))
         if style and not instruction:  # the measured comparison: the same brief drawn without the family's taste
-            jobs.append((concept_prompt(brief, {"title": "Without your taste", "direction": "a typical new house for this plot"}),
+            neutral = {**brief, "style": "Modern Contemporary", "style_notes": ""}  # the brief as it was before the taste pass
+            jobs.append((concept_prompt(neutral, {"title": "Without your taste", "direction": "a typical new house for this plot"}),
                          {"title": "Without your taste", "baseline": True}))
     refs = [] if base else await design_refs(project)
     for i, (pr, take) in enumerate(jobs):
