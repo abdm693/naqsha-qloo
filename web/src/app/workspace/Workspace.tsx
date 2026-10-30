@@ -162,29 +162,25 @@ export function Workspace() {
   return (
     <div className="relative min-h-[100dvh] overflow-x-clip bg-canvas">
       {/* The same warm light as the landing, behind the greeting. */}
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-[560px]"
-        style={{ background: "radial-gradient(55% 60% at 85% 0%, rgb(226 186 140 / .24), transparent 70%), radial-gradient(40% 50% at 0% 0%, rgb(236 214 190 / .30), transparent 70%)" }}
-        aria-hidden
-      />
-      <header className={cn("sticky top-0 z-20 transition-[background-color,box-shadow,backdrop-filter] duration-300", scrolled ? "glass-light" : "bg-transparent")}>
+      <header className={cn("sticky top-0 z-20 transition-[background-color,box-shadow,backdrop-filter] duration-300", scrolled ? "bg-dusk-1" : "bg-[#0E1432]")}>
         <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-between gap-3 px-4 sm:px-8">
           <Link to="/" aria-label="Naqsha home" className="rounded-[8px] outline-none focus-visible:shadow-focus">
-            <Wordmark />
+            <Wordmark tone="white" />
           </Link>
           <div className="flex items-center gap-2">
-            {api.mock && <span className="hidden text-[12px] font-medium text-ink-3 sm:inline">Demo data</span>}
-            {!user && <span className="hidden text-[13px] text-ink-3 md:inline">Guest · saved in this browser</span>}
-            <AccountMenu guestLabel="Sign in" />
+            {api.mock && <span className="hidden text-[12px] font-medium text-dusk-ink-2 sm:inline">Demo data</span>}
+            <AccountMenu guestLabel="Sign in" className="text-dusk-ink hover:bg-dusk-3 hover:text-dusk-ink" />
           </div>
         </div>
       </header>
 
-      <main className="relative mx-auto max-w-[1280px] px-4 pb-24 sm:px-8">
-        {/* Start a home in one message */}
+      <main className="relative pb-24">
+        {/* Outside at dusk: one question. Your homes are below, indoors. */}
+        <div className="bg-[linear-gradient(180deg,#0E1432,#1B2352)]">
         {/* One left edge: the heading, the composer, the tabs and the grid all start at the container's gutter. */}
-        <section className="max-w-[720px] pb-10 pt-10 sm:pb-14 sm:pt-16" aria-labelledby="start-heading">
-          <h1 id="start-heading" className="font-display text-[44px]/[48px] tracking-[-.035em] text-ink sm:text-[64px]/[68px]">
+        <section className="mx-auto max-w-[1280px] px-4 pb-12 pt-10 sm:px-8 sm:pb-16 sm:pt-16" aria-labelledby="start-heading">
+          <div className="max-w-[720px]">
+          <h1 id="start-heading" className="font-display text-[44px]/[48px] tracking-[-.035em] text-dusk-ink sm:text-[64px]/[68px]">
             Where's home?
           </h1>
           <form onSubmit={submit} className="mt-6">
@@ -198,16 +194,19 @@ export function Workspace() {
               className="shadow-e2"
             />
           </form>
-          <p className="mt-3 text-[13px] text-ink-3">
-            <button type="button" onClick={drawing.pick} className="hit-44 relative font-medium text-ink-2 underline-offset-4 outline-none hover:text-ink hover:underline focus-visible:underline" disabled={creating}>
+          <p className="mt-3 text-[13px]">
+            <button type="button" onClick={drawing.pick} className="hit-44 relative font-medium text-dusk-ink-2 underline-offset-4 outline-none hover:text-dusk-ink hover:underline focus-visible:underline" disabled={creating}>
               Start from your drawing
             </button>
           </p>
           {drawing.input}
+          </div>
         </section>
+        </div>
 
+        <div className="mx-auto max-w-[1280px] px-4 sm:px-8">
         {/* Tabs */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pb-6 pt-8">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-6 pt-8">
           <Segmented<Tab>
             label="Homes"
             value={active}
@@ -278,6 +277,7 @@ export function Workspace() {
             )}
           </motion.ul>
         )}
+        </div>
       </main>
 
       <RenameDialog project={renaming} onClose={() => setRenaming(null)} onRename={rename} returnFocus={() => moreButton(focusAfter.current)} />
