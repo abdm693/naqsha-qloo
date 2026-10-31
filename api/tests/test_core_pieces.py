@@ -88,3 +88,22 @@ def test_a_const_from_another_section_is_copied_in():
     assert fixed == ["facade_front: stone, trim"]
     assert secs[1]["code"].index("const stone") < secs[1]["code"].index("const trim") < secs[1]["code"].index("s.facade")
     assert "preset: 'gravel'" in secs[2]["code"] and "preset: 'stone'" not in secs[2]["code"]
+
+
+def test_a_declaration_in_a_loop_is_never_shared():
+    from app.agents.jsfix import declarations, share_declarations
+
+    loop = 'const glassMat = s.mat("glass_tinted");\n\nfor (const [wx, ww] of [[11, 5]]) {\n\n  const glass = new THREE.Mesh(new THREE.BoxGeometry(s.ft(ww), 1, 1), glassMat);\n  s.add(glass);\n}\n'
+    assert set(declarations(loop)) == {"glassMat"}
+    structure = {"name": "structure", "code": 's.structure({\n  glass: "glass_clear",\n  railing: "metal_bars",\n});\n'}
+    secs = [structure, {"name": "facade", "code": loop}]
+    assert share_declarations(secs) == []
+    assert structure["code"].startswith("s.structure")
+
+
+def test_names_in_strings_and_comments_are_not_uses():
+    from app.agents.jsfix import _uses
+
+    assert not _uses('s.mat("stone"); // stone here', "stone")
+    assert not _uses('s.x({ a: 1, stone: 2 })', "stone")
+    assert _uses("s.mat(stone)", "stone") and _uses("const a = b ? stone : c", "stone") and _uses("f({ a: stone })", "stone")

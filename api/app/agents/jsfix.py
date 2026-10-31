@@ -52,25 +52,70 @@ def _statement_end(code: str, start: int) -> int:
     return n
 
 
+def _code_map(code: str) -> tuple[list[int], str]:
+    """(the brace depth at each index, the code with strings and comments blanked), so `{ glass: "x" }` and "glass" aren't code."""
+    depths, chars = [0] * len(code), list(code)
+    depth, i, n = 0, 0, len(code)
+    quote = None
+    while i < n:
+        ch = code[i]
+        depths[i] = depth
+        if quote:
+            if ch == "\\" and i + 1 < n:
+                chars[i] = chars[i + 1] = " "
+                if i + 1 < n:
+                    depths[i + 1] = depth
+                i += 2
+                continue
+            if ch == quote:
+                quote = None
+            chars[i] = " " if ch != "\n" else ch
+        elif code.startswith("//", i) or code.startswith("/*", i):
+            end = code.find("\n", i) if code[i + 1] == "/" else code.find("*/", i + 2)
+            end = n if end < 0 else (end if code[i + 1] == "/" else end + 2)
+            for k in range(i, end):
+                depths[k] = depth
+                if chars[k] != "\n":
+                    chars[k] = " "
+            i = end
+            continue
+        elif ch in "'\"":
+            quote = ch
+            chars[i] = " "
+        elif ch == "`":  # template literals stay: their ${...} is code
+            pass
+        elif ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+        i += 1
+    return depths, "".join(chars)
+
+
 def declarations(code: str) -> dict[str, str]:
-    """Top-level `const/let/var NAME = …;` and `function NAME(…) {…}` statements of a section, by name."""
+    """Top-level `const/let/var NAME = …;` and `function NAME(…) {…}` statements of a section, by name. A declaration inside a
+    loop or a block is never one: it may lean on the loop's own variables."""
     out: dict[str, str] = {}
+    depths, _ = _code_map(code)
     for rx in (DECL_RE, FUNC_RE):
         for m in rx.finditer(code):
-            line_start = code.rfind("\n", 0, m.start()) + 1
-            if code[line_start:m.start()].strip() or (m.start() - line_start) > 0 and code[line_start] in " \t" and rx is DECL_RE and _indent(code, line_start) > 0:
-                continue  # indented: inside a block, not top level
-            end = _statement_end(code, m.start())
-            out.setdefault(m.group(1), code[m.start():end].strip())
+            at = m.start() + len(m.group(0)) - len(m.group(0).lstrip())
+            if depths[at]:
+                continue
+            end = _statement_end(code, at)
+            out.setdefault(m.group(1), code[at:end].strip())
     return out
 
 
-def _indent(code: str, line_start: int) -> int:
-    return len(code[line_start:]) - len(code[line_start:].lstrip(" \t"))
-
-
 def _uses(code: str, name: str) -> bool:
-    return re.search(rf"(?<![\w$.]){re.escape(name)}(?![\w$])", code) is not None
+    """Whether code really refers to `name`: strings, comments and object keys (`{ glass: "glass_clear" }`) don't count."""
+    _, clean = _code_map(code)
+    for m in re.finditer(rf"(?<![\w$.]){re.escape(name)}(?![\w$])", clean):
+        before, after = clean[:m.start()].rstrip()[-1:], clean[m.end():].lstrip()[:1]
+        if after == ":" and before in ("{", ",", ""):
+            continue
+        return True
+    return False
 
 
 def share_declarations(sections: list[dict]) -> list[str]:

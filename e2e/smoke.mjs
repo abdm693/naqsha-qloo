@@ -78,6 +78,11 @@ async function walk(p, family, city) {
   await p.waitForURL(/\/house/, { timeout: 20000 });
   await p.waitForTimeout(4000);
   await p.waitForFunction(() => !/Assembling your home|Opening the house/.test(document.body.innerText), null, { timeout: 240000 });
+  await p.waitForTimeout(3000);
+  const broken = await p.getByText(/didn't build/).count();
+  if (broken) throw new Error(`${city}: ${broken} parts of the house didn't build`);
+  const bare = await p.getByText(/Matches the concept: (\d+)%/).first().textContent().catch(() => "");
+  if (Number(bare.match(/(\d+)%/)?.[1] ?? 100) < 50) throw new Error(`${city}: ${bare}`);
   await clean(p, city);
 }
 

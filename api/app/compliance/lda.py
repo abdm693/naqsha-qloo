@@ -493,7 +493,7 @@ def check_asbuilt(plan: dict, summary: dict) -> dict:
     tol = 0.5
     lim = {k: allow(v) + tol for k, v in sb.items()}
     x0, y0, x1, y1 = sb["left"], sb["front"], W - sb["right"], D - sb["rear"]
-    skip = ("site", "boundary", "gate", "light", "glow", "facade:wall_light", "facade:led_strip", "lamp", "fixture", "street", "tree")
+    skip = ("site", "boundary", "gate", "light", "glow", "facade:wall_light", "facade:led_strip", "lamp", "fixture", "street", "tree", "context")
     checks = []
     for o in summary.get("objects", []):
         kind = (o.get("kind") or "").lower()
