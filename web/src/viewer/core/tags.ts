@@ -150,6 +150,7 @@ export function inSentence(name: string): string {
 
 /** "the kitchen", "bedroom 2" (numbered rooms read without "the"). */
 export function theRoom(name: string): string {
+  if (/^[A-Z][\p{L}-]*['’]s\b/u.test(name)) return name;  // "Mateo's bath": a person's own room keeps their name
   const s = inSentence(name);
   return /\d/.test(s) || /^(the|a|an)\s/.test(s) ? s : `the ${s}`;
 }
