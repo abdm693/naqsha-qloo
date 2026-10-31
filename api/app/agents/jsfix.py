@@ -9,6 +9,7 @@ from __future__ import annotations
 import re
 
 DECL_RE = re.compile(r"(?m)^\s*(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=")
+ANY_DECL_RE = re.compile(r"\b(?:const|let|var|function)\s+([A-Za-z_$][\w$]*)")
 FUNC_RE = re.compile(r"(?m)^\s*function\s+([A-Za-z_$][\w$]*)\s*\(")
 BUILTINS = {"s", "THREE", "Math", "JSON", "Object", "Array", "Number", "String", "console", "undefined", "null", "true", "false"}
 
@@ -126,7 +127,7 @@ def share_declarations(sections: list[dict]) -> list[str]:
             pool.setdefault(name, stmt)
     fixed = []
     for sec in sections:
-        own = set(declarations(sec["code"]))
+        own = set(declarations(sec["code"])) | set(ANY_DECL_RE.findall(sec["code"]))  # a name it declares anywhere is its own
         need: list[str] = []
 
         def want(name: str, seen: set[str]) -> None:

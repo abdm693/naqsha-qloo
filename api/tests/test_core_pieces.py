@@ -107,3 +107,12 @@ def test_names_in_strings_and_comments_are_not_uses():
     assert not _uses('s.mat("stone"); // stone here', "stone")
     assert not _uses('s.x({ a: 1, stone: 2 })', "stone")
     assert _uses("s.mat(stone)", "stone") and _uses("const a = b ? stone : c", "stone") and _uses("f({ a: stone })", "stone")
+
+
+def test_a_name_a_section_declares_in_a_block_stays_its_own():
+    from app.agents.jsfix import share_declarations
+
+    other = {"name": "facade", "code": "const trim = s.mat('wood');\nconst panel = new THREE.Mesh(g, trim);\ns.add(panel);\n"}
+    gates = {"name": "gates", "code": "const bronze = s.mat('bronze');\nfor (const x of [1, 2]) {\n  const panel = new THREE.Mesh(g, bronze);\n  s.add(panel);\n}\n"}
+    assert share_declarations([other, gates]) == []
+    assert gates["code"].startswith("const bronze")
