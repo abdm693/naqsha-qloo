@@ -394,7 +394,13 @@ function Home({ project, editor, inside, onChange, onAgain }: { project: Project
               </ul>
             </div>
           )}
-          {designed && <div className="mt-10"><LampButton onClick={() => goTo("concepts")}>See the home <ArrowRight className="size-4" /></LampButton></div>}
+          {(editor || designed) && (
+            <div className="mt-10">
+              {designed
+                ? <LampButton onClick={() => goTo("concepts")}>See the home <ArrowRight className="size-4" /></LampButton>
+                : <LampButton loading={!!building} onClick={() => void build()}>{building ?? "Build our home around it"}</LampButton>}
+            </div>
+          )}
         </div>
       </section>
 

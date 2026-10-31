@@ -202,8 +202,11 @@ await check("family", async (p) => {
   await answer("Dev", ["Coldplay", "Kyoto", "Parasite"]);
   await p.getByRole("heading", { name: /Everyone's home/ }).waitFor({ timeout: 15000 });
   await p.getByRole("button", { name: "See what you share" }).click();
-  await p.getByRole("button", { name: "See your home" }).click({ timeout: 90000 });
-  await p.getByRole("button", { name: /Build our home around it/ }).waitFor({ timeout: 15000 });
+  await p.getByRole("button", { name: "Look inside" }).click({ timeout: 90000 });
+  await p.getByRole("heading", { name: /Everything opens onto/ }).waitFor({ timeout: 15000 });
+  await p.getByRole("button", { name: /Build our home around it/ }).last().click({ timeout: 15000 });
+  await p.waitForURL(/\/concepts/, { timeout: 300000 });
+  await p.waitForFunction(() => [...document.images].some((i) => i.complete && i.naturalWidth > 300), null, { timeout: 300000 });
 }, page);
 
 await check("link", async (p) => {
