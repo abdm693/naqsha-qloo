@@ -7,6 +7,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { ArrowRight, Check, Link2, Plus, X } from "lucide-react";
 import type { FamilyMember, Pick, Project } from "@contracts/api-types";
 import { api, errorMessage } from "@/api/client";
+import { cn } from "@/app/lib/utils";
 import { canEdit } from "@/app/lib/views";
 import { useViewNav } from "@/app/design/nav";
 import { useAskContext } from "@/app/shell/ask";
@@ -111,8 +112,8 @@ function Who({ project, editor, onDone }: { project: Project; editor: boolean; o
   );
 }
 
-function Scene(props: Parameters<typeof HouseScene>[0]) {
-  return <div className="pointer-events-none fixed inset-x-0 bottom-0 h-[52dvh]"><HouseScene labels {...props} className="size-full" /></div>;
+function Scene({ back, ...props }: Parameters<typeof HouseScene>[0] & { back?: boolean }) {
+  return <div className={cn("pointer-events-none fixed inset-x-0 bottom-0 h-[52dvh] transition-opacity duration-700", back && "max-sm:opacity-15")}><HouseScene labels {...props} className="size-full" /></div>;
 }
 
 function Waiting({ project, editor, onChange, onReveal }: { project: Project; editor: boolean; onChange(p: Project): void; onReveal(): void }) {
@@ -264,7 +265,7 @@ function Reveal({ project, onDone, onFail }: { project: Project; onDone(p: Proje
           </AnimatePresence>
         )}
       </section>
-      <Scene windows={people.map((p, i) => ({ id: p.id, name: p.name, lit: i < lit }))} heart={heart} title={heart ? "Every light is on, and the heart of the house is lit" : "The windows are coming on"} />
+      <Scene back={words && !!h && crowded(h)} windows={people.map((p, i) => ({ id: p.id, name: p.name, lit: i < lit }))} heart={heart} title={heart ? "Every light is on, and the heart of the house is lit" : "The windows are coming on"} />
     </>
   );
 }
@@ -296,6 +297,9 @@ function Threads({ heart }: { heart: NonNullable<Project["heart"]> }) {
     </motion.ul>
   );
 }
+
+/** Too many favourites to sit above the house on a phone: the house steps back behind them. */
+const crowded = (h: NonNullable<Project["heart"]>) => (h.threads ?? []).reduce((n, t) => n + new Set(t.hands.map((x) => x.name)).size, 0) > 3;
 
 const firstUp = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 
@@ -362,7 +366,7 @@ function Home({ project, editor, inside, onChange, onAgain }: { project: Project
           )}
           {error && <p role="alert" className="mt-3 text-body text-lamp-soft">{error}</p>}
         </div>
-        <div className="pointer-events-none absolute bottom-0 left-1/2 h-[56dvh] w-[100vw] -translate-x-1/2">
+        <div className={cn("pointer-events-none absolute bottom-0 left-1/2 h-[56dvh] w-[100vw] -translate-x-1/2", crowded(h) && "max-sm:opacity-15")}>
           <HouseScene windows={people.filter((p) => p.answered).map((p) => ({ id: p.id, name: p.name, lit: true }))} heart labels className="size-full" title="Every light is on, and the heart of the house is lit" />
         </div>
       </section>
